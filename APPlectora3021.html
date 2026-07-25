@@ -5507,7 +5507,13 @@ function iniciarVoz() {
             btn.style.boxShadow = '0 0 30px rgba(46, 125, 50, 0.8)';
             btn.textContent = '✅';
         }
-        mostrarFeedback('🎤 Escuchado: ' + transcript, 3000);
+        mostrarFeedback('🎤 Escuchado: ' + transcript + ' — Presiona ▶ para confirmar', 4000);
+
+        // Mostrar botón de confirmar
+        var btnConfirmar = document.getElementById('btn-confirmar-voz');
+        if (btnConfirmar) {
+            btnConfirmar.style.display = 'flex';
+        }
     };
 
     recognition.onerror = function(event) {
@@ -5551,6 +5557,35 @@ function iniciarVoz() {
     mostrarFeedback('🎤 Habla la ubicación...', 5000);
 }
 
+// Confirmar lo dictado por voz — dispara los eventos que la app necesita
+function confirmarVoz() {
+    var input = ultimoInput;
+    if (!input || input.tagName !== 'INPUT') {
+        mostrarFeedback('⚠️ No hay campo activo para confirmar.', 2000);
+        return;
+    }
+
+    // Disparar eventos igual que si el usuario hubiera escrito y presionado Enter
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keypress', { key: 'Enter', keyCode: 13, bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keydown',  { key: 'Enter', keyCode: 13, bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keyup',    { key: 'Enter', keyCode: 13, bubbles: true }));
+
+    // Ocultar botón confirmar y restaurar micrófono
+    var btnConfirmar = document.getElementById('btn-confirmar-voz');
+    if (btnConfirmar) btnConfirmar.style.display = 'none';
+
+    var btnMic = document.getElementById('btn-voz-flotante');
+    if (btnMic) {
+        btnMic.style.background = 'linear-gradient(135deg, #4a148c, #7b1fa2)';
+        btnMic.style.boxShadow = '0 4px 20px rgba(156, 39, 176, 0.6)';
+        btnMic.textContent = '🎤';
+    }
+
+    mostrarFeedback('✅ Confirmado: ' + input.value, 2000);
+}
+
 // Guardar el último input enfocado
 document.addEventListener('focusin', function(e) {
     if (e.target && e.target.tagName === 'INPUT') {
@@ -5560,6 +5595,30 @@ document.addEventListener('focusin', function(e) {
 
 
 </script>
+
+    <!-- BOTÓN FLOTANTE CONFIRMAR VOZ (oculto hasta que se dicte algo) -->
+    <button id="btn-confirmar-voz" onclick="confirmarVoz()" style="
+        position: fixed;
+        bottom: 160px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0d6f2e, #1db954);
+        border: 2px solid #1db954;
+        color: #fff;
+        font-size: 28px;
+        cursor: pointer;
+        z-index: 9999;
+        box-shadow: 0 4px 20px rgba(29, 185, 84, 0.7);
+        transition: all 0.3s;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        pointer-events: all;
+    ">
+        ▶
+    </button>
 
     <!-- BOTÓN FLOTANTE DE VOZ -->
     <button id="btn-voz-flotante" onclick="iniciarVoz()" style="

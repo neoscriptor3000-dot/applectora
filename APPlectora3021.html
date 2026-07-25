@@ -5497,6 +5497,15 @@ function iniciarVoz() {
     recognition.onresult = function(event) {
         // Tomar SOLO el resultado final (el último)
         var transcript = event.results[event.results.length - 1][0].transcript.trim().toUpperCase();
+
+        // Diccionario fonético — sustituir palabras clave ANTES de limpiar espacios
+        transcript = transcript
+            .replace(/\bPOLLO\b/g,    'P')
+            .replace(/\bCORTES\b/g,   'C')
+            .replace(/\bDERECHA\b/g,  'D')
+            .replace(/\bIZQUIERDA\b/g,'I')
+            .replace(/\bCENTRO\b/g,   'C');
+
         // Limpiar espacios, puntos, comas y caracteres no deseados
         transcript = transcript.replace(/\./g, '').replace(/,/g, '').replace(/\s+/g, '');
         input.value = transcript;

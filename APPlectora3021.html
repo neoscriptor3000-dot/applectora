@@ -5454,6 +5454,76 @@ console.log('✅ V83 - Warehouse Móvil con Salida Masiva cargada correctamente.
 var ultimoInput = null;
 var reconocimientoActivo = false;
 
+// Convierte números escritos en español a dígitos (0-5000)
+function palabrasANumeros(texto) {
+    var unidades = {'CERO':0,'UNO':1,'DOS':2,'TRES':3,'CUATRO':4,'CINCO':5,'SEIS':6,'SIETE':7,'OCHO':8,'NUEVE':9};
+    var especiales = {'DIEZ':10,'ONCE':11,'DOCE':12,'TRECE':13,'CATORCE':14,'QUINCE':15,
+        'DIECISÉIS':16,'DIECISEIS':16,'DIECISIETE':17,'DIECIOCHO':18,'DIECINUEVE':19,
+        'VEINTE':20,'VEINTIUNO':21,'VEINTIDÓS':22,'VEINTIDOS':22,'VEINTITRÉS':23,'VEINTITRES':23,
+        'VEINTICUATRO':24,'VEINTICINCO':25,'VEINTISÉIS':26,'VEINTISEIS':26,
+        'VEINTISIETE':27,'VEINTIOCHO':28,'VEINTINUEVE':29,'TREINTA':30,
+        'CUARENTA':40,'CINCUENTA':50,'SESENTA':60,'SETENTA':70,'OCHENTA':80,'NOVENTA':90,
+        'CIEN':100,'CIENTO':100,'DOSCIENTOS':200,'DOSCIENTAS':200,'TRESCIENTOS':300,'TRESCIENTAS':300,
+        'CUATROCIENTOS':400,'CUATROCIENTAS':400,'QUINIENTOS':500,'QUINIENTAS':500,
+        'SEISCIENTOS':600,'SEISCIENTAS':600,'SETECIENTOS':700,'SETECIENTAS':700,
+        'OCHOCIENTOS':800,'OCHOCIENTAS':800,'NOVECIENTOS':900,'NOVECIENTAS':900,
+        'MIL':1000,'MILES':1000};
+
+    // Reemplazar "Y" entre decenas y unidades (ej: TREINTA Y UNO)
+    texto = texto.replace(/\bY\b/g, '');
+
+    var palabras = texto.split(/\s+/);
+    var resultado = [];
+    var i = 0;
+
+    while (i < palabras.length) {
+        var p = palabras[i];
+        var acum = null;
+
+        // Intentar leer un número compuesto
+        var j = i;
+        var num = 0;
+        var hayNumero = false;
+        var miles = 0;
+
+        while (j < palabras.length) {
+            var w = palabras[j];
+            if (w === 'MIL' || w === 'MILES') {
+                miles = (num === 0 ? 1 : num) * 1000;
+                num = 0;
+                hayNumero = true;
+                j++;
+            } else if (especiales[w] !== undefined) {
+                num += especiales[w];
+                hayNumero = true;
+                j++;
+            } else if (unidades[w] !== undefined) {
+                num += unidades[w];
+                hayNumero = true;
+                j++;
+            } else {
+                break;
+            }
+        }
+
+        if (hayNumero) {
+            resultado.push(String(miles + num));
+            i = j;
+        } else {
+            resultado.push(p);
+            i++;
+        }
+    }
+
+    return resultado.join(' ');
+}
+
+// Convierte decimales en palabras usando PUNTO como separador
+function procesarDecimales(texto) {
+    // Busca patrón: número PUNTO número — los une con punto decimal
+    return texto.replace(/(\d+)\s+PUNTO\s+(\d+)/g, '$1.$2');
+}
+
 function iniciarVoz() {
     // 1. Validar navegador
     var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -5499,15 +5569,22 @@ function iniciarVoz() {
         var transcript = event.results[event.results.length - 1][0].transcript.trim().toUpperCase();
 
         // Diccionario fonético — sustituir palabras clave ANTES de limpiar espacios
-        transcript = transcript
-            .replace(/\bPOLLO\b/g,    'P')
-            .replace(/\bCORTES\b/g,   'C')
-            .replace(/\bDERECHA\b/g,  'D')
-            .replace(/\bIZQUIERDA\b/g,'I')
-            .replace(/\bCENTRO\b/g,   'C');
+        // Primero convertir números en palabras a dígitos
+        transcript = palabrasANumeros(transcript);
+        // Luego procesar decimales (ej: "12 PUNTO 5" → "12.5")
+        transcript = procesarDecimales(transcript);
 
-        // Limpiar espacios, puntos, comas y caracteres no deseados
-        transcript = transcript.replace(/\./g, '').replace(/,/g, '').replace(/\s+/g, '');
+        // Luego sustituir palabras clave de cámara y rack
+        transcript = transcript
+            .replace(/\bPOLLO\b/g,        'P')
+            .replace(/\bCORTES\b/g,       'C')
+            .replace(/\bDERECHA\b/g,      'D')
+            .replace(/\bIZQUIERDA\b/g,    'I')
+            .replace(/\bCENTRO\b/g,       'C');
+
+        // Limpiar espacios, comas y caracteres no deseados
+        // Preservar puntos decimales (entre dígitos) pero eliminar los demás
+        transcript = transcript.replace(/,/g, '').replace(/\s+/g, '').replace(/(?<!\d)\.(?!\d)/g, '');
         input.value = transcript;
 
         // Mostrar feedback visual (verde)

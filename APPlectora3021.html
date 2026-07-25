@@ -5486,25 +5486,20 @@ function iniciarVoz() {
     input.style.borderColor = '#4fc3f7';
     input.style.boxShadow = '0 0 10px rgba(79,195,247,0.5)';
 
-    // 5. Iniciar reconocimiento (SIN onend que reestablezca)
+    // 5. Iniciar reconocimiento
     reconocimientoActivo = true;
     var recognition = new SpeechRecognition();
     recognition.lang = 'es-PE';
-    recognition.continuous = true;      // ← NO se detiene por silencio
-    recognition.interimResults = true;  // ← Muestra mientras hablas
+    recognition.continuous = false;     // ← Se detiene solo al terminar de hablar
+    recognition.interimResults = false; // ← Solo resultado final, sin parciales
     recognition.maxAlternatives = 1;
 
-    var textoCompleto = '';
-
     recognition.onresult = function(event) {
-        // Acumular el texto SIN reiniciar
-        for (var i = event.resultIndex; i < event.results.length; i++) {
-            var transcript = event.results[i][0].transcript.trim().toUpperCase();
-            textoCompleto += transcript;
-        }
-        // Limpiar caracteres especiales
-        textoCompleto = textoCompleto.replace(/\./g, '').replace(/,/g, '').replace(/\s+/g, '');
-        input.value = textoCompleto;
+        // Tomar SOLO el resultado final (el último)
+        var transcript = event.results[event.results.length - 1][0].transcript.trim().toUpperCase();
+        // Limpiar espacios, puntos, comas y caracteres no deseados
+        transcript = transcript.replace(/\./g, '').replace(/,/g, '').replace(/\s+/g, '');
+        input.value = transcript;
 
         // Mostrar feedback visual (verde)
         if (btn) {
@@ -5512,7 +5507,7 @@ function iniciarVoz() {
             btn.style.boxShadow = '0 0 30px rgba(46, 125, 50, 0.8)';
             btn.textContent = '✅';
         }
-        mostrarFeedback('🎤 Escuchado: ' + textoCompleto, 3000);
+        mostrarFeedback('🎤 Escuchado: ' + transcript, 3000);
     };
 
     recognition.onerror = function(event) {

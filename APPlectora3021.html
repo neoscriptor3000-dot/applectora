@@ -441,7 +441,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 
 </div>
 
-<div id="panel-ingreso" class="panel"><h3>📥 INGRESAR PALLET</h3><input type="text" id="ing-codigo" placeholder="Código del producto" onchange="autocompletarProducto()" onkeydown="if(event.key==='Enter')document.getElementById('ing-producto').focus()"><input type="text" id="ing-producto" placeholder="Nombre del producto" onkeydown="if(event.key==='Enter')document.getElementById('ing-lote').focus()"><input type="text" id="ing-lote" placeholder="Lote" onkeydown="if(event.key==='Enter')document.getElementById('ing-unidades').focus()"><input type="number" id="ing-unidades" placeholder="Unidades" min="0" onkeydown="if(event.key==='Enter')document.getElementById('ing-kilos').focus()"><input type="number" id="ing-kilos" placeholder="Peso en Kilos" min="0" step="0.01" onkeydown="if(event.key==='Enter')document.getElementById('ing-bandejas').focus()"><input type="number" id="ing-bandejas" placeholder="Número de Bandejas" min="0" onkeydown="if(event.key==='Enter')document.getElementById('ing-venc').focus()"><input type="text" id="ing-venc" placeholder="Vencimiento (ej: 15/03/2028)" onkeydown="if(event.key==='Enter')document.getElementById('ing-ubicacion').focus()"><input type="text" id="ing-ubicacion" placeholder="Escanee ubicación destino" onchange="confirmarIngreso()"><div id="resultado-ingreso"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
+<div id="panel-ingreso" class="panel"><h3>📥 INGRESAR PALLET</h3><input type="text" id="ing-codigo" placeholder="Código del producto" onchange="autocompletarProducto()" onkeydown="if(event.key==='Enter')document.getElementById('ing-producto').focus()"><input type="text" id="ing-producto" placeholder="Nombre del producto" onkeydown="if(event.key==='Enter')document.getElementById('ing-lote').focus()"><input type="text" id="ing-lote" placeholder="Lote" onkeydown="if(event.key==='Enter')document.getElementById('ing-unidades').focus()"><input type="text" id="ing-unidades" placeholder="Unidades" onkeydown="if(event.key==='Enter')document.getElementById('ing-kilos').focus()"><input type="text" id="ing-kilos" placeholder="Peso en Kilos (ej: 20.5)" onkeydown="if(event.key==='Enter')document.getElementById('ing-bandejas').focus()"><input type="text" id="ing-bandejas" placeholder="Número de Bandejas" onkeydown="if(event.key==='Enter')document.getElementById('ing-venc').focus()"><input type="text" id="ing-venc" placeholder="Vencimiento (ej: 15/03/2028)" onkeydown="if(event.key==='Enter')document.getElementById('ing-ubicacion').focus()"><input type="text" id="ing-ubicacion" placeholder="Escanee ubicación destino" onchange="confirmarIngreso()"><div id="resultado-ingreso"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
 </div>
 
 <script>
@@ -612,6 +612,17 @@ function mostrarPanel(id) {
     if (id === 'panel-escanear') {
         document.getElementById('input-escanear').focus();
         document.getElementById('resultado-escanear').innerHTML = '';
+    }
+
+    if (id === 'panel-ingreso') {
+        ['ing-codigo','ing-producto','ing-lote','ing-venc','ing-ubicacion'].forEach(function(campo) {
+            document.getElementById(campo).value = '';
+        });
+        ['ing-unidades','ing-kilos','ing-bandejas'].forEach(function(campo) {
+            document.getElementById(campo).value = '';
+        });
+        document.getElementById('resultado-ingreso').innerHTML = '';
+        document.getElementById('ing-codigo').focus();
     }
 
     if (id === 'panel-ver-carril') {
@@ -1466,8 +1477,8 @@ function confirmarIngreso() {
     encontrado.codigo = document.getElementById('ing-codigo').value.trim();
     encontrado.producto = document.getElementById('ing-producto').value.trim();
     encontrado.lote = document.getElementById('ing-lote').value.trim();
-    encontrado.und = parseFloat(document.getElementById('ing-unidades').value) || 0;
-    encontrado.kg = parseFloat(document.getElementById('ing-kilos').value) || 0;
+    encontrado.und = parseFloat(document.getElementById('ing-unidades').value.replace(',','.')) || 0;
+    encontrado.kg = parseFloat(document.getElementById('ing-kilos').value.replace(',','.')) || 0;
     encontrado.vence = document.getElementById('ing-venc').value.trim();
     encontrado.bandejas = document.getElementById('ing-bandejas').value.trim();
     guardarEnLocalStorage();
@@ -2164,21 +2175,89 @@ function mostrarResumenIngreso() {
         resumen[key].und += p.und;
         resumen[key].kg += p.kg;
     });
-    var html = '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
-    html += '<tr style="color:#607d8b;"><th>CÓDIGO</th><th>PRODUCTO</th><th>PALLETS</th><th>LOTE</th><th>UND</th><th>KG</th></tr>';
+
+    // Detectar pallets sin lote o sin fecha
+    var sinLote = listaIngreso.filter(function(p) { return !p.lote || !p.vence; });
+    var advertencia = '';
+    if (sinLote.length > 0) {
+        advertencia = '<div style="background:rgba(255,152,0,0.15);border:1px solid #ff9800;border-radius:8px;padding:10px;margin-bottom:10px;font-size:12px;color:#ff9800;">⚠️ ' + sinLote.length + ' pallet(s) sin lote o fecha de vencimiento.</div>';
+    }
+
+    var html = advertencia;
+    html += '<div style="display:flex;gap:8px;margin-bottom:10px;">';
+    html += '<button onclick="completarLoteVenc()" style="flex:1;background:linear-gradient(135deg,#1565c0,#1e88e5);color:#fff;border:none;border-radius:8px;padding:10px;font-size:12px;font-weight:bold;cursor:pointer;">📝 Completar Lote/Venc.</button>';
+    html += '</div>';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+    html += '<tr style="color:#607d8b;"><th>CÓDIGO</th><th>PRODUCTO</th><th>PALLETS</th><th>LOTE</th><th>UND</th><th>KG</th><th></th></tr>';
     var totalPallets = 0;
     for (var key in resumen) {
         var r = resumen[key];
         totalPallets += r.cantidad;
+        var loteDisplay = r.lote ? r.lote : '<span style="color:#ff9800;">⚠️ —</span>';
         html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">';
-        html += '<td>' + r.codigo + '</td><td>' + r.producto + '</td><td style="text-align:center;color:#69f0ae;">' + r.cantidad + '</td><td>' + r.lote + '</td><td>' + r.und + '</td><td>' + r.kg + '</td>';
+        html += '<td>' + r.codigo + '</td><td>' + r.producto + '</td><td style="text-align:center;color:#69f0ae;">' + r.cantidad + '</td><td>' + loteDisplay + '</td><td>' + r.und + '</td><td>' + r.kg + '</td>';
+        html += '<td><button onclick="editarLoteProducto(\'' + r.codigo + '\')" style="background:rgba(79,195,247,0.2);border:1px solid #4fc3f7;color:#fff;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:11px;">✏️</button></td>';
         html += '</tr>';
     }
-    html += '<tr style="font-weight:bold;background:rgba(255,255,255,0.05);"><td colspan="2">TOTAL</td><td style="color:#69f0ae;">' + totalPallets + ' pallets</td><td colspan="3"></td></tr>';
+    html += '<tr style="font-weight:bold;background:rgba(255,255,255,0.05);"><td colspan="2">TOTAL</td><td style="color:#69f0ae;">' + totalPallets + ' pallets</td><td colspan="4"></td></tr>';
     html += '</table>';
     document.getElementById('resumen-ingreso-lista').innerHTML = html;
     document.getElementById('menu-principal').style.display = 'none';
     document.getElementById('panel-resumen-ingreso').style.display = 'block';
+}
+
+// Botón 1: Replica el único lote/fecha existente a todos los pallets que no lo tienen
+function completarLoteVenc() {
+    // Buscar pallets que sí tienen lote y fecha
+    var conDatos = listaIngreso.filter(function(p) { return p.lote && p.vence; });
+    if (conDatos.length === 0) {
+        mostrarFeedback('⚠️ Ningún pallet tiene lote o fecha. Use ✏️ para ingresar los datos manualmente.', 4000);
+        return;
+    }
+    // Verificar que todos los que tienen datos comparten el mismo lote Y la misma fecha
+    var lotesUnicos = {};
+    conDatos.forEach(function(p) { lotesUnicos[p.lote + '|||' + p.vence] = { lote: p.lote, vence: p.vence }; });
+    var keys = Object.keys(lotesUnicos);
+    if (keys.length > 1) {
+        mostrarFeedback('⚠️ No se puede: existen ' + keys.length + ' lotes/fechas distintos. Use ✏️ por producto.', 4000);
+        return;
+    }
+    // Hay un único lote/fecha — replicar a los que no tienen
+    var loteRef = lotesUnicos[keys[0]].lote;
+    var venceRef = lotesUnicos[keys[0]].vence;
+    var actualizados = 0;
+    listaIngreso.forEach(function(p) {
+        if (!p.lote || !p.vence) {
+            p.lote = loteRef;
+            p.vence = venceRef;
+            actualizados++;
+        }
+    });
+    mostrarFeedback('✅ Lote ' + loteRef + ' y fecha ' + venceRef + ' aplicados a ' + actualizados + ' pallet(s).', 4000);
+    mostrarResumenIngreso();
+}
+
+// Botón 2: Editar lote y fecha de todos los pallets de un código específico
+function editarLoteProducto(codigo) {
+    var loteActual = '';
+    var venceActual = '';
+    listaIngreso.forEach(function(p) {
+        if (p.codigo === codigo && p.lote) { loteActual = p.lote; venceActual = p.vence; }
+    });
+    var nuevoLote = prompt('✏️ Lote para código ' + codigo + ':', loteActual);
+    if (nuevoLote === null) return;
+    var nuevaFecha = prompt('📅 Fecha de vencimiento (ej: 31/05/2028):', venceActual);
+    if (nuevaFecha === null) return;
+    var actualizados = 0;
+    listaIngreso.forEach(function(p) {
+        if (p.codigo === codigo) {
+            p.lote = nuevoLote.trim();
+            p.vence = nuevaFecha.trim();
+            actualizados++;
+        }
+    });
+    mostrarFeedback('✅ Lote y fecha actualizados en ' + actualizados + ' pallet(s) del código ' + codigo + '.', 3000);
+    mostrarResumenIngreso();
 }
 
 function irASeleccionarCamara() {

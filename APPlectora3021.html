@@ -5595,11 +5595,11 @@ function iniciarVoz() {
         }
         mostrarFeedback('🎤 Escuchado: ' + transcript + ' — Presiona ▶ para confirmar', 4000);
 
-        // Mostrar botón de confirmar
+        // Mostrar botones de confirmar y borrar
         var btnConfirmar = document.getElementById('btn-confirmar-voz');
-        if (btnConfirmar) {
-            btnConfirmar.style.display = 'flex';
-        }
+        if (btnConfirmar) btnConfirmar.style.display = 'flex';
+        var btnBorrar = document.getElementById('btn-borrar-voz');
+        if (btnBorrar) btnBorrar.style.display = 'flex';
     };
 
     recognition.onerror = function(event) {
@@ -5643,6 +5643,22 @@ function iniciarVoz() {
     mostrarFeedback('🎤 Habla la ubicación...', 5000);
 }
 
+function borrarCampoVoz() {
+    var input = ultimoInput;
+    if (!input || input.tagName !== 'INPUT') {
+        mostrarFeedback('⚠️ No hay campo activo para borrar.', 2000);
+        return;
+    }
+    input.value = '';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    // Ocultar botones confirmar y borrar
+    var btnConfirmar = document.getElementById('btn-confirmar-voz');
+    if (btnConfirmar) btnConfirmar.style.display = 'none';
+    var btnBorrar = document.getElementById('btn-borrar-voz');
+    if (btnBorrar) btnBorrar.style.display = 'none';
+    mostrarFeedback('🗑 Campo borrado. Puedes volver a intentar.', 2000);
+}
+
 // Confirmar lo dictado por voz — dispara los eventos que la app necesita
 function confirmarVoz() {
     var input = ultimoInput;
@@ -5658,9 +5674,11 @@ function confirmarVoz() {
     input.dispatchEvent(new KeyboardEvent('keydown',  { key: 'Enter', keyCode: 13, bubbles: true }));
     input.dispatchEvent(new KeyboardEvent('keyup',    { key: 'Enter', keyCode: 13, bubbles: true }));
 
-    // Ocultar botón confirmar y restaurar micrófono
+    // Ocultar botones confirmar y borrar
     var btnConfirmar = document.getElementById('btn-confirmar-voz');
     if (btnConfirmar) btnConfirmar.style.display = 'none';
+    var btnBorrar = document.getElementById('btn-borrar-voz');
+    if (btnBorrar) btnBorrar.style.display = 'none';
 
     var btnMic = document.getElementById('btn-voz-flotante');
     if (btnMic) {
@@ -5714,6 +5732,30 @@ window.addEventListener('load', function() {
 
 
 </script>
+
+    <!-- BOTÓN FLOTANTE BORRAR CAMPO -->
+    <button id="btn-borrar-voz" onclick="borrarCampoVoz()" style="
+        position: fixed;
+        bottom: 230px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #b71c1c, #e53935);
+        border: 2px solid #e53935;
+        color: #fff;
+        font-size: 28px;
+        cursor: pointer;
+        z-index: 9999;
+        box-shadow: 0 4px 20px rgba(229, 57, 53, 0.6);
+        transition: all 0.3s;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        pointer-events: all;
+    ">
+        🗑
+    </button>
 
     <!-- BOTÓN FLOTANTE CONFIRMAR VOZ (oculto hasta que se dicte algo) -->
     <button id="btn-confirmar-voz" onclick="confirmarVoz()" style="

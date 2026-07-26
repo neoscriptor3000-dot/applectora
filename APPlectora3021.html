@@ -1999,6 +1999,10 @@ function cargarListaIngreso(event) {
             }
         }
         huellaIngresoMasivo = filasParaHuella.join('|||').substring(0, 200);
+        // Fix 3: validar que la huella no esté vacía
+        if (!huellaIngresoMasivo || huellaIngresoMasivo.trim() === '') {
+            huellaIngresoMasivo = 'excel_' + Date.now();
+        }
         console.log('🔑 Huella Ingreso Masivo:', huellaIngresoMasivo);
         
         listaIngreso = [];
@@ -2059,8 +2063,8 @@ function cargarListaIngreso(event) {
             listaIngreso.push({
                 codigo: cod,
                 producto: String(r[7] || '').trim(),
-                und: parseFloat(r[8]) || 0,
-                kg: parseFloat(r[9]) || 0,
+                und: parseFloat(String(r[8] || '').replace(/\./g,'').replace(',','.')) || 0,
+                kg: parseFloat(String(r[9] || '').replace(/\./g,'').replace(',','.')) || 0,
                 lote: String(r[17] || '').trim().substring(0, 4),
                 vence: fechaVenc,
                 linea: lineaVal
@@ -2187,19 +2191,23 @@ function mostrarResumenIngreso() {
     html += '<div style="display:flex;gap:8px;margin-bottom:10px;">';
     html += '<button onclick="completarLoteVenc()" style="flex:1;background:linear-gradient(135deg,#1565c0,#1e88e5);color:#fff;border:none;border-radius:8px;padding:10px;font-size:12px;font-weight:bold;cursor:pointer;">📝 Completar Lote/Venc.</button>';
     html += '</div>';
-    html += '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
-    html += '<tr style="color:#607d8b;"><th>CÓDIGO</th><th>PRODUCTO</th><th>PALLETS</th><th>LOTE</th><th>UND</th><th>KG</th><th></th></tr>';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:10px;">';
+    html += '<tr style="color:#607d8b;"><th style="padding:3px;">CÓD</th><th style="padding:3px;">PRODUCTO</th><th style="padding:3px;text-align:center;">PAL</th><th style="padding:3px;">LOTE</th><th style="padding:3px;text-align:right;">KG</th><th style="padding:3px;"></th></tr>';
     var totalPallets = 0;
     for (var key in resumen) {
         var r = resumen[key];
         totalPallets += r.cantidad;
-        var loteDisplay = r.lote ? r.lote : '<span style="color:#ff9800;">⚠️ —</span>';
-        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">';
-        html += '<td>' + r.codigo + '</td><td>' + r.producto + '</td><td style="text-align:center;color:#69f0ae;">' + r.cantidad + '</td><td>' + loteDisplay + '</td><td>' + r.und + '</td><td>' + r.kg + '</td>';
-        html += '<td><button onclick="editarLoteProducto(\'' + r.codigo + '\')" style="background:rgba(79,195,247,0.2);border:1px solid #4fc3f7;color:#fff;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:11px;">✏️</button></td>';
+        var loteDisplay = r.lote ? r.lote : '<span style="color:#ff9800;">⚠️</span>';
+        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
+        html += '<td style="padding:3px;">' + r.codigo + '</td>';
+        html += '<td style="padding:3px;font-size:9px;">' + r.producto + '</td>';
+        html += '<td style="padding:3px;text-align:center;color:#69f0ae;">' + r.cantidad + '</td>';
+        html += '<td style="padding:3px;">' + loteDisplay + '</td>';
+        html += '<td style="padding:3px;text-align:right;">' + r.kg + '</td>';
+        html += '<td style="padding:3px;"><button onclick="editarLoteProducto(\'' + r.codigo + '\')" style="background:rgba(79,195,247,0.2);border:1px solid #4fc3f7;color:#fff;border-radius:4px;padding:3px 6px;cursor:pointer;font-size:11px;">✏️</button></td>';
         html += '</tr>';
     }
-    html += '<tr style="font-weight:bold;background:rgba(255,255,255,0.05);"><td colspan="2">TOTAL</td><td style="color:#69f0ae;">' + totalPallets + ' pallets</td><td colspan="4"></td></tr>';
+    html += '<tr style="font-weight:bold;background:rgba(255,255,255,0.05);"><td colspan="2" style="padding:4px;">TOTAL</td><td style="color:#69f0ae;text-align:center;padding:4px;">' + totalPallets + '</td><td colspan="3" style="padding:4px;font-size:9px;color:#607d8b;">pallets</td></tr>';
     html += '</table>';
     document.getElementById('resumen-ingreso-lista').innerHTML = html;
     document.getElementById('menu-principal').style.display = 'none';
@@ -2277,12 +2285,17 @@ function mostrarPalletIngreso() {
         document.getElementById('input-lista-ingreso').value = '';
         document.getElementById('ing-masivo-info').innerHTML = '✅ TODOS LOS PALLETS INGRESADOS';
         setTimeout(function() { verIngresados(); }, 2500);
+        // Reset completo
+        if (huellaIngresoMasivo) localStorage.removeItem('ingreso_progreso_' + huellaIngresoMasivo);
         localStorage.removeItem('progreso_' + (listaIngreso.length > 0 ? listaIngreso[0].codigo : '') + '_' + listaIngreso.length);
         localStorage.removeItem('palletsIngresados_temp');
         document.getElementById('ing-masivo-detalle').innerHTML = '';
         document.getElementById('ing-masivo-sugerencias').innerHTML = '';
         document.getElementById('ing-masivo-ubicacion').style.display = 'none';
         listaIngreso = [];
+        palletsIngresados = [];
+        indexIngreso = 0;
+        huellaIngresoMasivo = '';
         return;
     }
     var p = listaIngreso[indexIngreso];

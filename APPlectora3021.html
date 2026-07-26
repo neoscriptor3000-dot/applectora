@@ -5576,11 +5576,35 @@ function iniciarVoz() {
 
         // Luego sustituir palabras clave de cámara y rack
         transcript = transcript
+            .replace(/\bPOLLOS\b/g,       'P')
             .replace(/\bPOLLO\b/g,        'P')
             .replace(/\bCORTES\b/g,       'C')
             .replace(/\bDERECHA\b/g,      'D')
             .replace(/\bIZQUIERDA\b/g,    'I')
-            .replace(/\bCENTRO\b/g,       'C');
+            .replace(/\bCENTROS\b/g,      'C')
+            .replace(/\bCENTRO\b/g,       'C')
+            // Letras que Chrome transcribe como sílabas
+            .replace(/\bDE\b/g,           'D')
+            .replace(/\bBE\b/g,           'B')
+            .replace(/\bBI\b/g,           'B')
+            .replace(/\bCE\b/g,           'C')
+            .replace(/\bCI\b/g,           'C')
+            .replace(/\bEFE\b/g,          'F')
+            .replace(/\bGE\b/g,           'G')
+            .replace(/\bJE\b/g,           'J')
+            .replace(/\bKA\b/g,           'K')
+            .replace(/\bELE\b/g,          'L')
+            .replace(/\bEME\b/g,          'M')
+            .replace(/\bENE\b/g,          'N')
+            .replace(/\bPE\b/g,           'P')
+            .replace(/\bCU\b/g,           'Q')
+            .replace(/\bERRE\b/g,         'R')
+            .replace(/\bESE\b/g,          'S')
+            .replace(/\bTE\b/g,           'T')
+            .replace(/\bUVE\b/g,          'V')
+            .replace(/\bEQUIS\b/g,        'X')
+            .replace(/\bIGRIEGA\b/g,      'Y')
+            .replace(/\bZETA\b/g,         'Z');
 
         // Limpiar espacios, comas y caracteres no deseados
         // Preservar puntos decimales (entre dígitos) pero eliminar los demás

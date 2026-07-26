@@ -571,10 +571,15 @@ function buscarEnTabla(ubicacion) {
 }
 
 // Valida si una nomenclatura tiene formato de ubicación real del almacén
-// Formato: [1|2][P|C][I|D|C][1-60][A-D][1-6]
-// Ejemplos válidos: 2PD15A1, 1CC3B2, 2PI28D6
+// Primero verifica el formato, luego confirma que existe en tablaDatos
 function esUbicacionValida(ub) {
-    return /^[12][PC][IDC]\d{1,2}[A-D][1-6]$/.test(ub);
+    // 1. Verificar formato básico: [1|2][P|C][I|D|C][1-60][A-D][1-6]
+    if (!/^[12][PC][IDC]\d{1,2}[A-D][1-6]$/.test(ub)) return false;
+    // 2. Verificar que existe en tablaDatos (cargado del Excel)
+    for (var i = 0; i < tablaDatos.length; i++) {
+        if (tablaDatos[i].ubicacion === ub) return true;
+    }
+    return false;
 }
 
 function buscarPorCodigo(codigo) {

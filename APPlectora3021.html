@@ -570,6 +570,13 @@ function buscarEnTabla(ubicacion) {
     return null;
 }
 
+// Valida si una nomenclatura tiene formato de ubicación real del almacén
+// Formato: [1|2][P|C][I|D|C][1-60][A-D][1-6]
+// Ejemplos válidos: 2PD15A1, 1CC3B2, 2PI28D6
+function esUbicacionValida(ub) {
+    return /^[12][PC][IDC]\d{1,2}[A-D][1-6]$/.test(ub);
+}
+
 function buscarPorCodigo(codigo) {
     var resultados = [];
     for (var i = 0; i < tablaDatos.length; i++) {
@@ -1165,6 +1172,11 @@ function escanearUbicacion() {
     var ub = document.getElementById('input-escanear').value.toUpperCase().trim();
     if (!ub) return;
     document.getElementById('input-escanear').value = '';
+    if (!esUbicacionValida(ub)) {
+        document.getElementById('resultado-escanear').innerHTML = '<div class="mensaje" style="color:#ff6b35;font-size:18px;">❌ Ubicación <b>' + ub + '</b> no existe en el almacén.</div>';
+        setTimeout(function() { document.getElementById('input-escanear').focus(); }, 300);
+        return;
+    }
     var encontrado = buscarEnTabla(ub);
     var html = '<div class="ubicacion-display">📍 ' + ub + '</div>';
     if (encontrado && encontrado.codigo) {
@@ -1428,6 +1440,12 @@ function autocompletarProducto() {
 function confirmarIngreso() {
     var ub = document.getElementById('ing-ubicacion').value.toUpperCase().trim();
     if (!ub) return;
+    if (!esUbicacionValida(ub)) {
+        alert('❌ Ubicación ' + ub + ' no existe en el almacén.\nVerifica la nomenclatura e intenta de nuevo.');
+        document.getElementById('ing-ubicacion').value = '';
+        document.getElementById('ing-ubicacion').focus();
+        return;
+    }
     var existente = buscarEnTabla(ub);
     if (existente && existente.codigo) {
         alert('⚠️ Ubicación OCUPADA: ' + ub + '\n\n' + existente.codigo + ' - ' + existente.producto + '\nLote: ' + existente.lote + '\n' + existente.und + ' und | ' + existente.kg + ' kg');
@@ -1860,6 +1878,11 @@ function verificarOrigen() {
     var ub = document.getElementById('traslado-origen').value.toUpperCase().trim();
     if (!ub) return;
     document.getElementById('traslado-origen').value = '';
+    if (!esUbicacionValida(ub)) {
+        document.getElementById('traslado-info-origen').innerHTML = '<span style="color:#ff6b35;">❌ Ubicación <b>' + ub + '</b> no existe en el almacén.</span>';
+        document.getElementById('traslado-seccion-destino').style.display = 'none';
+        return;
+    }
     var encontrado = buscarEnTabla(ub);
     if (!encontrado || !encontrado.codigo) {
         document.getElementById('traslado-info-origen').innerHTML = '<span style="color:#ff6b35;">⚠️ Ubicación VACÍA o no encontrada</span>';
@@ -1876,6 +1899,11 @@ function ejecutarTraslado() {
     var ubDestino = document.getElementById('traslado-destino').value.toUpperCase().trim();
     if (!ubDestino || !trasladoOrigenData) return;
     document.getElementById('traslado-destino').value = '';
+    if (!esUbicacionValida(ubDestino)) {
+        document.getElementById('traslado-msg').innerHTML = '<span style="color:#ff6b35;">❌ Ubicación destino <b>' + ubDestino + '</b> no existe en el almacén.</span>';
+        document.getElementById('traslado-destino').focus();
+        return;
+    }
     var destino = buscarEnTabla(ubDestino);
     if (!destino) {
         destino = { ubicacion: ubDestino, codigo: '', producto: '', lote: '', und: 0, kg: 0, vence: '', linea: '', occ: false };
@@ -2235,6 +2263,12 @@ function usarSugerenciaIngreso(ubicacion) {
 function confirmarIngresoMasivo() {
     var ub = document.getElementById('ing-masivo-ubicacion').value.toUpperCase().trim();
     if (!ub) return;
+    if (!esUbicacionValida(ub)) {
+        alert('❌ Ubicación ' + ub + ' no existe en el almacén.\nVerifica la nomenclatura e intenta de nuevo.');
+        document.getElementById('ing-masivo-ubicacion').value = '';
+        document.getElementById('ing-masivo-ubicacion').focus();
+        return;
+    }
     var p = listaIngreso[indexIngreso];
     var existente = buscarEnTabla(ub);
     if (existente && existente.codigo) {
@@ -5015,6 +5049,13 @@ function confirmarIngresoEtiqueta() {
         return;
     }
     
+    if (!esUbicacionValida(ubicacion)) {
+        alert('❌ Ubicación ' + ubicacion + ' no existe en el almacén.\nVerifica la nomenclatura e intenta de nuevo.');
+        document.getElementById('ing-etiqueta-ubicacion').value = '';
+        document.getElementById('ing-etiqueta-ubicacion').focus();
+        return;
+    }
+
     if (!palletEncontradoEtiqueta) {
         alert('⚠️ Primero debe pistolear una etiqueta.');
         return;
@@ -5608,6 +5649,8 @@ function iniciarVoz() {
 
         // Limpiar espacios, comas y caracteres no deseados
         // Preservar puntos decimales (entre dígitos) pero eliminar los demás
+        // Reemplazar coma decimal (20,05 → 20.05) antes de limpiar
+        transcript = transcript.replace(/(\d),(\d)/g, '$1.$2');
         transcript = transcript.replace(/,/g, '').replace(/\s+/g, '').replace(/(?<!\d)\.(?!\d)/g, '');
         input.value = transcript;
 

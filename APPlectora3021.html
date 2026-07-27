@@ -666,7 +666,19 @@ function buscarEnTabla(ubicacion) {
     return null;
 }
 
-// Valida si una nomenclatura tiene formato de ubicación real del almacén
+function parsearNumero(val) {
+    var s = String(val || '').trim();
+    if (!s) return 0;
+    // Si tiene coma Y punto: formato europeo 1.234,50 → quitar puntos, cambiar coma por punto
+    if (s.indexOf(',') !== -1 && s.indexOf('.') !== -1) {
+        s = s.replace(/\./g, '').replace(',', '.');
+    // Si solo tiene coma: decimal europeo 1045,50 → cambiar coma por punto
+    } else if (s.indexOf(',') !== -1) {
+        s = s.replace(',', '.');
+    }
+    // Si solo tiene punto o ninguno: ya está en formato correcto (1045.50 o 1045)
+    return parseFloat(s) || 0;
+}
 // Primero verifica el formato, luego confirma que existe en tablaDatos
 function esUbicacionValida(ub) {
     // 1. Verificar formato básico: [1|2][P|C][I|D|C][1-60][A-D][1-6]
@@ -2180,8 +2192,8 @@ function cargarListaIngreso(event) {
             listaIngreso.push({
                 codigo: cod,
                 producto: String(r[7] || '').trim(),
-                und: parseFloat(String(r[8] || '').replace(/\./g,'').replace(',','.')) || 0,
-                kg: parseFloat(String(r[9] || '').replace(/\./g,'').replace(',','.')) || 0,
+                und: parsearNumero(r[8]) || 0,
+                kg: parsearNumero(r[9]) || 0,
                 lote: String(r[17] || '').trim().substring(0, 4),
                 vence: fechaVenc,
                 linea: lineaVal,
@@ -2193,8 +2205,8 @@ function cargarListaIngreso(event) {
                 catalogoClaves[claveVal] = {
                     codigo: cod,
                     producto: String(r[7] || '').trim(),
-                    und: parseFloat(String(r[8] || '').replace(/\./g,'').replace(',','.')) || 0,
-                    kg: parseFloat(String(r[9] || '').replace(/\./g,'').replace(',','.')) || 0,
+                    und: parsearNumero(r[8]) || 0,
+                    kg: parsearNumero(r[9]) || 0,
                     lote: String(r[17] || '').trim().substring(0, 4),
                     vence: fechaVenc,
                     linea: lineaVal,
@@ -2970,8 +2982,8 @@ for (var i = headerRow + 1; i < rows.length; i++) {
         cod = String(r[5] || '').trim();        // Columna F (índice 5)
         if (!cod) cod = String(r[4] || '').trim(); // Columna E como fallback
         prod = String(r[7] || '').trim();        // Columna H (índice 7)
-        und = parseFloat(r[8]) || 0;             // Columna I (índice 8)
-        kg = parseFloat(r[9]) || 0;              // Columna J (índice 9)
+        und = parsearNumero(r[8]);             // Columna I (índice 8)
+        kg = parsearNumero(r[9]);              // Columna J (índice 9)
         if (kg === 0 && r[10]) kg = parseFloat(r[10]) || 0;
         lote = String(r[17] || '').trim();       // Columna R (índice 17)
         vence = String(r[18] || '').trim();      // Columna S (índice 18)
@@ -4953,8 +4965,8 @@ function cargarListaIngresoEtiqueta(event) {
                 codigoBarras: codigoBarras,
                 codigo: cod,
                 producto: String(r[7] || '').trim(),
-                und: parseFloat(r[8]) || 0,
-                kg: parseFloat(r[9]) || 0,
+                und: parsearNumero(r[8]),
+                kg: parsearNumero(r[9]),
                 lote: String(r[17] || '').trim().substring(0, 4),
                 vence: fechaVenc,
                 linea: lineaVal,
@@ -4967,8 +4979,8 @@ function cargarListaIngresoEtiqueta(event) {
                 catalogoClaves[codigoBarras] = {
                     codigo: cod,
                     producto: String(r[7] || '').trim(),
-                    und: parseFloat(r[8]) || 0,
-                    kg: parseFloat(r[9]) || 0,
+                    und: parsearNumero(r[8]),
+                    kg: parsearNumero(r[9]),
                     lote: String(r[17] || '').trim().substring(0, 4),
                     vence: fechaVenc,
                     linea: lineaVal,
@@ -6062,8 +6074,49 @@ function pistoleoSalida() {
     var entry = catalogoClaves[clave];
 
     if (!entry) {
-        document.getElementById('sp-ultimo-pistoleo').innerHTML =
-            '<div style="background:rgba(183,28,28,0.2);border:1px solid #b71c1c;border-radius:8px;padding:8px;color:#ef9a9a;font-size:12px;">❌ CLAVE <b>' + clave + '</b> no encontrada en el catálogo.</div>';
+        // FASE 3: Buscar por código en tablaDatos (pallets sin CLAVE)
+        var porCodigo = [];
+        tablaDatos.forEach(function(slot) {
+            if (slot.codigo === clave && slot.ubicacion) porCodigo.push(slot);
+        });
+
+        if (porCodigo.length === 0) {
+            document.getElementById('sp-ultimo-pistoleo').innerHTML =
+                '<div style="background:rgba(183,28,28,0.2);border:1px solid #b71c1c;border-radius:8px;padding:8px;color:#ef9a9a;font-size:12px;">❌ CLAVE <b>' + clave + '</b> no encontrada en el catálogo ni en el inventario.</div>';
+            setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
+            return;
+        }
+
+        // Si hay solo uno, agregarlo directamente
+        if (porCodigo.length === 1) {
+            var slot = porCodigo[0];
+            var yaAgregado = spPalletsPistoleados.find(function(p) { return p.ubicacion === slot.ubicacion; });
+            if (yaAgregado) {
+                document.getElementById('sp-ultimo-pistoleo').innerHTML =
+                    '<div style="background:rgba(255,152,0,0.2);border:1px solid #ff9800;border-radius:8px;padding:8px;color:#ffb300;font-size:12px;">⚠️ Este pallet ya fue agregado.</div>';
+                setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
+                return;
+            }
+            spPalletsPistoleados.push({ clave: null, codigo: slot.codigo, producto: slot.producto, und: slot.und, kg: slot.kg, lote: slot.lote, vence: slot.vence, ubicacion: slot.ubicacion, sinClave: true });
+            document.getElementById('sp-ultimo-pistoleo').innerHTML =
+                '<div style="background:rgba(255,152,0,0.15);border:1px solid #ff9800;border-radius:8px;padding:8px;font-size:12px;">' +
+                '⚠️ Sin clave — encontrado por código<br><b>' + slot.codigo + '</b> — ' + slot.producto + '<br>📍 ' + slot.ubicacion + ' | ⚖️ ' + slot.kg + ' kg</div>';
+            actualizarListaPistoleo();
+            setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
+            return;
+        }
+
+        // Si hay varios, mostrar selección
+        var htmlOpc = '<div style="background:rgba(255,152,0,0.1);border:1px solid #ff9800;border-radius:8px;padding:8px;font-size:11px;">';
+        htmlOpc += '<div style="color:#ffb300;margin-bottom:6px;">⚠️ Código <b>' + clave + '</b> encontrado en ' + porCodigo.length + ' ubicaciones. Seleccione:</div>';
+        porCodigo.forEach(function(slot, i) {
+            htmlOpc += '<button onclick="agregarPalletSinClave(' + i + ',\'' + clave + '\')" style="width:100%;text-align:left;background:rgba(255,255,255,0.05);border:1px solid rgba(255,152,0,0.3);color:#fff;border-radius:6px;padding:6px;margin-bottom:4px;cursor:pointer;font-size:11px;">';
+            htmlOpc += '📍 ' + slot.ubicacion + ' | ' + slot.producto.substring(0,20) + '... | ⚖️ ' + slot.kg + ' kg';
+            htmlOpc += '</button>';
+        });
+        htmlOpc += '</div>';
+        document.getElementById('sp-ultimo-pistoleo').innerHTML = htmlOpc;
+        window._spOpcionesSinClave = porCodigo;
         setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
         return;
     }
@@ -6089,13 +6142,28 @@ function pistoleoSalida() {
         ubicacion: entry.ubicacion
     });
 
-    // Mostrar feedback del último pistoleo
     document.getElementById('sp-ultimo-pistoleo').innerHTML =
         '<div style="background:rgba(46,125,50,0.2);border:1px solid #2e7d32;border-radius:8px;padding:8px;font-size:12px;">' +
         '✅ <b>' + entry.codigo + '</b> — ' + entry.producto + '<br>' +
         '📍 ' + (entry.ubicacion || '⚠️ Sin ubicación') + ' | ⚖️ ' + entry.kg + ' kg | 🔢 Lote: ' + entry.lote +
         '</div>';
 
+    actualizarListaPistoleo();
+    setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
+}
+
+function agregarPalletSinClave(idx, codigo) {
+    var slot = window._spOpcionesSinClave[idx];
+    if (!slot) return;
+    var yaAgregado = spPalletsPistoleados.find(function(p) { return p.ubicacion === slot.ubicacion; });
+    if (yaAgregado) {
+        mostrarFeedback('⚠️ Este pallet ya fue agregado.', 2000);
+        return;
+    }
+    spPalletsPistoleados.push({ clave: null, codigo: slot.codigo, producto: slot.producto, und: slot.und, kg: slot.kg, lote: slot.lote, vence: slot.vence, ubicacion: slot.ubicacion, sinClave: true });
+    document.getElementById('sp-ultimo-pistoleo').innerHTML =
+        '<div style="background:rgba(255,152,0,0.15);border:1px solid #ff9800;border-radius:8px;padding:8px;font-size:12px;">' +
+        '⚠️ Sin clave — agregado desde <b>' + slot.ubicacion + '</b><br>' + slot.producto + ' | ⚖️ ' + slot.kg + ' kg</div>';
     actualizarListaPistoleo();
     setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
 }

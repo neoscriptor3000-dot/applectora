@@ -580,14 +580,23 @@ function guardarCatalogoClaves() {
 }
 
 function obtenerCoberturaCatalogo() {
-    var totalPallets = tablaDatos.length;
-    var conClave = 0;
-    var clavesEnCatalogo = Object.keys(catalogoClaves).length;
-    // Contar pallets en tablaDatos que tienen su clave en el catálogo
+    // Pallets actualmente ocupados en cámara
+    var ocupados = tablaDatos.filter(function(s) { return s.codigo && s.ubicacion; });
+    var total = ocupados.length;
+
+    // Construir set de ubicaciones con clave registrada
+    var ubicacionesConClave = {};
     Object.values(catalogoClaves).forEach(function(entry) {
-        if (entry.ubicacion) conClave++;
+        if (entry.ubicacion) ubicacionesConClave[entry.ubicacion] = true;
     });
-    return { total: totalPallets, conClave: clavesEnCatalogo, sinClave: Math.max(0, totalPallets - clavesEnCatalogo) };
+
+    // Contar cuántos pallets ocupados tienen su ubicación en el catálogo
+    var conClave = ocupados.filter(function(s) {
+        return ubicacionesConClave[s.ubicacion] === true;
+    }).length;
+
+    var sinClave = total - conClave;
+    return { total: total, conClave: conClave, sinClave: sinClave };
 }
 
 // ============================================================

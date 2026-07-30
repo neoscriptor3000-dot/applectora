@@ -212,6 +212,12 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
         <button onclick="reiniciarPistoleo()" style="background:rgba(183,28,28,0.3);border:1px solid #b71c1c;color:#ef9a9a;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;">🔄 Cambiar destino</button>
     </div>
 
+    <!-- CONTADOR DE PALLETS -->
+    <div style="text-align:center;margin-bottom:10px;">
+        <div style="display:inline-block;background:linear-gradient(135deg,#1565c0,#1e88e5);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:32px;font-weight:bold;color:#fff;box-shadow:0 0 20px rgba(30,136,229,0.6);" id="sp-contador">0</div>
+        <div style="color:#90a4ae;font-size:10px;margin-top:2px;">pallets</div>
+    </div>
+
     <input type="text" id="sp-input-clave" placeholder="🔫 Pistolee etiqueta del pallet"
         style="font-size:16px;letter-spacing:1px;"
         onchange="pistoleoSalida()"
@@ -256,6 +262,22 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 
 <button class="btn btn-volver" onclick="reiniciarPistoleo();mostrarMenu();">⬅ VOLVER</button>
+</div>
+
+<!-- MODAL CONFIRMACIÓN SALIDA PISTOLEO -->
+<div id="modal-confirmacion-pistoleo" style="
+    display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+    background:rgba(0,0,0,0.8);z-index:99998;
+    align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#1a1a2e;border:2px solid #e53935;border-radius:12px;padding:24px;max-width:320px;width:100%;text-align:center;box-shadow:0 0 30px rgba(229,57,53,0.5);">
+        <div style="font-size:40px;margin-bottom:10px;">📤</div>
+        <div style="color:#ef9a9a;font-size:16px;font-weight:bold;margin-bottom:8px;">¿Confirmar Salida?</div>
+        <div id="mcp-resumen" style="color:#fff;font-size:14px;margin-bottom:20px;"></div>
+        <div style="display:flex;gap:10px;">
+            <button onclick="ejecutarSalidaPistoleo()" style="flex:1;background:linear-gradient(135deg,#b71c1c,#e53935);color:#fff;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:bold;cursor:pointer;">✅ SÍ, SALIR</button>
+            <button onclick="document.getElementById('modal-confirmacion-pistoleo').style.display='none'" style="flex:1;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:8px;padding:14px;font-size:15px;cursor:pointer;">❌ NO</button>
+        </div>
+    </div>
 </div>
 
 <!-- ===== PANEL DE HISTORIAL DE SALIDAS ===== -->
@@ -6234,6 +6256,10 @@ function pistoleoSalida() {
 }
 
 function actualizarListaPistoleo() {
+    // Actualizar contador
+    var contador = document.getElementById('sp-contador');
+    if (contador) contador.textContent = spPalletsPistoleados.length;
+
     if (spPalletsPistoleados.length === 0) {
         document.getElementById('sp-lista-pallets').innerHTML = '';
         document.getElementById('sp-resumen').style.display = 'none';
@@ -6243,20 +6269,30 @@ function actualizarListaPistoleo() {
 
     var totalKg = 0;
     var productos = {};
-    var html = '<div style="display:flex;flex-direction:column;gap:4px;">';
+    var html = '<div style="display:flex;flex-direction:column;gap:6px;">';
     spPalletsPistoleados.forEach(function(p, idx) {
         totalKg += p.kg;
         productos[p.codigo] = true;
-        html += '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(79,195,247,0.15);border-radius:6px;padding:6px 8px;font-size:11px;display:flex;justify-content:space-between;align-items:center;">';
-        html += '<div><span style="color:#4fc3f7;font-weight:bold;">' + p.codigo + '</span> <span style="color:#c0c0c0;">' + p.producto.substring(0,20) + '...</span><br>';
-        html += '<span style="color:#90a4ae;">📍 ' + (p.ubicacion || '—') + ' | ⚖️ ' + p.kg + ' kg</span></div>';
-        html += '<button onclick="quitarPalletPistoleo(' + idx + ')" style="background:rgba(183,28,28,0.3);border:1px solid #b71c1c;color:#ef9a9a;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:11px;">✕</button>';
+        var borderColor = p.sinClave ? 'rgba(255,152,0,0.5)' : 'rgba(105,240,174,0.4)';
+        var bg = p.sinClave ? 'rgba(255,152,0,0.08)' : 'rgba(46,125,50,0.1)';
+        html += '<div style="background:' + bg + ';border:1px solid ' + borderColor + ';border-radius:8px;padding:10px;">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
+        html += '<div style="flex:1;">';
+        html += '<div style="font-size:16px;font-weight:bold;color:#fff;margin-bottom:4px;">' + p.codigo + ' — ' + p.producto + '</div>';
+        html += '<div style="font-size:15px;color:#69f0ae;font-weight:bold;margin-bottom:3px;">📍 ' + (p.ubicacion || '—') + '</div>';
+        html += '<div style="display:flex;gap:12px;font-size:13px;">';
+        html += '<span style="color:#ffb300;">⚖️ ' + p.kg + ' kg</span>';
+        if (p.und > 0) html += '<span style="color:#4fc3f7;">📦 ' + p.und + ' und</span>';
+        html += '<span style="color:#90a4ae;">🔢 ' + (p.lote || '—') + '</span>';
         html += '</div>';
+        if (p.sinClave) html += '<div style="font-size:10px;color:#ffb300;margin-top:3px;">⚠️ Sin clave — ingreso manual</div>';
+        html += '</div>';
+        html += '<button onclick="quitarPalletPistoleo(' + idx + ')" style="background:rgba(183,28,28,0.4);border:1px solid #b71c1c;color:#ef9a9a;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:14px;margin-left:8px;">✕</button>';
+        html += '</div></div>';
     });
     html += '</div>';
     document.getElementById('sp-lista-pallets').innerHTML = html;
 
-    // Actualizar resumen
     document.getElementById('sp-total-pallets').textContent = spPalletsPistoleados.length;
     document.getElementById('sp-total-productos').textContent = Object.keys(productos).length;
     document.getElementById('sp-total-kg').textContent = totalKg.toFixed(2);
@@ -6271,7 +6307,20 @@ function quitarPalletPistoleo(idx) {
 
 function confirmarSalidaPistoleo() {
     if (spPalletsPistoleados.length === 0) return;
-    if (!confirm('¿Confirmar salida de ' + spPalletsPistoleados.length + ' pallet(s) a ' + spDestinoNombre + '?')) return;
+
+    // Mostrar modal de confirmación
+    var modal = document.getElementById('modal-confirmacion-pistoleo');
+    if (modal) {
+        document.getElementById('mcp-resumen').textContent =
+            spPalletsPistoleados.length + ' pallet(s) a ' + spDestinoNombre;
+        modal.style.display = 'flex';
+        return;
+    }
+    ejecutarSalidaPistoleo();
+}
+
+function ejecutarSalidaPistoleo() {
+    document.getElementById('modal-confirmacion-pistoleo').style.display = 'none';
 
     var fecha = new Date().toLocaleDateString('es-PE');
     var hora = new Date().toLocaleTimeString('es-PE');

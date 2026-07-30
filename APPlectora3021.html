@@ -209,7 +209,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <div id="sp-seccion-pistoleo" style="display:none;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <div style="color:#4fc3f7;font-size:12px;" id="sp-destino-label"></div>
-        <button onclick="reiniciarPistoleo()" style="background:rgba(183,28,28,0.3);border:1px solid #b71c1c;color:#ef9a9a;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;">🔄 Cambiar destino</button>
+        <button onclick="cambiarDestinoPistoleo()" style="background:rgba(183,28,28,0.3);border:1px solid #b71c1c;color:#ef9a9a;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;">🔄 Cambiar destino</button>
     </div>
 
     <!-- CONTADOR DE PALLETS -->
@@ -6188,7 +6188,18 @@ function confirmarDestinoPistoleo() {
     document.getElementById('sp-seccion-destino').style.display = 'none';
     document.getElementById('sp-seccion-pistoleo').style.display = 'block';
     document.getElementById('sp-destino-label').textContent = '📍 Destino: ' + spDestinoNombre;
-    setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
+    // Solo enfocar input si no hay pallets ya pistoleados
+    if (spPalletsPistoleados.length === 0) {
+        setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
+    }
+    // Actualizar lista por si venía de cambio de destino
+    actualizarListaPistoleo();
+}
+
+function cambiarDestinoPistoleo() {
+    // Solo muestra el selector de destino sin borrar los pallets pistoleados
+    document.getElementById('sp-seccion-destino').style.display = 'block';
+    document.getElementById('sp-seccion-pistoleo').style.display = 'none';
 }
 
 function reiniciarPistoleo() {

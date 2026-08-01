@@ -222,6 +222,8 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
         onchange="pistoleoSalida()"
         onkeydown="if(event.key==='Enter') pistoleoSalida()">
 
+    <button onclick="document.getElementById('sp-seccion-manual').style.display='block';document.getElementById('sp-manual-codigo').focus();" style="width:100%;background:rgba(255,152,0,0.15);border:1px solid rgba(255,152,0,0.5);color:#ffb300;border-radius:8px;padding:10px;font-size:13px;cursor:pointer;margin-top:6px;">✏️ Ingresar manualmente (sin clave)</button>
+
     <div id="sp-ultimo-pistoleo" style="min-height:40px;margin:8px 0;"></div>
 
     <div id="sp-seccion-manual" style="display:none;background:rgba(255,152,0,0.08);border:1px solid rgba(255,152,0,0.4);border-radius:8px;padding:10px;margin-bottom:8px;">

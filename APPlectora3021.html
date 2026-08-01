@@ -5829,22 +5829,99 @@ function iniciarVoz() {
     var textoCompleto = '';
 
     recognition.onresult = function(event) {
-        // Acumular el texto SIN reiniciar
-        for (var i = event.resultIndex; i < event.results.length; i++) {
-            var transcript = event.results[i][0].transcript.trim().toUpperCase();
-            textoCompleto += transcript;
-        }
-        // Limpiar caracteres especiales
-        textoCompleto = textoCompleto.replace(/\./g, '').replace(/,/g, '').replace(/\s+/g, '');
-        input.value = textoCompleto;
+        var raw = event.results[event.results.length - 1][0].transcript.trim().toUpperCase();
 
-        // Mostrar feedback visual (verde)
+        // ── PASO 1: dígito a dígito (para códigos y decimales dígito a dígito) ──
+        // Convierte palabras de un solo dígito en fila → concatena como string
+        // Ej: "DOS DOS DOS UNO" → "2221"
+        // Ej: "UNO CERO UNO CERO PUNTO SEIS CINCO" → "1010.65"
+        var DIGITOS = { 'CERO':'0','UNO':'1','DOS':'2','TRES':'3','CUATRO':'4',
+                        'CINCO':'5','SEIS':'6','SIETE':'7','OCHO':'8','NUEVE':'9' };
+
+        // ── PASO 2: palabrasANumeros (para números compuestos) ──
+        // Ej: "MIL DIEZ PUNTO SESENTA Y CINCO" → "1010.65"
+        function convNumeros(texto) {
+            var UNIDADES = {'CERO':0,'UNO':1,'DOS':2,'TRES':3,'CUATRO':4,'CINCO':5,'SEIS':6,'SIETE':7,'OCHO':8,'NUEVE':9};
+            var ESPECIALES = {'DIEZ':10,'ONCE':11,'DOCE':12,'TRECE':13,'CATORCE':14,'QUINCE':15,
+                'DIECISÉIS':16,'DIECISEIS':16,'DIECISIETE':17,'DIECIOCHO':18,'DIECINUEVE':19,
+                'VEINTE':20,'VEINTIUNO':21,'VEINTIDÓS':22,'VEINTIDOS':22,'VEINTITRÉS':23,'VEINTITRES':23,
+                'VEINTICUATRO':24,'VEINTICINCO':25,'VEINTISÉIS':26,'VEINTISEIS':26,
+                'VEINTISIETE':27,'VEINTIOCHO':28,'VEINTINUEVE':29,'TREINTA':30,
+                'CUARENTA':40,'CINCUENTA':50,'SESENTA':60,'SETENTA':70,'OCHENTA':80,'NOVENTA':90,
+                'CIEN':100,'CIENTO':100,'DOSCIENTOS':200,'DOSCIENTAS':200,'TRESCIENTOS':300,'TRESCIENTAS':300,
+                'CUATROCIENTOS':400,'CUATROCIENTAS':400,'QUINIENTOS':500,'QUINIENTAS':500,
+                'SEISCIENTOS':600,'SEISCIENTAS':600,'SETECIENTOS':700,'SETECIENTAS':700,
+                'OCHOCIENTOS':800,'OCHOCIENTAS':800,'NOVECIENTOS':900,'NOVECIENTAS':900,
+                'MIL':1000,'MILES':1000};
+            texto = texto.replace(/\bY\b/g, '');
+            var palabras = texto.split(/\s+/);
+            var resultado = []; var i = 0;
+            while (i < palabras.length) {
+                var w = palabras[i];
+                // Si la siguiente palabra es también número, intentar acumular
+                var num = 0; var miles = 0; var hayNum = false; var j = i;
+                while (j < palabras.length) {
+                    var p = palabras[j];
+                    if (p === 'MIL' || p === 'MILES') { miles = (num===0?1:num)*1000; num=0; hayNum=true; j++; }
+                    else if (ESPECIALES[p] !== undefined) { num += ESPECIALES[p]; hayNum=true; j++; }
+                    else if (UNIDADES[p] !== undefined) { num += UNIDADES[p]; hayNum=true; j++; }
+                    else break;
+                }
+                if (hayNum) { resultado.push(String(miles+num)); i=j; }
+                else { resultado.push(w); i++; }
+            }
+            return resultado.join(' ');
+        }
+
+        // ── Detectar si es modo dígito a dígito ──
+        // Si TODAS las palabras (ignorando PUNTO) son dígitos unitarios → modo dígito
+        var palabras = raw.split(/\s+/);
+        var todasDigitos = palabras.every(function(p) { return DIGITOS[p] !== undefined || p === 'PUNTO'; });
+
+        var transcript;
+        if (todasDigitos) {
+            // Modo dígito a dígito: concatenar directamente
+            transcript = palabras.map(function(p) { return p === 'PUNTO' ? '.' : DIGITOS[p]; }).join('');
+        } else {
+            // Modo compuesto: convertir números y procesar PUNTO como decimal
+            transcript = convNumeros(raw);
+            // Convertir PUNTO entre números como decimal
+            transcript = transcript.replace(/(\d+)\s+PUNTO\s+(\d+)/g, '$1.$2');
+            // Sustituir palabras clave de rack/cámara
+            transcript = transcript
+                .replace(/\bPOLLOS?\b/g,    'P')
+                .replace(/\bCORTES\b/g,      'C')
+                .replace(/\bDERECHA\b/g,     'D')
+                .replace(/\bIZQUIERDA\b/g,   'I')
+                .replace(/\bCENTROS?\b/g,    'C')
+                .replace(/\bDE\b/g,  'D').replace(/\bBE\b/g,  'B').replace(/\bBI\b/g,  'B')
+                .replace(/\bCE\b/g,  'C').replace(/\bCI\b/g,  'C').replace(/\bEFE\b/g, 'F')
+                .replace(/\bGE\b/g,  'G').replace(/\bJE\b/g,  'J').replace(/\bKA\b/g,  'K')
+                .replace(/\bELE\b/g, 'L').replace(/\bEME\b/g, 'M').replace(/\bENE\b/g, 'N')
+                .replace(/\bPE\b/g,  'P').replace(/\bCU\b/g,  'Q').replace(/\bERRE\b/g,'R')
+                .replace(/\bESE\b/g, 'S').replace(/\bTE\b/g,  'T').replace(/\bUVE\b/g, 'V')
+                .replace(/\bEQUIS\b/g,'X').replace(/\bIGRIEGA\b/g,'Y').replace(/\bZETA\b/g,'Z');
+            // Reemplazar coma decimal (20,5 → 20.5)
+            transcript = transcript.replace(/(\d),(\d)/g, '$1.$2');
+            // Limpiar espacios y comas sobrantes, preservar punto decimal
+            transcript = transcript.replace(/,/g,'').replace(/\s+/g,'').replace(/(?<!\d)\.(?!\d)/g,'');
+        }
+
+        input.value = transcript;
+
         if (btn) {
             btn.style.background = 'linear-gradient(135deg, #2e7d32, #43a047)';
             btn.style.boxShadow = '0 0 30px rgba(46, 125, 50, 0.8)';
             btn.textContent = '✅';
         }
-        mostrarFeedback('🎤 Escuchado: ' + textoCompleto, 3000);
+
+        // Mostrar botones confirmar y borrar
+        var btnConfirmar = document.getElementById('btn-confirmar-voz');
+        if (btnConfirmar) btnConfirmar.style.display = 'flex';
+        var btnBorrar = document.getElementById('btn-borrar-voz');
+        if (btnBorrar) btnBorrar.style.display = 'flex';
+
+        mostrarFeedback('🎤 ' + transcript, 3000);
     };
 
     recognition.onerror = function(event) {
@@ -5890,13 +5967,51 @@ function iniciarVoz() {
 
 // Guardar el último input enfocado
 document.addEventListener('focusin', function(e) {
-    if (e.target && e.target.tagName === 'INPUT') {
-        ultimoInput = e.target;
-    }
+    if (e.target && e.target.tagName === 'INPUT') { ultimoInput = e.target; }
 });
 
+function confirmarVoz() {
+    var input = ultimoInput;
+    if (!input || input.tagName !== 'INPUT') { mostrarFeedback('⚠️ No hay campo activo.'); return; }
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keypress', { key:'Enter', keyCode:13, bubbles:true }));
+    input.dispatchEvent(new KeyboardEvent('keydown',  { key:'Enter', keyCode:13, bubbles:true }));
+    input.dispatchEvent(new KeyboardEvent('keyup',    { key:'Enter', keyCode:13, bubbles:true }));
+    var btnC = document.getElementById('btn-confirmar-voz'); if (btnC) btnC.style.display = 'none';
+    var btnB = document.getElementById('btn-borrar-voz');    if (btnB) btnB.style.display = 'none';
+    var btnM = document.getElementById('btn-voz-flotante');
+    if (btnM) { btnM.style.background='linear-gradient(135deg,#4a148c,#7b1fa2)'; btnM.textContent='🎤'; }
+    mostrarFeedback('✅ Confirmado: ' + input.value);
+}
+
+function borrarCampoVoz() {
+    var input = ultimoInput;
+    if (!input || input.tagName !== 'INPUT') { mostrarFeedback('⚠️ No hay campo activo.'); return; }
+    input.value = '';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    var btnC = document.getElementById('btn-confirmar-voz'); if (btnC) btnC.style.display = 'none';
+    var btnB = document.getElementById('btn-borrar-voz');    if (btnB) btnB.style.display = 'none';
+    mostrarFeedback('🗑 Campo borrado.');
+}
 
 </script>
+
+    <!-- BOTÓN FLOTANTE BORRAR (oculto hasta que se dicte algo) -->
+    <button id="btn-borrar-voz" onclick="borrarCampoVoz()" style="
+        position:fixed;bottom:230px;right:20px;width:60px;height:60px;
+        border-radius:50%;background:linear-gradient(135deg,#b71c1c,#e53935);
+        border:2px solid #e53935;color:#fff;font-size:28px;cursor:pointer;
+        z-index:9999;box-shadow:0 4px 20px rgba(229,57,53,0.6);
+        display:none;align-items:center;justify-content:center;">🗑</button>
+
+    <!-- BOTÓN FLOTANTE CONFIRMAR (oculto hasta que se dicte algo) -->
+    <button id="btn-confirmar-voz" onclick="confirmarVoz()" style="
+        position:fixed;bottom:160px;right:20px;width:60px;height:60px;
+        border-radius:50%;background:linear-gradient(135deg,#0d6f2e,#1db954);
+        border:2px solid #1db954;color:#fff;font-size:28px;cursor:pointer;
+        z-index:9999;box-shadow:0 4px 20px rgba(29,185,84,0.7);
+        display:none;align-items:center;justify-content:center;">▶</button>
 
     <!-- BOTÓN FLOTANTE DE VOZ -->
     <button id="btn-voz-flotante" onclick="iniciarVoz()" style="
@@ -5921,9 +6036,6 @@ document.addEventListener('focusin', function(e) {
     ">
         🎤
     </button>
-
-</body>
-</html>
 
 </body>
 </html>

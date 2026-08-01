@@ -55,6 +55,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <div id="menu-principal">
 <div class="titulo">📱 WAREHOUSE MÓVIL V83</div>
 <div class="subtitulo">Corporación Rico</div>
+<div id="indicador-cobertura-claves"></div>
 
 <div class="menu-grupo" onclick="toggleMenuApp('menu-ubicaciones')">📍 UBICACIONES ▾</div>
 <div id="menu-ubicaciones" class="menu-items-app">
@@ -80,6 +81,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <button class="btn btn-salida" onclick="cargarSalidaConTipo('CD')" style="background:#1565c0;">📤 Salida a CDs</button>
 <button class="btn btn-salida" onclick="cargarSalidaConTipo('LOCAL')" style="background:#e65100;">📤 Salida Local</button>
 <input type="file" id="input-lista-salida" accept=".xlsx,.xls" onchange="cargarSalidaMasiva(event)" style="display:none">
+<button class="btn btn-salida" onclick="mostrarPanel('panel-salida-pistoleo')" style="background:#6a1b9a;">🔫 Salida por Pistoleo</button>
 <button class="btn btn-salida" onclick="mostrarPanel('panel-historial-salidas')" style="background:#b71c1c;">📋 Historial de Salidas</button>
 </div>
 
@@ -174,6 +176,94 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 </div>
 <button class="btn btn-volver" onclick="volverDePickingSuelto()">⬅ VOLVER</button>
+</div>
+
+<!-- ===== PANEL SALIDA POR PISTOLEO ===== -->
+<div id="panel-salida-pistoleo" class="panel">
+<h3>🔫 SALIDA POR PISTOLEO</h3>
+
+<div id="sp-seccion-destino">
+    <div style="color:#90a4ae;font-size:12px;margin-bottom:6px;">Seleccione el destino (solo una vez):</div>
+    <select id="sp-destino" style="width:100%;font-size:14px;padding:10px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:8px;margin-bottom:10px;">
+        <option value="">Seleccione destino...</option>
+        <option value="CUSCO_SAYLLA">ALMACEN_CUSCO_SAYLLA</option>
+        <option value="CUSCO_PARQUE">ALMACEN_CUSCO_PQUE_INDUST</option>
+        <option value="JULIACA">ALMACEN_JULIACA</option>
+        <option value="PUNO">ALMACEN_PUNO</option>
+        <option value="LIMA">ALMACEN_LIMA</option>
+        <option value="VILLA_SALVADOR">TIENDA_VILLA_EL_SALVADOR</option>
+        <option value="COSTA">COSTA</option>
+        <option value="NOCHE">NOCHE</option>
+        <option value="CAMARA_500">CAMARA 500</option>
+        <option value="ZONAS">ZONAS</option>
+        <option value="TIENDAS">TIENDAS</option>
+        <option value="PBA">PBA</option>
+        <option value="PDC">DESPOSTE (PDC)</option>
+        <option value="PREPARADOS">EMBUTIDOS (PREPARADOS)</option>
+        <option value="CAMARA_1000">CAMARA 1000</option>
+        <option value="CAMARA_2000">CAMARA 2000</option>
+    </select>
+    <button class="btn" onclick="confirmarDestinoPistoleo()" style="background:linear-gradient(135deg,#1565c0,#1e88e5);">✅ Confirmar Destino</button>
+</div>
+
+<div id="sp-seccion-pistoleo" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="color:#4fc3f7;font-size:12px;" id="sp-destino-label"></div>
+        <button onclick="cambiarDestinoPistoleo()" style="background:rgba(183,28,28,0.3);border:1px solid #b71c1c;color:#ef9a9a;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;">🔄 Cambiar destino</button>
+    </div>
+
+    <div style="text-align:center;margin-bottom:10px;">
+        <div style="display:inline-block;background:linear-gradient(135deg,#1565c0,#1e88e5);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:32px;font-weight:bold;color:#fff;box-shadow:0 0 20px rgba(30,136,229,0.6);" id="sp-contador">0</div>
+        <div style="color:#90a4ae;font-size:10px;margin-top:2px;">pallets</div>
+    </div>
+
+    <input type="text" id="sp-input-clave" placeholder="🔫 Pistolee etiqueta del pallet"
+        style="font-size:16px;letter-spacing:1px;"
+        onchange="pistoleoSalida()"
+        onkeydown="if(event.key==='Enter') pistoleoSalida()">
+
+    <div id="sp-ultimo-pistoleo" style="min-height:40px;margin:8px 0;"></div>
+
+    <div id="sp-seccion-manual" style="display:none;background:rgba(255,152,0,0.08);border:1px solid rgba(255,152,0,0.4);border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="color:#ffb300;font-size:12px;font-weight:bold;margin-bottom:8px;">✏️ Ingreso manual — pallet sin clave</div>
+        <input type="text" id="sp-manual-codigo" placeholder="Código del producto" style="font-size:14px;margin-bottom:6px;" onchange="spAutocompletarProducto()" onkeydown="if(event.key==='Enter'){spAutocompletarProducto();document.getElementById('sp-manual-und').focus();}">
+        <div id="sp-manual-nombre" style="color:#4fc3f7;font-size:11px;min-height:16px;margin-bottom:6px;"></div>
+        <input type="text" id="sp-manual-und" placeholder="Unidades (dejar vacío si no aplica)" style="font-size:14px;margin-bottom:6px;" onkeydown="if(event.key==='Enter')document.getElementById('sp-manual-kg').focus();">
+        <input type="text" id="sp-manual-kg" placeholder="Peso en kg" style="font-size:14px;margin-bottom:8px;" onkeydown="if(event.key==='Enter')spBuscarPalletManual();">
+        <div style="display:flex;gap:8px;">
+            <button onclick="spBuscarPalletManual()" style="flex:1;background:linear-gradient(135deg,#e65100,#ff8a65);color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:bold;cursor:pointer;">🔍 Buscar</button>
+            <button onclick="spCerrarManual()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:8px;padding:10px;font-size:13px;cursor:pointer;">✕</button>
+        </div>
+        <div id="sp-manual-resultado" style="margin-top:8px;"></div>
+    </div>
+
+    <div id="sp-lista-pallets" style="max-height:280px;overflow-y:auto;margin-bottom:10px;"></div>
+
+    <div id="sp-resumen" style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px;margin-bottom:10px;display:none;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;">
+            <span>📦 Pallets: <b id="sp-total-pallets" style="color:#69f0ae;">0</b></span>
+            <span>📋 Productos: <b id="sp-total-productos" style="color:#4fc3f7;">0</b></span>
+            <span>⚖️ Kg: <b id="sp-total-kg" style="color:#ffb300;">0</b></span>
+        </div>
+    </div>
+
+    <button class="btn" id="sp-btn-confirmar" onclick="confirmarSalidaPistoleo()" style="background:linear-gradient(135deg,#b71c1c,#e53935);display:none;">📤 CONFIRMAR SALIDA</button>
+</div>
+
+<button class="btn btn-volver" onclick="reiniciarPistoleo();mostrarMenu();">⬅ VOLVER</button>
+</div>
+
+<!-- MODAL CONFIRMACIÓN SALIDA PISTOLEO -->
+<div id="modal-confirmacion-pistoleo" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:99998;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#1a1a2e;border:2px solid #e53935;border-radius:12px;padding:24px;max-width:320px;width:100%;text-align:center;">
+        <div style="font-size:40px;margin-bottom:10px;">📤</div>
+        <div style="color:#ef9a9a;font-size:16px;font-weight:bold;margin-bottom:8px;">¿Confirmar Salida?</div>
+        <div id="mcp-resumen" style="color:#fff;font-size:14px;margin-bottom:20px;"></div>
+        <div style="display:flex;gap:10px;">
+            <button onclick="ejecutarSalidaPistoleo()" style="flex:1;background:linear-gradient(135deg,#b71c1c,#e53935);color:#fff;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:bold;cursor:pointer;">✅ SÍ, SALIR</button>
+            <button onclick="document.getElementById('modal-confirmacion-pistoleo').style.display='none'" style="flex:1;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:8px;padding:14px;font-size:15px;cursor:pointer;">❌ NO</button>
+        </div>
+    </div>
 </div>
 
 <!-- ===== PANEL DE HISTORIAL DE SALIDAS ===== -->
@@ -455,6 +545,38 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 var tablaDatos = [];
 var historialMovimientos = [];
 var historialSalidas = [];
+
+// ============================================================
+// CATÁLOGO DE CLAVES (código de barras único por pallet)
+// ============================================================
+var catalogoClaves = {};
+
+function cargarCatalogoClaves() {
+    try { catalogoClaves = JSON.parse(localStorage.getItem('catalogoClaves') || '{}'); }
+    catch(e) { catalogoClaves = {}; }
+}
+
+function guardarCatalogoClaves() {
+    try { localStorage.setItem('catalogoClaves', JSON.stringify(catalogoClaves)); }
+    catch(e) {}
+}
+
+function parsearNumero(val) {
+    var s = String(val || '').trim();
+    if (!s) return 0;
+    if (s.indexOf(',') !== -1 && s.indexOf('.') !== -1) { s = s.replace(/\./g,'').replace(',','.'); }
+    else if (s.indexOf(',') !== -1) { s = s.replace(',','.'); }
+    return parseFloat(s) || 0;
+}
+
+function obtenerCoberturaCatalogo() {
+    var ocupados = tablaDatos.filter(function(s) { return s.codigo && s.ubicacion; });
+    var total = ocupados.length;
+    var ubicacionesConClave = {};
+    Object.values(catalogoClaves).forEach(function(e) { if (e.ubicacion) ubicacionesConClave[e.ubicacion] = true; });
+    var conClave = ocupados.filter(function(s) { return ubicacionesConClave[s.ubicacion]; }).length;
+    return { total: total, conClave: conClave, sinClave: total - conClave };
+}
 var filtroCamaraApp = '';
 
 // ============================================================
@@ -503,6 +625,8 @@ function cargarDatosDesdeLocalStorage() {
 }
 
 cargarDatosDesdeLocalStorage();
+cargarCatalogoClaves();
+window.addEventListener('load', function() { actualizarIndicadorCobertura(); });
 
 // ============================================================
 // FUNCIÓN DE GUARDADO EN LOCALSTORAGE
@@ -535,6 +659,192 @@ function mostrarFeedback(mensaje) {
     toast.textContent = mensaje;
     document.body.appendChild(toast);
     setTimeout(function() { if (toast.parentNode) toast.remove(); }, 2000);
+}
+
+// ============================================================
+// SALIDA POR PISTOLEO
+// ============================================================
+var spDestino = '';
+var spDestinoNombre = '';
+var spPalletsPistoleados = [];
+
+function confirmarDestinoPistoleo() {
+    var sel = document.getElementById('sp-destino');
+    spDestino = sel.value;
+    spDestinoNombre = sel.options[sel.selectedIndex].text;
+    if (!spDestino) { mostrarFeedback('⚠️ Seleccione un destino primero.'); return; }
+    document.getElementById('sp-seccion-destino').style.display = 'none';
+    document.getElementById('sp-seccion-pistoleo').style.display = 'block';
+    document.getElementById('sp-destino-label').textContent = '📍 Destino: ' + spDestinoNombre;
+    if (spPalletsPistoleados.length === 0) setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
+    actualizarListaPistoleo();
+}
+
+function cambiarDestinoPistoleo() {
+    document.getElementById('sp-seccion-destino').style.display = 'block';
+    document.getElementById('sp-seccion-pistoleo').style.display = 'none';
+}
+
+function reiniciarPistoleo() {
+    spDestino = ''; spDestinoNombre = ''; spPalletsPistoleados = [];
+    document.getElementById('sp-seccion-destino').style.display = 'block';
+    document.getElementById('sp-seccion-pistoleo').style.display = 'none';
+    document.getElementById('sp-destino').value = '';
+    document.getElementById('sp-input-clave').value = '';
+    document.getElementById('sp-ultimo-pistoleo').innerHTML = '';
+    document.getElementById('sp-lista-pallets').innerHTML = '';
+    document.getElementById('sp-resumen').style.display = 'none';
+    document.getElementById('sp-btn-confirmar').style.display = 'none';
+    spCerrarManual();
+}
+
+function pistoleoSalida() {
+    var clave = document.getElementById('sp-input-clave').value.trim();
+    if (!clave) return;
+    document.getElementById('sp-input-clave').value = '';
+    var entry = catalogoClaves[clave];
+    if (!entry) {
+        document.getElementById('sp-ultimo-pistoleo').innerHTML =
+            '<div style="background:rgba(183,28,28,0.2);border:1px solid #b71c1c;border-radius:8px;padding:8px;color:#ef9a9a;font-size:12px;">❌ CLAVE <b>' + clave + '</b> no registrada.<br><span style="color:#ffb300;">Use el ingreso manual ↓</span></div>';
+        document.getElementById('sp-seccion-manual').style.display = 'block';
+        setTimeout(function() { document.getElementById('sp-manual-codigo').focus(); }, 200);
+        return;
+    }
+    var yaAgregado = spPalletsPistoleados.find(function(p) { return p.clave === clave; });
+    if (yaAgregado) {
+        document.getElementById('sp-ultimo-pistoleo').innerHTML = '<div style="background:rgba(255,152,0,0.2);border:1px solid #ff9800;border-radius:8px;padding:8px;color:#ffb300;font-size:12px;">⚠️ Este pallet ya fue pistoleado.</div>';
+        setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
+        return;
+    }
+    spPalletsPistoleados.push({ clave: clave, codigo: entry.codigo, producto: entry.producto, und: entry.und, kg: entry.kg, lote: entry.lote, vence: entry.vence, ubicacion: entry.ubicacion });
+    document.getElementById('sp-ultimo-pistoleo').innerHTML =
+        '<div style="background:rgba(46,125,50,0.2);border:1px solid #2e7d32;border-radius:8px;padding:8px;font-size:12px;">✅ <b>' + entry.codigo + '</b> — ' + entry.producto + '<br>📍 ' + (entry.ubicacion||'Sin ub.') + ' | ⚖️ ' + entry.kg + ' kg | 🔢 ' + entry.lote + '</div>';
+    actualizarListaPistoleo();
+    setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
+}
+
+function spAutocompletarProducto() {
+    var cod = document.getElementById('sp-manual-codigo').value.trim().toUpperCase();
+    document.getElementById('sp-manual-codigo').value = cod;
+    var div = document.getElementById('sp-manual-nombre');
+    var encontrado = null;
+    for (var i = 0; i < tablaDatos.length; i++) { if (tablaDatos[i].codigo === cod && tablaDatos[i].producto) { encontrado = tablaDatos[i]; break; } }
+    div.textContent = encontrado ? '📦 ' + encontrado.producto : '⚠️ Código no encontrado';
+    div.style.color = encontrado ? '#4fc3f7' : '#ef9a9a';
+}
+
+function spBuscarPalletManual() {
+    var cod = document.getElementById('sp-manual-codigo').value.trim().toUpperCase();
+    var und = parsearNumero(document.getElementById('sp-manual-und').value) || 0;
+    var kg  = parsearNumero(document.getElementById('sp-manual-kg').value);
+    if (!cod) { mostrarFeedback('⚠️ Ingrese el código.'); return; }
+    if (!kg)  { mostrarFeedback('⚠️ Ingrese el peso.'); return; }
+    var candidatos = tablaDatos.filter(function(s) {
+        if (s.codigo !== cod || !s.ubicacion || !s.codigo) return false;
+        var okKg  = Math.abs(s.kg - kg) <= 2;
+        var okUnd = (!und) || (Math.abs(s.und - und) <= 1);
+        return okKg && okUnd;
+    });
+    var resultDiv = document.getElementById('sp-manual-resultado');
+    if (candidatos.length === 0) { resultDiv.innerHTML = '<div style="color:#ef9a9a;font-size:12px;">❌ No se encontró ningún pallet con esos datos.</div>'; return; }
+    var html = '<div style="font-size:11px;color:#ffb300;margin-bottom:6px;">Seleccione la ubicación:</div>';
+    candidatos.forEach(function(s, i) {
+        html += '<button onclick="spAgregarManual(' + i + ')" style="width:100%;text-align:left;background:rgba(255,255,255,0.05);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:6px;padding:8px;margin-bottom:4px;cursor:pointer;font-size:11px;">';
+        html += '📍 <b>' + s.ubicacion + '</b> | ⚖️ ' + s.kg + ' kg | 📦 ' + s.und + ' und | 🔢 ' + (s.lote||'—') + '</button>';
+    });
+    resultDiv.innerHTML = html;
+    window._spCandidatos = candidatos;
+}
+
+function spAgregarManual(idx) {
+    var s = window._spCandidatos[idx];
+    if (!s) return;
+    var ya = spPalletsPistoleados.find(function(p) { return p.ubicacion === s.ubicacion; });
+    if (ya) { mostrarFeedback('⚠️ Este pallet ya fue agregado.'); return; }
+    spPalletsPistoleados.push({ clave: null, codigo: s.codigo, producto: s.producto, und: s.und, kg: s.kg, lote: s.lote, vence: s.vence, ubicacion: s.ubicacion, sinClave: true });
+    document.getElementById('sp-ultimo-pistoleo').innerHTML =
+        '<div style="background:rgba(255,152,0,0.15);border:1px solid #ff9800;border-radius:8px;padding:8px;font-size:12px;">⚠️ Manual — <b>' + s.codigo + '</b><br>📍 ' + s.ubicacion + ' | ⚖️ ' + s.kg + ' kg</div>';
+    spCerrarManual();
+    actualizarListaPistoleo();
+    setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
+}
+
+function spCerrarManual() {
+    var sec = document.getElementById('sp-seccion-manual');
+    if (sec) sec.style.display = 'none';
+    ['sp-manual-codigo','sp-manual-und','sp-manual-kg'].forEach(function(id) { var el=document.getElementById(id); if(el) el.value=''; });
+    var n = document.getElementById('sp-manual-nombre'); if(n) n.textContent='';
+    var r = document.getElementById('sp-manual-resultado'); if(r) r.innerHTML='';
+}
+
+function actualizarListaPistoleo() {
+    var contador = document.getElementById('sp-contador');
+    if (contador) contador.textContent = spPalletsPistoleados.length;
+    if (spPalletsPistoleados.length === 0) {
+        document.getElementById('sp-lista-pallets').innerHTML = '';
+        document.getElementById('sp-resumen').style.display = 'none';
+        document.getElementById('sp-btn-confirmar').style.display = 'none';
+        return;
+    }
+    var totalKg = 0; var productos = {};
+    var html = '<div style="display:flex;flex-direction:column;gap:6px;">';
+    spPalletsPistoleados.forEach(function(p, idx) {
+        totalKg += p.kg; productos[p.codigo] = true;
+        var bc = p.sinClave ? 'rgba(255,152,0,0.5)' : 'rgba(105,240,174,0.4)';
+        var bg = p.sinClave ? 'rgba(255,152,0,0.08)' : 'rgba(46,125,50,0.1)';
+        html += '<div style="background:' + bg + ';border:1px solid ' + bc + ';border-radius:8px;padding:10px;">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
+        html += '<div style="flex:1;"><div style="font-size:15px;font-weight:bold;color:#fff;">' + p.codigo + ' — ' + p.producto + '</div>';
+        html += '<div style="font-size:14px;color:#69f0ae;font-weight:bold;">📍 ' + (p.ubicacion||'—') + '</div>';
+        html += '<div style="display:flex;gap:10px;font-size:13px;margin-top:2px;"><span style="color:#ffb300;">⚖️ ' + p.kg + ' kg</span>';
+        if (p.und > 0) html += '<span style="color:#4fc3f7;">📦 ' + p.und + ' und</span>';
+        html += '<span style="color:#90a4ae;">🔢 ' + (p.lote||'—') + '</span></div>';
+        if (p.sinClave) html += '<div style="font-size:10px;color:#ffb300;">⚠️ Ingreso manual</div>';
+        html += '</div><button onclick="quitarPalletPistoleo(' + idx + ')" style="background:rgba(183,28,28,0.4);border:1px solid #b71c1c;color:#ef9a9a;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:14px;margin-left:8px;">✕</button>';
+        html += '</div></div>';
+    });
+    html += '</div>';
+    document.getElementById('sp-lista-pallets').innerHTML = html;
+    document.getElementById('sp-total-pallets').textContent = spPalletsPistoleados.length;
+    document.getElementById('sp-total-productos').textContent = Object.keys(productos).length;
+    document.getElementById('sp-total-kg').textContent = totalKg.toFixed(2);
+    document.getElementById('sp-resumen').style.display = 'block';
+    document.getElementById('sp-btn-confirmar').style.display = 'block';
+}
+
+function quitarPalletPistoleo(idx) {
+    spPalletsPistoleados.splice(idx, 1);
+    actualizarListaPistoleo();
+}
+
+function confirmarSalidaPistoleo() {
+    if (spPalletsPistoleados.length === 0) return;
+    document.getElementById('mcp-resumen').textContent = spPalletsPistoleados.length + ' pallet(s) a ' + spDestinoNombre;
+    document.getElementById('modal-confirmacion-pistoleo').style.display = 'flex';
+}
+
+function ejecutarSalidaPistoleo() {
+    document.getElementById('modal-confirmacion-pistoleo').style.display = 'none';
+    var fecha = new Date().toLocaleDateString('es-PE');
+    var hora  = new Date().toLocaleTimeString('es-PE');
+    spPalletsPistoleados.forEach(function(p) {
+        var slot = buscarEnTabla(p.ubicacion);
+        if (slot && slot.codigo) {
+            var uAnt = slot.und, kAnt = slot.kg;
+            slot.codigo=''; slot.producto=''; slot.lote=''; slot.und=0; slot.kg=0; slot.vence=''; slot.linea='';
+            historialMovimientos.push({ fecha:fecha, hora:hora, tipo:'SALIDA', ubicacion:p.ubicacion, codigo:p.codigo, producto:p.producto, lote:p.lote, undAnt:uAnt, undDesp:0, kgAnt:kAnt, kgDesp:0 });
+            historialSalidas.push({ fecha:fecha, hora:hora, tipo:'SALIDA', ubicacion:p.ubicacion, codigo:p.codigo, producto:p.producto, lote:p.lote, und:uAnt, kg:kAnt, destino:spDestino, nombreDestino:spDestinoNombre });
+        }
+        if (p.clave) delete catalogoClaves[p.clave];
+    });
+    guardarEnLocalStorage();
+    guardarCatalogoClaves();
+    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    localStorage.setItem('historialSalidas', JSON.stringify(historialSalidas));
+    mostrarFeedback('✅ Salida registrada: ' + spPalletsPistoleados.length + ' pallet(s)');
+    reiniciarPistoleo();
+    actualizarIndicadorCobertura();
+    mostrarMenu();
 }
 
 // ============================================================
@@ -683,6 +993,26 @@ function toggleMenuApp(id) {
 function mostrarMenu() {
     document.getElementById('menu-principal').style.display = 'block';
     document.querySelectorAll('.panel').forEach(function(p) { p.style.display = 'none'; });
+    actualizarIndicadorCobertura();
+}
+
+function actualizarIndicadorCobertura() {
+    var indicador = document.getElementById('indicador-cobertura-claves');
+    if (!indicador) return;
+    var cob = obtenerCoberturaCatalogo();
+    var pct = cob.total > 0 ? Math.round((cob.conClave / cob.total) * 100) : 0;
+    var color = pct >= 80 ? '#69f0ae' : pct >= 40 ? '#ffb300' : '#ef9a9a';
+    indicador.innerHTML =
+        '<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;margin:8px 0;font-size:11px;">' +
+        '<div style="color:#90a4ae;margin-bottom:4px;">📊 Cobertura catálogo de claves</div>' +
+        '<div style="display:flex;justify-content:space-between;">' +
+        '<span>✅ Con clave: <b style="color:#69f0ae;">' + cob.conClave + '</b></span>' +
+        '<span>⚠️ Sin clave: <b style="color:#ef9a9a;">' + cob.sinClave + '</b></span>' +
+        '<span style="color:' + color + ';font-weight:bold;">' + pct + '%</span>' +
+        '</div>' +
+        '<div style="background:rgba(0,0,0,0.3);border-radius:4px;height:4px;margin-top:6px;">' +
+        '<div style="background:' + color + ';width:' + pct + '%;height:4px;border-radius:4px;"></div>' +
+        '</div></div>';
 }
 
 // ============================================================

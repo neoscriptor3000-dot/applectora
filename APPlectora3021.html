@@ -34,7 +34,7 @@ input,select{width:100%;padding:10px;margin:6px 0;background:rgba(3,12,32,0.9);b
 table{width:100%;border-collapse:collapse;font-size:11px;margin-top:10px}
 th{background:rgba(79,195,247,0.1);color:#4fc3f7;padding:6px;text-align:left}
 td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
-.ubicacion-display{font-size:80px;text-align:center;font-weight:bold;color:#4fc3f7;letter-spacing:5px;margin:20px 0}
+.ubicacion-display{font-size:28px;text-align:center;font-weight:bold;color:#4fc3f7;letter-spacing:2px;margin:10px 0}
 .menu-grupo{border:1px solid rgba(79,195,247,0.4);color:#fff;padding:16px 20px;border-radius:10px;cursor:pointer;font-size:15px;font-weight:600;margin:8px 0;transition:all 0.2s;box-shadow:0 3px 10px rgba(0,0,0,0.4)}
 .menu-grupo:hover{opacity:0.85;box-shadow:0 5px 15px rgba(0,0,0,0.5)}
 .menu-grupo:nth-child(3){background:#00838f}
@@ -55,7 +55,6 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <div id="menu-principal">
 <div class="titulo">📱 WAREHOUSE MÓVIL V83</div>
 <div class="subtitulo">Corporación Rico</div>
-<div id="indicador-cobertura-claves"></div>
 
 <div class="menu-grupo" onclick="toggleMenuApp('menu-ubicaciones')">📍 UBICACIONES ▾</div>
 <div id="menu-ubicaciones" class="menu-items-app">
@@ -81,7 +80,6 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <button class="btn btn-salida" onclick="cargarSalidaConTipo('CD')" style="background:#1565c0;">📤 Salida a CDs</button>
 <button class="btn btn-salida" onclick="cargarSalidaConTipo('LOCAL')" style="background:#e65100;">📤 Salida Local</button>
 <input type="file" id="input-lista-salida" accept=".xlsx,.xls" onchange="cargarSalidaMasiva(event)" style="display:none">
-<button class="btn btn-salida" onclick="mostrarPanel('panel-salida-pistoleo')" style="background:#6a1b9a;">🔫 Salida por Pistoleo</button>
 <button class="btn btn-salida" onclick="mostrarPanel('panel-historial-salidas')" style="background:#b71c1c;">📋 Historial de Salidas</button>
 </div>
 
@@ -176,108 +174,6 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 </div>
 <button class="btn btn-volver" onclick="volverDePickingSuelto()">⬅ VOLVER</button>
-</div>
-
-<!-- ===== PANEL SALIDA POR PISTOLEO ===== -->
-<div id="panel-salida-pistoleo" class="panel">
-<h3>🔫 SALIDA POR PISTOLEO</h3>
-
-<div id="sp-seccion-destino">
-    <div style="color:#90a4ae;font-size:12px;margin-bottom:6px;">Seleccione el destino (solo una vez):</div>
-    <select id="sp-destino" style="width:100%;font-size:14px;padding:10px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:8px;margin-bottom:10px;">
-        <option value="">Seleccione destino...</option>
-        <option value="CUSCO_SAYLLA">ALMACEN_CUSCO_SAYLLA</option>
-        <option value="CUSCO_PARQUE">ALMACEN_CUSCO_PQUE_INDUST</option>
-        <option value="JULIACA">ALMACEN_JULIACA</option>
-        <option value="PUNO">ALMACEN_PUNO</option>
-        <option value="LIMA">ALMACEN_LIMA</option>
-        <option value="VILLA_SALVADOR">TIENDA_VILLA_EL_SALVADOR</option>
-        <option value="COSTA">COSTA</option>
-        <option value="NOCHE">NOCHE</option>
-        <option value="CAMARA_500">CAMARA 500</option>
-        <option value="ZONAS">ZONAS</option>
-        <option value="TIENDAS">TIENDAS</option>
-        <option value="PBA">PBA</option>
-        <option value="PDC">DESPOSTE (PDC)</option>
-        <option value="PREPARADOS">EMBUTIDOS (PREPARADOS)</option>
-        <option value="CAMARA_1000">CAMARA 1000</option>
-        <option value="CAMARA_2000">CAMARA 2000</option>
-    </select>
-    <button class="btn" onclick="confirmarDestinoPistoleo()" style="background:linear-gradient(135deg,#1565c0,#1e88e5);">✅ Confirmar Destino</button>
-</div>
-
-<div id="sp-seccion-pistoleo" style="display:none;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <div style="color:#4fc3f7;font-size:12px;" id="sp-destino-label"></div>
-        <button onclick="cambiarDestinoPistoleo()" style="background:rgba(183,28,28,0.3);border:1px solid #b71c1c;color:#ef9a9a;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;">🔄 Cambiar destino</button>
-    </div>
-
-    <!-- CONTADOR DE PALLETS -->
-    <div style="text-align:center;margin-bottom:10px;">
-        <div style="display:inline-block;background:linear-gradient(135deg,#1565c0,#1e88e5);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:32px;font-weight:bold;color:#fff;box-shadow:0 0 20px rgba(30,136,229,0.6);" id="sp-contador">0</div>
-        <div style="color:#90a4ae;font-size:10px;margin-top:2px;">pallets</div>
-    </div>
-
-    <input type="text" id="sp-input-clave" placeholder="🔫 Pistolee etiqueta del pallet"
-        style="font-size:16px;letter-spacing:1px;"
-        onchange="pistoleoSalida()"
-        onkeydown="if(event.key==='Enter') pistoleoSalida()">
-
-    <div id="sp-ultimo-pistoleo" style="min-height:40px;margin:8px 0;"></div>
-
-    <!-- SECCIÓN MANUAL — para pallets sin CLAVE -->
-    <div id="sp-seccion-manual" style="display:none;background:rgba(255,152,0,0.08);border:1px solid rgba(255,152,0,0.4);border-radius:8px;padding:10px;margin-bottom:8px;">
-        <div style="color:#ffb300;font-size:12px;font-weight:bold;margin-bottom:8px;">✏️ Ingreso manual — pallet sin clave</div>
-        <input type="text" id="sp-manual-codigo" placeholder="Código del producto"
-            style="font-size:14px;margin-bottom:6px;"
-            onchange="spAutocompletarProducto()"
-            onkeydown="if(event.key==='Enter'){spAutocompletarProducto();document.getElementById('sp-manual-und').focus();}">
-        <div id="sp-manual-nombre" style="color:#4fc3f7;font-size:11px;min-height:16px;margin-bottom:6px;"></div>
-        <input type="text" id="sp-manual-und" placeholder="Unidades (dejar vacío si no aplica)"
-            style="font-size:14px;margin-bottom:6px;"
-            onkeydown="if(event.key==='Enter')document.getElementById('sp-manual-kg').focus();">
-        <input type="text" id="sp-manual-kg" placeholder="Peso en kg"
-            style="font-size:14px;margin-bottom:8px;"
-            onkeydown="if(event.key==='Enter')spBuscarPalletManual();">
-        <div style="display:flex;gap:8px;">
-            <button onclick="spBuscarPalletManual()" style="flex:1;background:linear-gradient(135deg,#e65100,#ff8a65);color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:bold;cursor:pointer;">🔍 Buscar</button>
-            <button onclick="spCerrarManual()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:8px;padding:10px;font-size:13px;cursor:pointer;">✕</button>
-        </div>
-        <div id="sp-manual-resultado" style="margin-top:8px;"></div>
-    </div>
-
-    <div id="sp-lista-pallets" style="max-height:280px;overflow-y:auto;margin-bottom:10px;"></div>
-
-    <div id="sp-resumen" style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px;margin-bottom:10px;display:none;">
-        <div style="display:flex;justify-content:space-between;font-size:12px;">
-            <span>📦 Pallets: <b id="sp-total-pallets" style="color:#69f0ae;">0</b></span>
-            <span>📋 Productos: <b id="sp-total-productos" style="color:#4fc3f7;">0</b></span>
-            <span>⚖️ Kg: <b id="sp-total-kg" style="color:#ffb300;">0</b></span>
-        </div>
-    </div>
-
-    <button class="btn" id="sp-btn-confirmar" onclick="confirmarSalidaPistoleo()" style="background:linear-gradient(135deg,#b71c1c,#e53935);display:none;">
-        📤 CONFIRMAR SALIDA
-    </button>
-</div>
-
-<button class="btn btn-volver" onclick="reiniciarPistoleo();mostrarMenu();">⬅ VOLVER</button>
-</div>
-
-<!-- MODAL CONFIRMACIÓN SALIDA PISTOLEO -->
-<div id="modal-confirmacion-pistoleo" style="
-    display:none;position:fixed;top:0;left:0;right:0;bottom:0;
-    background:rgba(0,0,0,0.8);z-index:99998;
-    align-items:center;justify-content:center;padding:20px;">
-    <div style="background:#1a1a2e;border:2px solid #e53935;border-radius:12px;padding:24px;max-width:320px;width:100%;text-align:center;box-shadow:0 0 30px rgba(229,57,53,0.5);">
-        <div style="font-size:40px;margin-bottom:10px;">📤</div>
-        <div style="color:#ef9a9a;font-size:16px;font-weight:bold;margin-bottom:8px;">¿Confirmar Salida?</div>
-        <div id="mcp-resumen" style="color:#fff;font-size:14px;margin-bottom:20px;"></div>
-        <div style="display:flex;gap:10px;">
-            <button onclick="ejecutarSalidaPistoleo()" style="flex:1;background:linear-gradient(135deg,#b71c1c,#e53935);color:#fff;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:bold;cursor:pointer;">✅ SÍ, SALIR</button>
-            <button onclick="document.getElementById('modal-confirmacion-pistoleo').style.display='none'" style="flex:1;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:8px;padding:14px;font-size:15px;cursor:pointer;">❌ NO</button>
-        </div>
-    </div>
 </div>
 
 <!-- ===== PANEL DE HISTORIAL DE SALIDAS ===== -->
@@ -545,7 +441,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 
 </div>
 
-<div id="panel-ingreso" class="panel"><h3>📥 INGRESAR PALLET</h3><input type="text" id="ing-codigo" placeholder="Código del producto" onchange="autocompletarProducto()" onkeydown="if(event.key==='Enter')document.getElementById('ing-producto').focus()"><input type="text" id="ing-producto" placeholder="Nombre del producto" onkeydown="if(event.key==='Enter')document.getElementById('ing-lote').focus()"><input type="text" id="ing-lote" placeholder="Lote" onkeydown="if(event.key==='Enter')document.getElementById('ing-unidades').focus()"><input type="text" id="ing-unidades" placeholder="Unidades" onkeydown="if(event.key==='Enter')document.getElementById('ing-kilos').focus()"><input type="text" id="ing-kilos" placeholder="Peso en Kilos (ej: 20.5)" onkeydown="if(event.key==='Enter')document.getElementById('ing-bandejas').focus()"><input type="text" id="ing-bandejas" placeholder="Número de Bandejas" onkeydown="if(event.key==='Enter')document.getElementById('ing-venc').focus()"><input type="text" id="ing-venc" placeholder="Vencimiento (ej: 15/03/2028)" onkeydown="if(event.key==='Enter')document.getElementById('ing-ubicacion').focus()"><input type="text" id="ing-ubicacion" placeholder="Escanee ubicación destino" onchange="confirmarIngreso()"><div id="resultado-ingreso"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
+<div id="panel-ingreso" class="panel"><h3>📥 INGRESAR PALLET</h3><input type="text" id="ing-codigo" placeholder="Código del producto" onchange="autocompletarProducto()" onkeydown="if(event.key==='Enter')document.getElementById('ing-producto').focus()"><input type="text" id="ing-producto" placeholder="Nombre del producto" onkeydown="if(event.key==='Enter')document.getElementById('ing-lote').focus()"><input type="text" id="ing-lote" placeholder="Lote" onkeydown="if(event.key==='Enter')document.getElementById('ing-unidades').focus()"><input type="number" id="ing-unidades" placeholder="Unidades" min="0" onkeydown="if(event.key==='Enter')document.getElementById('ing-kilos').focus()"><input type="number" id="ing-kilos" placeholder="Peso en Kilos" min="0" step="0.01" onkeydown="if(event.key==='Enter')document.getElementById('ing-bandejas').focus()"><input type="number" id="ing-bandejas" placeholder="Número de Bandejas" min="0" onkeydown="if(event.key==='Enter')document.getElementById('ing-venc').focus()"><input type="text" id="ing-venc" placeholder="Vencimiento (ej: 15/03/2028)" onkeydown="if(event.key==='Enter')document.getElementById('ing-ubicacion').focus()"><input type="text" id="ing-ubicacion" placeholder="Escanee ubicación destino" onchange="confirmarIngreso()"><div id="resultado-ingreso"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
 </div>
 
 <script>
@@ -560,44 +456,6 @@ var tablaDatos = [];
 var historialMovimientos = [];
 var historialSalidas = [];
 var filtroCamaraApp = '';
-
-// ============================================================
-// CATÁLOGO DE CLAVES (código de barras por pallet)
-// ============================================================
-var catalogoClaves = {}; // { "7001234": { codigo, producto, und, kg, lote, vence, linea, ubicacion } }
-
-function cargarCatalogoClaves() {
-    try {
-        var guardado = localStorage.getItem('catalogoClaves');
-        catalogoClaves = guardado ? JSON.parse(guardado) : {};
-    } catch(e) { catalogoClaves = {}; }
-}
-
-function guardarCatalogoClaves() {
-    try {
-        localStorage.setItem('catalogoClaves', JSON.stringify(catalogoClaves));
-    } catch(e) { console.error('Error guardando catálogo claves:', e); }
-}
-
-function obtenerCoberturaCatalogo() {
-    // Pallets actualmente ocupados en cámara
-    var ocupados = tablaDatos.filter(function(s) { return s.codigo && s.ubicacion; });
-    var total = ocupados.length;
-
-    // Construir set de ubicaciones con clave registrada
-    var ubicacionesConClave = {};
-    Object.values(catalogoClaves).forEach(function(entry) {
-        if (entry.ubicacion) ubicacionesConClave[entry.ubicacion] = true;
-    });
-
-    // Contar cuántos pallets ocupados tienen su ubicación en el catálogo
-    var conClave = ocupados.filter(function(s) {
-        return ubicacionesConClave[s.ubicacion] === true;
-    }).length;
-
-    var sinClave = total - conClave;
-    return { total: total, conClave: conClave, sinClave: sinClave };
-}
 
 // ============================================================
 // CARGA DE DATOS DESDE LOCALSTORAGE
@@ -645,12 +503,6 @@ function cargarDatosDesdeLocalStorage() {
 }
 
 cargarDatosDesdeLocalStorage();
-cargarCatalogoClaves();
-// Mostrar indicador al cargar la app
-window.addEventListener('load', function() {
-    actualizarIndicadorCobertura();
-    iniciarRecordatorioBackup();
-});
 
 // ============================================================
 // FUNCIÓN DE GUARDADO EN LOCALSTORAGE
@@ -718,30 +570,6 @@ function buscarEnTabla(ubicacion) {
     return null;
 }
 
-function parsearNumero(val) {
-    var s = String(val || '').trim();
-    if (!s) return 0;
-    // Si tiene coma Y punto: formato europeo 1.234,50 → quitar puntos, cambiar coma por punto
-    if (s.indexOf(',') !== -1 && s.indexOf('.') !== -1) {
-        s = s.replace(/\./g, '').replace(',', '.');
-    // Si solo tiene coma: decimal europeo 1045,50 → cambiar coma por punto
-    } else if (s.indexOf(',') !== -1) {
-        s = s.replace(',', '.');
-    }
-    // Si solo tiene punto o ninguno: ya está en formato correcto (1045.50 o 1045)
-    return parseFloat(s) || 0;
-}
-// Primero verifica el formato, luego confirma que existe en tablaDatos
-function esUbicacionValida(ub) {
-    // 1. Verificar formato básico: [1|2][P|C][I|D|C][1-60][A-D][1-6]
-    if (!/^[12][PC][IDC]\d{1,2}[A-D][1-6]$/.test(ub)) return false;
-    // 2. Verificar que existe en tablaDatos (cargado del Excel)
-    for (var i = 0; i < tablaDatos.length; i++) {
-        if (tablaDatos[i].ubicacion === ub) return true;
-    }
-    return false;
-}
-
 function buscarPorCodigo(codigo) {
     var resultados = [];
     for (var i = 0; i < tablaDatos.length; i++) {
@@ -772,17 +600,6 @@ function mostrarPanel(id) {
     if (id === 'panel-escanear') {
         document.getElementById('input-escanear').focus();
         document.getElementById('resultado-escanear').innerHTML = '';
-    }
-
-    if (id === 'panel-ingreso') {
-        ['ing-codigo','ing-producto','ing-lote','ing-venc','ing-ubicacion'].forEach(function(campo) {
-            document.getElementById(campo).value = '';
-        });
-        ['ing-unidades','ing-kilos','ing-bandejas'].forEach(function(campo) {
-            document.getElementById(campo).value = '';
-        });
-        document.getElementById('resultado-ingreso').innerHTML = '';
-        document.getElementById('ing-codigo').focus();
     }
 
     if (id === 'panel-ver-carril') {
@@ -866,27 +683,6 @@ function toggleMenuApp(id) {
 function mostrarMenu() {
     document.getElementById('menu-principal').style.display = 'block';
     document.querySelectorAll('.panel').forEach(function(p) { p.style.display = 'none'; });
-    actualizarIndicadorCobertura();
-}
-
-function actualizarIndicadorCobertura() {
-    var indicador = document.getElementById('indicador-cobertura-claves');
-    if (!indicador) return;
-    var cob = obtenerCoberturaCatalogo();
-    var pct = cob.total > 0 ? Math.round((cob.conClave / cob.total) * 100) : 0;
-    var color = pct >= 80 ? '#69f0ae' : pct >= 40 ? '#ffb300' : '#ef9a9a';
-    indicador.innerHTML =
-        '<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;margin:8px 0;font-size:11px;">' +
-        '<div style="color:#90a4ae;margin-bottom:4px;">📊 Cobertura catálogo de claves</div>' +
-        '<div style="display:flex;justify-content:space-between;">' +
-        '<span>✅ Con clave: <b style="color:#69f0ae;">' + cob.conClave + '</b></span>' +
-        '<span>⚠️ Sin clave: <b style="color:#ef9a9a;">' + cob.sinClave + '</b></span>' +
-        '<span style="color:' + color + ';font-weight:bold;">' + pct + '%</span>' +
-        '</div>' +
-        '<div style="background:rgba(0,0,0,0.3);border-radius:4px;height:4px;margin-top:6px;">' +
-        '<div style="background:' + color + ';width:' + pct + '%;height:4px;border-radius:4px;transition:width 0.5s;"></div>' +
-        '</div>' +
-        '</div>';
 }
 
 // ============================================================
@@ -1369,11 +1165,6 @@ function escanearUbicacion() {
     var ub = document.getElementById('input-escanear').value.toUpperCase().trim();
     if (!ub) return;
     document.getElementById('input-escanear').value = '';
-    if (!esUbicacionValida(ub)) {
-        document.getElementById('resultado-escanear').innerHTML = '<div class="mensaje" style="color:#ff6b35;font-size:18px;">❌ Ubicación <b>' + ub + '</b> no existe en el almacén.</div>';
-        setTimeout(function() { document.getElementById('input-escanear').focus(); }, 300);
-        return;
-    }
     var encontrado = buscarEnTabla(ub);
     var html = '<div class="ubicacion-display">📍 ' + ub + '</div>';
     if (encontrado && encontrado.codigo) {
@@ -1637,12 +1428,6 @@ function autocompletarProducto() {
 function confirmarIngreso() {
     var ub = document.getElementById('ing-ubicacion').value.toUpperCase().trim();
     if (!ub) return;
-    if (!esUbicacionValida(ub)) {
-        alert('❌ Ubicación ' + ub + ' no existe en el almacén.\nVerifica la nomenclatura e intenta de nuevo.');
-        document.getElementById('ing-ubicacion').value = '';
-        document.getElementById('ing-ubicacion').focus();
-        return;
-    }
     var existente = buscarEnTabla(ub);
     if (existente && existente.codigo) {
         alert('⚠️ Ubicación OCUPADA: ' + ub + '\n\n' + existente.codigo + ' - ' + existente.producto + '\nLote: ' + existente.lote + '\n' + existente.und + ' und | ' + existente.kg + ' kg');
@@ -1658,8 +1443,8 @@ function confirmarIngreso() {
     encontrado.codigo = document.getElementById('ing-codigo').value.trim();
     encontrado.producto = document.getElementById('ing-producto').value.trim();
     encontrado.lote = document.getElementById('ing-lote').value.trim();
-    encontrado.und = parseFloat(document.getElementById('ing-unidades').value.replace(',','.')) || 0;
-    encontrado.kg = parseFloat(document.getElementById('ing-kilos').value.replace(',','.')) || 0;
+    encontrado.und = parseFloat(document.getElementById('ing-unidades').value) || 0;
+    encontrado.kg = parseFloat(document.getElementById('ing-kilos').value) || 0;
     encontrado.vence = document.getElementById('ing-venc').value.trim();
     encontrado.bandejas = document.getElementById('ing-bandejas').value.trim();
     guardarEnLocalStorage();
@@ -2075,11 +1860,6 @@ function verificarOrigen() {
     var ub = document.getElementById('traslado-origen').value.toUpperCase().trim();
     if (!ub) return;
     document.getElementById('traslado-origen').value = '';
-    if (!esUbicacionValida(ub)) {
-        document.getElementById('traslado-info-origen').innerHTML = '<span style="color:#ff6b35;">❌ Ubicación <b>' + ub + '</b> no existe en el almacén.</span>';
-        document.getElementById('traslado-seccion-destino').style.display = 'none';
-        return;
-    }
     var encontrado = buscarEnTabla(ub);
     if (!encontrado || !encontrado.codigo) {
         document.getElementById('traslado-info-origen').innerHTML = '<span style="color:#ff6b35;">⚠️ Ubicación VACÍA o no encontrada</span>';
@@ -2096,11 +1876,6 @@ function ejecutarTraslado() {
     var ubDestino = document.getElementById('traslado-destino').value.toUpperCase().trim();
     if (!ubDestino || !trasladoOrigenData) return;
     document.getElementById('traslado-destino').value = '';
-    if (!esUbicacionValida(ubDestino)) {
-        document.getElementById('traslado-msg').innerHTML = '<span style="color:#ff6b35;">❌ Ubicación destino <b>' + ubDestino + '</b> no existe en el almacén.</span>';
-        document.getElementById('traslado-destino').focus();
-        return;
-    }
     var destino = buscarEnTabla(ubDestino);
     if (!destino) {
         destino = { ubicacion: ubDestino, codigo: '', producto: '', lote: '', und: 0, kg: 0, vence: '', linea: '', occ: false };
@@ -2121,13 +1896,6 @@ function ejecutarTraslado() {
     destino.linea = orig.linea;
     destino.occ = true;
     orig.codigo = ''; orig.producto = ''; orig.lote = ''; orig.und = 0; orig.kg = 0; orig.vence = ''; orig.linea = ''; orig.occ = false;
-    // Actualizar ubicación en catálogo de claves si existe entrada para la ubicación origen
-    Object.keys(catalogoClaves).forEach(function(clave) {
-        if (catalogoClaves[clave].ubicacion === trasladoOrigenData.ubicacion) {
-            catalogoClaves[clave].ubicacion = ubDestino;
-        }
-    });
-    guardarCatalogoClaves();
     guardarEnLocalStorage();
     historialMovimientos.push({
         fecha: new Date().toLocaleDateString('es-PE'),
@@ -2187,10 +1955,6 @@ function cargarListaIngreso(event) {
             }
         }
         huellaIngresoMasivo = filasParaHuella.join('|||').substring(0, 200);
-        // Fix 3: validar que la huella no esté vacía
-        if (!huellaIngresoMasivo || huellaIngresoMasivo.trim() === '') {
-            huellaIngresoMasivo = 'excel_' + Date.now();
-        }
         console.log('🔑 Huella Ingreso Masivo:', huellaIngresoMasivo);
         
         listaIngreso = [];
@@ -2251,34 +2015,17 @@ function cargarListaIngreso(event) {
             listaIngreso.push({
                 codigo: cod,
                 producto: String(r[7] || '').trim(),
-                und: parsearNumero(r[8]) || 0,
-                kg: parsearNumero(r[9]) || 0,
+                und: parseFloat(r[8]) || 0,
+                kg: parseFloat(r[9]) || 0,
                 lote: String(r[17] || '').trim().substring(0, 4),
                 vence: fechaVenc,
-                linea: lineaVal,
-                clave: String(r[4] || '').trim()
+                linea: lineaVal
             });
-            // Guardar en catálogo de claves si tiene CLAVE
-            var claveVal = String(r[4] || '').trim();
-            if (claveVal) {
-                catalogoClaves[claveVal] = {
-                    codigo: cod,
-                    producto: String(r[7] || '').trim(),
-                    und: parsearNumero(r[8]) || 0,
-                    kg: parsearNumero(r[9]) || 0,
-                    lote: String(r[17] || '').trim().substring(0, 4),
-                    vence: fechaVenc,
-                    linea: lineaVal,
-                    ubicacion: ''
-                };
-            }
         }
         if (listaIngreso.length === 0) {
             alert('⚠️ No se encontraron pallets en el archivo.');
             return;
         }
-        // Guardar catálogo de claves actualizado
-        guardarCatalogoClaves();
         
         // ============================================
         // BUSCAR PROGRESO GUARDADO CON ESTA HUELLA
@@ -2384,95 +2131,21 @@ function mostrarResumenIngreso() {
         resumen[key].und += p.und;
         resumen[key].kg += p.kg;
     });
-
-    // Detectar pallets sin lote o sin fecha
-    var sinLote = listaIngreso.filter(function(p) { return !p.lote || !p.vence; });
-    var advertencia = '';
-    if (sinLote.length > 0) {
-        advertencia = '<div style="background:rgba(255,152,0,0.15);border:1px solid #ff9800;border-radius:8px;padding:10px;margin-bottom:10px;font-size:12px;color:#ff9800;">⚠️ ' + sinLote.length + ' pallet(s) sin lote o fecha de vencimiento.</div>';
-    }
-
-    var html = advertencia;
-    html += '<div style="display:flex;gap:8px;margin-bottom:10px;">';
-    html += '<button onclick="completarLoteVenc()" style="flex:1;background:linear-gradient(135deg,#1565c0,#1e88e5);color:#fff;border:none;border-radius:8px;padding:10px;font-size:12px;font-weight:bold;cursor:pointer;">📝 Completar Lote/Venc.</button>';
-    html += '</div>';
-    html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+    var html = '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+    html += '<tr style="color:#607d8b;"><th>CÓDIGO</th><th>PRODUCTO</th><th>PALLETS</th><th>LOTE</th><th>UND</th><th>KG</th></tr>';
     var totalPallets = 0;
     for (var key in resumen) {
         var r = resumen[key];
         totalPallets += r.cantidad;
-        var loteDisplay = r.lote ? r.lote : '<span style="color:#ff9800;">⚠️ Sin lote</span>';
-        html += '<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(79,195,247,0.2);border-radius:8px;padding:8px 10px;">';
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-        html += '<span style="color:#4fc3f7;font-size:11px;font-weight:bold;">' + r.codigo + '</span>';
-        html += '<span style="color:#69f0ae;font-size:11px;">🧺 ' + r.cantidad + ' pal | ⚖️ ' + r.kg + ' kg</span>';
-        html += '</div>';
-        html += '<div style="font-size:10px;color:#c0c0c0;margin:2px 0;">' + r.producto + '</div>';
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">';
-        html += '<span style="font-size:11px;">🔢 ' + loteDisplay + '</span>';
-        html += '<button onclick="editarLoteProducto(\'' + r.codigo + '\')" style="background:rgba(79,195,247,0.2);border:1px solid #4fc3f7;color:#fff;border-radius:4px;padding:3px 10px;cursor:pointer;font-size:12px;">✏️</button>';
-        html += '</div>';
-        html += '</div>';
+        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">';
+        html += '<td>' + r.codigo + '</td><td>' + r.producto + '</td><td style="text-align:center;color:#69f0ae;">' + r.cantidad + '</td><td>' + r.lote + '</td><td>' + r.und + '</td><td>' + r.kg + '</td>';
+        html += '</tr>';
     }
-    html += '</div>';
-    html += '<div style="margin-top:8px;text-align:center;color:#69f0ae;font-weight:bold;font-size:13px;">TOTAL: ' + totalPallets + ' pallets</div>';
+    html += '<tr style="font-weight:bold;background:rgba(255,255,255,0.05);"><td colspan="2">TOTAL</td><td style="color:#69f0ae;">' + totalPallets + ' pallets</td><td colspan="3"></td></tr>';
+    html += '</table>';
     document.getElementById('resumen-ingreso-lista').innerHTML = html;
     document.getElementById('menu-principal').style.display = 'none';
     document.getElementById('panel-resumen-ingreso').style.display = 'block';
-}
-
-// Botón 1: Replica el único lote/fecha existente a todos los pallets que no lo tienen
-function completarLoteVenc() {
-    // Buscar pallets que sí tienen lote y fecha
-    var conDatos = listaIngreso.filter(function(p) { return p.lote && p.vence; });
-    if (conDatos.length === 0) {
-        mostrarFeedback('⚠️ Ningún pallet tiene lote o fecha. Use ✏️ para ingresar los datos manualmente.', 4000);
-        return;
-    }
-    // Verificar que todos los que tienen datos comparten el mismo lote Y la misma fecha
-    var lotesUnicos = {};
-    conDatos.forEach(function(p) { lotesUnicos[p.lote + '|||' + p.vence] = { lote: p.lote, vence: p.vence }; });
-    var keys = Object.keys(lotesUnicos);
-    if (keys.length > 1) {
-        mostrarFeedback('⚠️ No se puede: existen ' + keys.length + ' lotes/fechas distintos. Use ✏️ por producto.', 4000);
-        return;
-    }
-    // Hay un único lote/fecha — replicar a los que no tienen
-    var loteRef = lotesUnicos[keys[0]].lote;
-    var venceRef = lotesUnicos[keys[0]].vence;
-    var actualizados = 0;
-    listaIngreso.forEach(function(p) {
-        if (!p.lote || !p.vence) {
-            p.lote = loteRef;
-            p.vence = venceRef;
-            actualizados++;
-        }
-    });
-    mostrarFeedback('✅ Lote ' + loteRef + ' y fecha ' + venceRef + ' aplicados a ' + actualizados + ' pallet(s).', 4000);
-    mostrarResumenIngreso();
-}
-
-// Botón 2: Editar lote y fecha de todos los pallets de un código específico
-function editarLoteProducto(codigo) {
-    var loteActual = '';
-    var venceActual = '';
-    listaIngreso.forEach(function(p) {
-        if (p.codigo === codigo && p.lote) { loteActual = p.lote; venceActual = p.vence; }
-    });
-    var nuevoLote = prompt('✏️ Lote para código ' + codigo + ':', loteActual);
-    if (nuevoLote === null) return;
-    var nuevaFecha = prompt('📅 Fecha de vencimiento (ej: 31/05/2028):', venceActual);
-    if (nuevaFecha === null) return;
-    var actualizados = 0;
-    listaIngreso.forEach(function(p) {
-        if (p.codigo === codigo) {
-            p.lote = nuevoLote.trim();
-            p.vence = nuevaFecha.trim();
-            actualizados++;
-        }
-    });
-    mostrarFeedback('✅ Lote y fecha actualizados en ' + actualizados + ' pallet(s) del código ' + codigo + '.', 3000);
-    mostrarResumenIngreso();
 }
 
 function irASeleccionarCamara() {
@@ -2492,17 +2165,12 @@ function mostrarPalletIngreso() {
         document.getElementById('input-lista-ingreso').value = '';
         document.getElementById('ing-masivo-info').innerHTML = '✅ TODOS LOS PALLETS INGRESADOS';
         setTimeout(function() { verIngresados(); }, 2500);
-        // Reset completo
-        if (huellaIngresoMasivo) localStorage.removeItem('ingreso_progreso_' + huellaIngresoMasivo);
         localStorage.removeItem('progreso_' + (listaIngreso.length > 0 ? listaIngreso[0].codigo : '') + '_' + listaIngreso.length);
         localStorage.removeItem('palletsIngresados_temp');
         document.getElementById('ing-masivo-detalle').innerHTML = '';
         document.getElementById('ing-masivo-sugerencias').innerHTML = '';
         document.getElementById('ing-masivo-ubicacion').style.display = 'none';
         listaIngreso = [];
-        palletsIngresados = [];
-        indexIngreso = 0;
-        huellaIngresoMasivo = '';
         return;
     }
     var p = listaIngreso[indexIngreso];
@@ -2567,12 +2235,6 @@ function usarSugerenciaIngreso(ubicacion) {
 function confirmarIngresoMasivo() {
     var ub = document.getElementById('ing-masivo-ubicacion').value.toUpperCase().trim();
     if (!ub) return;
-    if (!esUbicacionValida(ub)) {
-        alert('❌ Ubicación ' + ub + ' no existe en el almacén.\nVerifica la nomenclatura e intenta de nuevo.');
-        document.getElementById('ing-masivo-ubicacion').value = '';
-        document.getElementById('ing-masivo-ubicacion').focus();
-        return;
-    }
     var p = listaIngreso[indexIngreso];
     var existente = buscarEnTabla(ub);
     if (existente && existente.codigo) {
@@ -2593,14 +2255,6 @@ function confirmarIngresoMasivo() {
     encontrado.kg = p.kg;
     encontrado.vence = p.vence;
     encontrado.bandejas = document.getElementById('ing-masivo-bandejas').value.trim();
-
-    // Actualizar ubicación en catálogo de claves si este pallet tiene CLAVE
-    if (p.clave && catalogoClaves[p.clave]) {
-        catalogoClaves[p.clave].ubicacion = ub;
-        catalogoClaves[p.clave].lote = p.lote;
-        catalogoClaves[p.clave].vence = p.vence;
-        guardarCatalogoClaves();
-    }
 
     // ============================================
     // VALIDAR QUE LA PROCEDENCIA ESTÉ SELECCIONADA
@@ -3041,8 +2695,8 @@ for (var i = headerRow + 1; i < rows.length; i++) {
         cod = String(r[5] || '').trim();        // Columna F (índice 5)
         if (!cod) cod = String(r[4] || '').trim(); // Columna E como fallback
         prod = String(r[7] || '').trim();        // Columna H (índice 7)
-        und = parsearNumero(r[8]);             // Columna I (índice 8)
-        kg = parsearNumero(r[9]);              // Columna J (índice 9)
+        und = parseFloat(r[8]) || 0;             // Columna I (índice 8)
+        kg = parseFloat(r[9]) || 0;              // Columna J (índice 9)
         if (kg === 0 && r[10]) kg = parseFloat(r[10]) || 0;
         lote = String(r[17] || '').trim();       // Columna R (índice 17)
         vence = String(r[18] || '').trim();      // Columna S (índice 18)
@@ -4277,13 +3931,6 @@ console.log('🧪 DESTINO SELECCIONADO:', destino);
         u.kg = 0;
         u.vence = '';
         u.linea = '';
-        // Eliminar del catálogo de claves si existe entrada para esta ubicación
-        Object.keys(catalogoClaves).forEach(function(clave) {
-            if (catalogoClaves[clave].ubicacion === p.ubicacion) {
-                delete catalogoClaves[clave];
-            }
-        });
-        guardarCatalogoClaves();
     }
 
     p.procesado = true;
@@ -4725,17 +4372,6 @@ function finalizarSalidaMasiva() {
     // Guardar progreso completado
     localStorage.setItem('salidasEnProgreso_' + new Date().toISOString().slice(0,10), JSON.stringify(palletsSalidos));
 
-    // Eliminar del catálogo de claves los pallets que salieron
-    palletsSalidos.forEach(function(p) {
-        if (!p.ubicacion || p.ubicacion === '— (NUEVO)') return;
-        Object.keys(catalogoClaves).forEach(function(clave) {
-            if (catalogoClaves[clave].ubicacion === p.ubicacion) {
-                delete catalogoClaves[clave];
-            }
-        });
-    });
-    guardarCatalogoClaves();
-
     // ============================================
     // GUARDAR PROGRESO CON HUELLA DEL EXCEL
     // ============================================
@@ -5042,8 +4678,8 @@ function cargarListaIngresoEtiqueta(event) {
                 codigoBarras: codigoBarras,
                 codigo: cod,
                 producto: String(r[7] || '').trim(),
-                und: parsearNumero(r[8]),
-                kg: parsearNumero(r[9]),
+                und: parseFloat(r[8]) || 0,
+                kg: parseFloat(r[9]) || 0,
                 lote: String(r[17] || '').trim().substring(0, 4),
                 vence: fechaVenc,
                 linea: lineaVal,
@@ -5051,19 +4687,6 @@ function cargarListaIngresoEtiqueta(event) {
                 ubicacion: '',
                 bandejas: '0'
             });
-            // Guardar en catálogo de claves si tiene codigoBarras
-            if (codigoBarras) {
-                catalogoClaves[codigoBarras] = {
-                    codigo: cod,
-                    producto: String(r[7] || '').trim(),
-                    und: parsearNumero(r[8]),
-                    kg: parsearNumero(r[9]),
-                    lote: String(r[17] || '').trim().substring(0, 4),
-                    vence: fechaVenc,
-                    linea: lineaVal,
-                    ubicacion: ''
-                };
-            }
         }
         
         if (listaEtiqueta.length === 0) {
@@ -5392,13 +5015,6 @@ function confirmarIngresoEtiqueta() {
         return;
     }
     
-    if (!esUbicacionValida(ubicacion)) {
-        alert('❌ Ubicación ' + ubicacion + ' no existe en el almacén.\nVerifica la nomenclatura e intenta de nuevo.');
-        document.getElementById('ing-etiqueta-ubicacion').value = '';
-        document.getElementById('ing-etiqueta-ubicacion').focus();
-        return;
-    }
-
     if (!palletEncontradoEtiqueta) {
         alert('⚠️ Primero debe pistolear una etiqueta.');
         return;
@@ -5438,15 +5054,7 @@ function confirmarIngresoEtiqueta() {
     encontrado.linea = '';
     
     guardarEnLocalStorage();
-
-    // Actualizar catálogo de claves con la ubicación asignada
-    if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
-        catalogoClaves[p.codigoBarras].ubicacion = ubicacion;
-        catalogoClaves[p.codigoBarras].lote = p.lote;
-        catalogoClaves[p.codigoBarras].vence = p.vence;
-        guardarCatalogoClaves();
-    }
-
+    
     historialMovimientos.push({
         fecha: new Date().toLocaleDateString('es-PE'),
         hora: new Date().toLocaleTimeString('es-PE'),
@@ -5846,76 +5454,6 @@ console.log('✅ V83 - Warehouse Móvil con Salida Masiva cargada correctamente.
 var ultimoInput = null;
 var reconocimientoActivo = false;
 
-// Convierte números escritos en español a dígitos (0-5000)
-function palabrasANumeros(texto) {
-    var unidades = {'CERO':0,'UNO':1,'DOS':2,'TRES':3,'CUATRO':4,'CINCO':5,'SEIS':6,'SIETE':7,'OCHO':8,'NUEVE':9};
-    var especiales = {'DIEZ':10,'ONCE':11,'DOCE':12,'TRECE':13,'CATORCE':14,'QUINCE':15,
-        'DIECISÉIS':16,'DIECISEIS':16,'DIECISIETE':17,'DIECIOCHO':18,'DIECINUEVE':19,
-        'VEINTE':20,'VEINTIUNO':21,'VEINTIDÓS':22,'VEINTIDOS':22,'VEINTITRÉS':23,'VEINTITRES':23,
-        'VEINTICUATRO':24,'VEINTICINCO':25,'VEINTISÉIS':26,'VEINTISEIS':26,
-        'VEINTISIETE':27,'VEINTIOCHO':28,'VEINTINUEVE':29,'TREINTA':30,
-        'CUARENTA':40,'CINCUENTA':50,'SESENTA':60,'SETENTA':70,'OCHENTA':80,'NOVENTA':90,
-        'CIEN':100,'CIENTO':100,'DOSCIENTOS':200,'DOSCIENTAS':200,'TRESCIENTOS':300,'TRESCIENTAS':300,
-        'CUATROCIENTOS':400,'CUATROCIENTAS':400,'QUINIENTOS':500,'QUINIENTAS':500,
-        'SEISCIENTOS':600,'SEISCIENTAS':600,'SETECIENTOS':700,'SETECIENTAS':700,
-        'OCHOCIENTOS':800,'OCHOCIENTAS':800,'NOVECIENTOS':900,'NOVECIENTAS':900,
-        'MIL':1000,'MILES':1000};
-
-    // Reemplazar "Y" entre decenas y unidades (ej: TREINTA Y UNO)
-    texto = texto.replace(/\bY\b/g, '');
-
-    var palabras = texto.split(/\s+/);
-    var resultado = [];
-    var i = 0;
-
-    while (i < palabras.length) {
-        var p = palabras[i];
-        var acum = null;
-
-        // Intentar leer un número compuesto
-        var j = i;
-        var num = 0;
-        var hayNumero = false;
-        var miles = 0;
-
-        while (j < palabras.length) {
-            var w = palabras[j];
-            if (w === 'MIL' || w === 'MILES') {
-                miles = (num === 0 ? 1 : num) * 1000;
-                num = 0;
-                hayNumero = true;
-                j++;
-            } else if (especiales[w] !== undefined) {
-                num += especiales[w];
-                hayNumero = true;
-                j++;
-            } else if (unidades[w] !== undefined) {
-                num += unidades[w];
-                hayNumero = true;
-                j++;
-            } else {
-                break;
-            }
-        }
-
-        if (hayNumero) {
-            resultado.push(String(miles + num));
-            i = j;
-        } else {
-            resultado.push(p);
-            i++;
-        }
-    }
-
-    return resultado.join(' ');
-}
-
-// Convierte decimales en palabras usando PUNTO como separador
-function procesarDecimales(texto) {
-    // Busca patrón: número PUNTO número — los une con punto decimal
-    return texto.replace(/(\d+)\s+PUNTO\s+(\d+)/g, '$1.$2');
-}
-
 function iniciarVoz() {
     // 1. Validar navegador
     var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -5948,62 +5486,25 @@ function iniciarVoz() {
     input.style.borderColor = '#4fc3f7';
     input.style.boxShadow = '0 0 10px rgba(79,195,247,0.5)';
 
-    // 5. Iniciar reconocimiento
+    // 5. Iniciar reconocimiento (SIN onend que reestablezca)
     reconocimientoActivo = true;
     var recognition = new SpeechRecognition();
     recognition.lang = 'es-PE';
-    recognition.continuous = false;     // ← Se detiene solo al terminar de hablar
-    recognition.interimResults = false; // ← Solo resultado final, sin parciales
+    recognition.continuous = true;      // ← NO se detiene por silencio
+    recognition.interimResults = true;  // ← Muestra mientras hablas
     recognition.maxAlternatives = 1;
 
+    var textoCompleto = '';
+
     recognition.onresult = function(event) {
-        // Tomar SOLO el resultado final (el último)
-        var transcript = event.results[event.results.length - 1][0].transcript.trim().toUpperCase();
-
-        // Diccionario fonético — sustituir palabras clave ANTES de limpiar espacios
-        // Primero convertir números en palabras a dígitos
-        transcript = palabrasANumeros(transcript);
-        // Luego procesar decimales (ej: "12 PUNTO 5" → "12.5")
-        transcript = procesarDecimales(transcript);
-
-        // Luego sustituir palabras clave de cámara y rack
-        transcript = transcript
-            .replace(/\bPOLLOS\b/g,       'P')
-            .replace(/\bPOLLO\b/g,        'P')
-            .replace(/\bCORTES\b/g,       'C')
-            .replace(/\bDERECHA\b/g,      'D')
-            .replace(/\bIZQUIERDA\b/g,    'I')
-            .replace(/\bCENTROS\b/g,      'C')
-            .replace(/\bCENTRO\b/g,       'C')
-            // Letras que Chrome transcribe como sílabas
-            .replace(/\bDE\b/g,           'D')
-            .replace(/\bBE\b/g,           'B')
-            .replace(/\bBI\b/g,           'B')
-            .replace(/\bCE\b/g,           'C')
-            .replace(/\bCI\b/g,           'C')
-            .replace(/\bEFE\b/g,          'F')
-            .replace(/\bGE\b/g,           'G')
-            .replace(/\bJE\b/g,           'J')
-            .replace(/\bKA\b/g,           'K')
-            .replace(/\bELE\b/g,          'L')
-            .replace(/\bEME\b/g,          'M')
-            .replace(/\bENE\b/g,          'N')
-            .replace(/\bPE\b/g,           'P')
-            .replace(/\bCU\b/g,           'Q')
-            .replace(/\bERRE\b/g,         'R')
-            .replace(/\bESE\b/g,          'S')
-            .replace(/\bTE\b/g,           'T')
-            .replace(/\bUVE\b/g,          'V')
-            .replace(/\bEQUIS\b/g,        'X')
-            .replace(/\bIGRIEGA\b/g,      'Y')
-            .replace(/\bZETA\b/g,         'Z');
-
-        // Limpiar espacios, comas y caracteres no deseados
-        // Preservar puntos decimales (entre dígitos) pero eliminar los demás
-        // Reemplazar coma decimal (20,05 → 20.05) antes de limpiar
-        transcript = transcript.replace(/(\d),(\d)/g, '$1.$2');
-        transcript = transcript.replace(/,/g, '').replace(/\s+/g, '').replace(/(?<!\d)\.(?!\d)/g, '');
-        input.value = transcript;
+        // Acumular el texto SIN reiniciar
+        for (var i = event.resultIndex; i < event.results.length; i++) {
+            var transcript = event.results[i][0].transcript.trim().toUpperCase();
+            textoCompleto += transcript;
+        }
+        // Limpiar caracteres especiales
+        textoCompleto = textoCompleto.replace(/\./g, '').replace(/,/g, '').replace(/\s+/g, '');
+        input.value = textoCompleto;
 
         // Mostrar feedback visual (verde)
         if (btn) {
@@ -6011,13 +5512,7 @@ function iniciarVoz() {
             btn.style.boxShadow = '0 0 30px rgba(46, 125, 50, 0.8)';
             btn.textContent = '✅';
         }
-        mostrarFeedback('🎤 Escuchado: ' + transcript + ' — Presiona ▶ para confirmar', 4000);
-
-        // Mostrar botones de confirmar y borrar
-        var btnConfirmar = document.getElementById('btn-confirmar-voz');
-        if (btnConfirmar) btnConfirmar.style.display = 'flex';
-        var btnBorrar = document.getElementById('btn-borrar-voz');
-        if (btnBorrar) btnBorrar.style.display = 'flex';
+        mostrarFeedback('🎤 Escuchado: ' + textoCompleto, 3000);
     };
 
     recognition.onerror = function(event) {
@@ -6061,117 +5556,6 @@ function iniciarVoz() {
     mostrarFeedback('🎤 Habla la ubicación...', 5000);
 }
 
-function spAutocompletarProducto() {
-    var cod = document.getElementById('sp-manual-codigo').value.trim().toUpperCase();
-    document.getElementById('sp-manual-codigo').value = cod;
-    var nombreDiv = document.getElementById('sp-manual-nombre');
-    if (!cod) { nombreDiv.textContent = ''; return; }
-    var encontrado = null;
-    for (var i = 0; i < tablaDatos.length; i++) {
-        if (tablaDatos[i].codigo === cod && tablaDatos[i].producto) { encontrado = tablaDatos[i]; break; }
-    }
-    nombreDiv.textContent = encontrado ? '📦 ' + encontrado.producto : '⚠️ Código no encontrado';
-    nombreDiv.style.color = encontrado ? '#4fc3f7' : '#ef9a9a';
-}
-
-function spBuscarPalletManual() {
-    var cod = document.getElementById('sp-manual-codigo').value.trim().toUpperCase();
-    var und = parsearNumero(document.getElementById('sp-manual-und').value) || 0;
-    var kg  = parsearNumero(document.getElementById('sp-manual-kg').value);
-    if (!cod) { mostrarFeedback('⚠️ Ingrese el código del producto.', 2000); return; }
-    if (!kg)  { mostrarFeedback('⚠️ Ingrese el peso del pallet.', 2000); return; }
-    var candidatos = tablaDatos.filter(function(s) {
-        if (s.codigo !== cod || !s.ubicacion) return false;
-        var coincideKg  = Math.abs(s.kg - kg) <= 2;
-        var coincideUnd = (!und) || (Math.abs(s.und - und) <= 1);
-        return coincideKg && coincideUnd;
-    });
-    var resultDiv = document.getElementById('sp-manual-resultado');
-    if (candidatos.length === 0) {
-        resultDiv.innerHTML = '<div style="color:#ef9a9a;font-size:12px;">❌ No se encontró ningún pallet con esos datos.</div>';
-        return;
-    }
-    var html = '<div style="font-size:11px;color:#ffb300;margin-bottom:6px;">Seleccione la ubicación:</div>';
-    candidatos.forEach(function(s, i) {
-        html += '<button onclick="spAgregarManual(' + i + ')" style="width:100%;text-align:left;background:rgba(255,255,255,0.05);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:6px;padding:8px;margin-bottom:4px;cursor:pointer;font-size:11px;">';
-        html += '📍 <b>' + s.ubicacion + '</b> | ⚖️ ' + s.kg + ' kg | 📦 ' + s.und + ' und | 🔢 ' + s.lote;
-        html += '</button>';
-    });
-    resultDiv.innerHTML = html;
-    window._spCandidatosManuales = candidatos;
-}
-
-function spAgregarManual(idx) {
-    var s = window._spCandidatosManuales[idx];
-    if (!s) return;
-    var yaAgregado = spPalletsPistoleados.find(function(p) { return p.ubicacion === s.ubicacion; });
-    if (yaAgregado) { mostrarFeedback('⚠️ Este pallet ya fue agregado.', 2000); return; }
-    spPalletsPistoleados.push({ clave: null, codigo: s.codigo, producto: s.producto, und: s.und, kg: s.kg, lote: s.lote, vence: s.vence, ubicacion: s.ubicacion, sinClave: true });
-    document.getElementById('sp-ultimo-pistoleo').innerHTML =
-        '<div style="background:rgba(255,152,0,0.15);border:1px solid #ff9800;border-radius:8px;padding:8px;font-size:12px;">' +
-        '⚠️ Manual — <b>' + s.codigo + '</b> — ' + s.producto + '<br>📍 ' + s.ubicacion + ' | ⚖️ ' + s.kg + ' kg</div>';
-    spCerrarManual();
-    actualizarListaPistoleo();
-    setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
-}
-
-function spCerrarManual() {
-    document.getElementById('sp-seccion-manual').style.display = 'none';
-    document.getElementById('sp-manual-codigo').value = '';
-    document.getElementById('sp-manual-und').value = '';
-    document.getElementById('sp-manual-kg').value = '';
-    document.getElementById('sp-manual-nombre').textContent = '';
-    document.getElementById('sp-manual-resultado').innerHTML = '';
-    setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
-}
-
-function borrarCampoVoz() {
-    var input = ultimoInput;
-    if (!input || input.tagName !== 'INPUT') {
-        mostrarFeedback('⚠️ No hay campo activo para borrar.', 2000);
-        return;
-    }
-    input.value = '';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    // Ocultar botones confirmar y borrar
-    var btnConfirmar = document.getElementById('btn-confirmar-voz');
-    if (btnConfirmar) btnConfirmar.style.display = 'none';
-    var btnBorrar = document.getElementById('btn-borrar-voz');
-    if (btnBorrar) btnBorrar.style.display = 'none';
-    mostrarFeedback('🗑 Campo borrado. Puedes volver a intentar.', 2000);
-}
-
-// Confirmar lo dictado por voz — dispara los eventos que la app necesita
-function confirmarVoz() {
-    var input = ultimoInput;
-    if (!input || input.tagName !== 'INPUT') {
-        mostrarFeedback('⚠️ No hay campo activo para confirmar.', 2000);
-        return;
-    }
-
-    // Disparar eventos igual que si el usuario hubiera escrito y presionado Enter
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-    input.dispatchEvent(new KeyboardEvent('keypress', { key: 'Enter', keyCode: 13, bubbles: true }));
-    input.dispatchEvent(new KeyboardEvent('keydown',  { key: 'Enter', keyCode: 13, bubbles: true }));
-    input.dispatchEvent(new KeyboardEvent('keyup',    { key: 'Enter', keyCode: 13, bubbles: true }));
-
-    // Ocultar botones confirmar y borrar
-    var btnConfirmar = document.getElementById('btn-confirmar-voz');
-    if (btnConfirmar) btnConfirmar.style.display = 'none';
-    var btnBorrar = document.getElementById('btn-borrar-voz');
-    if (btnBorrar) btnBorrar.style.display = 'none';
-
-    var btnMic = document.getElementById('btn-voz-flotante');
-    if (btnMic) {
-        btnMic.style.background = 'linear-gradient(135deg, #4a148c, #7b1fa2)';
-        btnMic.style.boxShadow = '0 4px 20px rgba(156, 39, 176, 0.6)';
-        btnMic.textContent = '🎤';
-    }
-
-    mostrarFeedback('✅ Confirmado: ' + input.value, 2000);
-}
-
 // Guardar el último input enfocado
 document.addEventListener('focusin', function(e) {
     if (e.target && e.target.tagName === 'INPUT') {
@@ -6179,281 +5563,8 @@ document.addEventListener('focusin', function(e) {
     }
 });
 
-// ============================================================
-// SALIDA POR PISTOLEO — FASE 2
-// ============================================================
-var spDestino = '';
-var spDestinoNombre = '';
-var spPalletsPistoleados = []; // lista de pallets confirmados
-
-function confirmarDestinoPistoleo() {
-    var sel = document.getElementById('sp-destino');
-    spDestino = sel.value;
-    spDestinoNombre = sel.options[sel.selectedIndex].text;
-    if (!spDestino) {
-        mostrarFeedback('⚠️ Seleccione un destino primero.', 2000);
-        return;
-    }
-    document.getElementById('sp-seccion-destino').style.display = 'none';
-    document.getElementById('sp-seccion-pistoleo').style.display = 'block';
-    document.getElementById('sp-destino-label').textContent = '📍 Destino: ' + spDestinoNombre;
-    // Solo enfocar input si no hay pallets ya pistoleados
-    if (spPalletsPistoleados.length === 0) {
-        setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
-    }
-    // Actualizar lista por si venía de cambio de destino
-    actualizarListaPistoleo();
-}
-
-function cambiarDestinoPistoleo() {
-    // Solo muestra el selector de destino sin borrar los pallets pistoleados
-    document.getElementById('sp-seccion-destino').style.display = 'block';
-    document.getElementById('sp-seccion-pistoleo').style.display = 'none';
-}
-
-function reiniciarPistoleo() {
-    spDestino = '';
-    spDestinoNombre = '';
-    spPalletsPistoleados = [];
-    document.getElementById('sp-seccion-destino').style.display = 'block';
-    document.getElementById('sp-seccion-pistoleo').style.display = 'none';
-    document.getElementById('sp-destino').value = '';
-    document.getElementById('sp-input-clave').value = '';
-    document.getElementById('sp-ultimo-pistoleo').innerHTML = '';
-    document.getElementById('sp-lista-pallets').innerHTML = '';
-    document.getElementById('sp-resumen').style.display = 'none';
-    document.getElementById('sp-btn-confirmar').style.display = 'none';
-}
-
-function pistoleoSalida() {
-    var clave = document.getElementById('sp-input-clave').value.trim();
-    if (!clave) return;
-    document.getElementById('sp-input-clave').value = '';
-
-    // Buscar en catálogo de claves
-    var entry = catalogoClaves[clave];
-
-    if (!entry) {
-        document.getElementById('sp-ultimo-pistoleo').innerHTML =
-            '<div style="background:rgba(183,28,28,0.2);border:1px solid #b71c1c;border-radius:8px;padding:8px;color:#ef9a9a;font-size:12px;">' +
-            '❌ CLAVE <b>' + clave + '</b> no registrada.<br>' +
-            '<span style="color:#ffb300;">Use el ingreso manual ↓ para retirar este pallet.</span></div>';
-        // Mostrar sección manual y enfocar campo código
-        document.getElementById('sp-seccion-manual').style.display = 'block';
-        setTimeout(function() { document.getElementById('sp-manual-codigo').focus(); }, 200);
-        return;
-    }
-
-    // Verificar si ya fue pistoleado
-    var yaAgregado = spPalletsPistoleados.find(function(p) { return p.clave === clave; });
-    if (yaAgregado) {
-        document.getElementById('sp-ultimo-pistoleo').innerHTML =
-            '<div style="background:rgba(255,152,0,0.2);border:1px solid #ff9800;border-radius:8px;padding:8px;color:#ffb300;font-size:12px;">⚠️ Este pallet ya fue pistoleado.</div>';
-        setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
-        return;
-    }
-
-    // Agregar a lista
-    spPalletsPistoleados.push({
-        clave: clave,
-        codigo: entry.codigo,
-        producto: entry.producto,
-        und: entry.und,
-        kg: entry.kg,
-        lote: entry.lote,
-        vence: entry.vence,
-        ubicacion: entry.ubicacion
-    });
-
-    document.getElementById('sp-ultimo-pistoleo').innerHTML =
-        '<div style="background:rgba(46,125,50,0.2);border:1px solid #2e7d32;border-radius:8px;padding:8px;font-size:12px;">' +
-        '✅ <b>' + entry.codigo + '</b> — ' + entry.producto + '<br>' +
-        '📍 ' + (entry.ubicacion || '⚠️ Sin ubicación') + ' | ⚖️ ' + entry.kg + ' kg | 🔢 Lote: ' + entry.lote +
-        '</div>';
-
-    actualizarListaPistoleo();
-    setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
-}
-
-function actualizarListaPistoleo() {
-    // Actualizar contador
-    var contador = document.getElementById('sp-contador');
-    if (contador) contador.textContent = spPalletsPistoleados.length;
-
-    if (spPalletsPistoleados.length === 0) {
-        document.getElementById('sp-lista-pallets').innerHTML = '';
-        document.getElementById('sp-resumen').style.display = 'none';
-        document.getElementById('sp-btn-confirmar').style.display = 'none';
-        return;
-    }
-
-    var totalKg = 0;
-    var productos = {};
-    var html = '<div style="display:flex;flex-direction:column;gap:6px;">';
-    spPalletsPistoleados.forEach(function(p, idx) {
-        totalKg += p.kg;
-        productos[p.codigo] = true;
-        var borderColor = p.sinClave ? 'rgba(255,152,0,0.5)' : 'rgba(105,240,174,0.4)';
-        var bg = p.sinClave ? 'rgba(255,152,0,0.08)' : 'rgba(46,125,50,0.1)';
-        html += '<div style="background:' + bg + ';border:1px solid ' + borderColor + ';border-radius:8px;padding:10px;">';
-        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
-        html += '<div style="flex:1;">';
-        html += '<div style="font-size:16px;font-weight:bold;color:#fff;margin-bottom:4px;">' + p.codigo + ' — ' + p.producto + '</div>';
-        html += '<div style="font-size:15px;color:#69f0ae;font-weight:bold;margin-bottom:3px;">📍 ' + (p.ubicacion || '—') + '</div>';
-        html += '<div style="display:flex;gap:12px;font-size:13px;">';
-        html += '<span style="color:#ffb300;">⚖️ ' + p.kg + ' kg</span>';
-        if (p.und > 0) html += '<span style="color:#4fc3f7;">📦 ' + p.und + ' und</span>';
-        html += '<span style="color:#90a4ae;">🔢 ' + (p.lote || '—') + '</span>';
-        html += '</div>';
-        if (p.sinClave) html += '<div style="font-size:10px;color:#ffb300;margin-top:3px;">⚠️ Sin clave — ingreso manual</div>';
-        html += '</div>';
-        html += '<button onclick="quitarPalletPistoleo(' + idx + ')" style="background:rgba(183,28,28,0.4);border:1px solid #b71c1c;color:#ef9a9a;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:14px;margin-left:8px;">✕</button>';
-        html += '</div></div>';
-    });
-    html += '</div>';
-    document.getElementById('sp-lista-pallets').innerHTML = html;
-
-    document.getElementById('sp-total-pallets').textContent = spPalletsPistoleados.length;
-    document.getElementById('sp-total-productos').textContent = Object.keys(productos).length;
-    document.getElementById('sp-total-kg').textContent = totalKg.toFixed(2);
-    document.getElementById('sp-resumen').style.display = 'block';
-    document.getElementById('sp-btn-confirmar').style.display = 'block';
-}
-
-function quitarPalletPistoleo(idx) {
-    spPalletsPistoleados.splice(idx, 1);
-    actualizarListaPistoleo();
-}
-
-function confirmarSalidaPistoleo() {
-    if (spPalletsPistoleados.length === 0) return;
-
-    // Mostrar modal de confirmación
-    var modal = document.getElementById('modal-confirmacion-pistoleo');
-    if (modal) {
-        document.getElementById('mcp-resumen').textContent =
-            spPalletsPistoleados.length + ' pallet(s) a ' + spDestinoNombre;
-        modal.style.display = 'flex';
-        return;
-    }
-    ejecutarSalidaPistoleo();
-}
-
-function ejecutarSalidaPistoleo() {
-    document.getElementById('modal-confirmacion-pistoleo').style.display = 'none';
-
-    var fecha = new Date().toLocaleDateString('es-PE');
-    var hora = new Date().toLocaleTimeString('es-PE');
-    var errores = [];
-
-    spPalletsPistoleados.forEach(function(p) {
-        // Retirar de tablaDatos
-        var slot = buscarEnTabla(p.ubicacion);
-        if (slot && slot.codigo) {
-            var undAnt = slot.und;
-            var kgAnt = slot.kg;
-            slot.codigo = ''; slot.producto = ''; slot.lote = '';
-            slot.und = 0; slot.kg = 0; slot.vence = ''; slot.linea = '';
-            // Registrar en historial
-            historialMovimientos.push({ fecha: fecha, hora: hora, tipo: 'SALIDA', ubicacion: p.ubicacion, codigo: p.codigo, producto: p.producto, lote: p.lote, undAnt: undAnt, undDesp: 0, kgAnt: kgAnt, kgDesp: 0 });
-            historialSalidas.push({ fecha: fecha, hora: hora, tipo: 'SALIDA', ubicacion: p.ubicacion, codigo: p.codigo, producto: p.producto, lote: p.lote, und: undAnt, kg: kgAnt, destino: spDestino, nombreDestino: spDestinoNombre });
-        } else {
-            errores.push(p.clave);
-        }
-        // Eliminar del catálogo de claves
-        delete catalogoClaves[p.clave];
-    });
-
-    guardarEnLocalStorage();
-    guardarCatalogoClaves();
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
-    localStorage.setItem('historialSalidas', JSON.stringify(historialSalidas));
-
-    var msg = '✅ Salida registrada: ' + spPalletsPistoleados.length + ' pallet(s) a ' + spDestinoNombre;
-    if (errores.length > 0) msg += '\n⚠️ ' + errores.length + ' pallet(s) sin ubicación registrada.';
-    alert(msg);
-
-    reiniciarPistoleo();
-    actualizarIndicadorCobertura();
-    mostrarMenu();
-}
-var intervaloBackup = 2 * 60 * 60 * 1000; // 2 horas en ms
-var timerBackup = null;
-
-function mostrarRecordatorioBackup() {
-    var modal = document.getElementById('modal-recordatorio-backup');
-    if (modal) modal.style.display = 'flex';
-}
-
-function cerrarRecordatorioBackup() {
-    var modal = document.getElementById('modal-recordatorio-backup');
-    if (modal) modal.style.display = 'none';
-}
-
-function recordatorioMasTarde() {
-    cerrarRecordatorioBackup();
-    // Posponer 30 minutos
-    setTimeout(mostrarRecordatorioBackup, 30 * 60 * 1000);
-    mostrarFeedback('⏰ Te recordaremos en 30 minutos.', 3000);
-}
-
-function iniciarRecordatorioBackup() {
-    if (timerBackup) clearInterval(timerBackup);
-    timerBackup = setInterval(mostrarRecordatorioBackup, intervaloBackup);
-}
-
-// Iniciar el recordatorio al cargar la app - ya iniciado arriba junto con actualizarIndicadorCobertura
-
 
 </script>
-
-    <!-- BOTÓN FLOTANTE BORRAR CAMPO -->
-    <button id="btn-borrar-voz" onclick="borrarCampoVoz()" style="
-        position: fixed;
-        bottom: 230px;
-        right: 20px;
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #b71c1c, #e53935);
-        border: 2px solid #e53935;
-        color: #fff;
-        font-size: 28px;
-        cursor: pointer;
-        z-index: 9999;
-        box-shadow: 0 4px 20px rgba(229, 57, 53, 0.6);
-        transition: all 0.3s;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        pointer-events: all;
-    ">
-        🗑
-    </button>
-
-    <!-- BOTÓN FLOTANTE CONFIRMAR VOZ (oculto hasta que se dicte algo) -->
-    <button id="btn-confirmar-voz" onclick="confirmarVoz()" style="
-        position: fixed;
-        bottom: 160px;
-        right: 20px;
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #0d6f2e, #1db954);
-        border: 2px solid #1db954;
-        color: #fff;
-        font-size: 28px;
-        cursor: pointer;
-        z-index: 9999;
-        box-shadow: 0 4px 20px rgba(29, 185, 84, 0.7);
-        transition: all 0.3s;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        pointer-events: all;
-    ">
-        ▶
-    </button>
 
     <!-- BOTÓN FLOTANTE DE VOZ -->
     <button id="btn-voz-flotante" onclick="iniciarVoz()" style="
@@ -6479,63 +5590,8 @@ function iniciarRecordatorioBackup() {
         🎤
     </button>
 
-    <!-- MODAL RECORDATORIO DE BACKUP -->
-    <div id="modal-recordatorio-backup" style="
-        display: none;
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.75);
-        z-index: 99999;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-    ">
-        <div style="
-            background: #1a1a2e;
-            border: 2px solid #e65100;
-            border-radius: 12px;
-            padding: 24px;
-            max-width: 340px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 0 30px rgba(230,81,0,0.5);
-        ">
-            <div style="font-size: 40px; margin-bottom: 10px;">⏰</div>
-            <div style="color: #ff8a65; font-size: 16px; font-weight: bold; margin-bottom: 8px;">
-                Recordatorio de Respaldo
-            </div>
-            <div style="color: #c0c0c0; font-size: 13px; margin-bottom: 20px; line-height: 1.5;">
-                Han pasado <strong style="color:#fff;">2 horas</strong> de trabajo.<br>
-                Descarga tu respaldo para no perder avances.
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button onclick="descargarBackupManual(); mostrarFeedback('✅ Backup JSON descargado', 2000);" style="
-                    background: linear-gradient(135deg, #e65100, #ff8a65);
-                    color: #fff; border: none; border-radius: 8px;
-                    padding: 12px; font-size: 14px; font-weight: bold; cursor: pointer;">
-                    💾 Descargar JSON
-                </button>
-                <button onclick="descargarExcel(); mostrarFeedback('✅ Excel descargado', 2000);" style="
-                    background: linear-gradient(135deg, #1b5e20, #43a047);
-                    color: #fff; border: none; border-radius: 8px;
-                    padding: 12px; font-size: 14px; font-weight: bold; cursor: pointer;">
-                    📊 Descargar Excel
-                </button>
-                <button onclick="cerrarRecordatorioBackup();" style="
-                    background: linear-gradient(135deg, #263238, #455a64);
-                    color: #fff; border: none; border-radius: 8px;
-                    padding: 12px; font-size: 14px; cursor: pointer;">
-                    ✅ Ya descargué, cerrar
-                </button>
-                <button onclick="recordatorioMasTarde();" style="
-                    background: transparent;
-                    color: #888; border: 1px solid #444; border-radius: 8px;
-                    padding: 10px; font-size: 12px; cursor: pointer;">
-                    ⏱ Recordar en 30 minutos
-                </button>
-            </div>
-        </div>
-    </div>
+</body>
+</html>
 
 </body>
 </html>

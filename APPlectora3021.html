@@ -5831,15 +5831,9 @@ function iniciarVoz() {
     recognition.onresult = function(event) {
         var raw = event.results[event.results.length - 1][0].transcript.trim().toUpperCase();
 
-        // ── PASO 1: dígito a dígito (para códigos y decimales dígito a dígito) ──
-        // Convierte palabras de un solo dígito en fila → concatena como string
-        // Ej: "DOS DOS DOS UNO" → "2221"
-        // Ej: "UNO CERO UNO CERO PUNTO SEIS CINCO" → "1010.65"
         var DIGITOS = { 'CERO':'0','UNO':'1','DOS':'2','TRES':'3','CUATRO':'4',
                         'CINCO':'5','SEIS':'6','SIETE':'7','OCHO':'8','NUEVE':'9' };
 
-        // ── PASO 2: palabrasANumeros (para números compuestos) ──
-        // Ej: "MIL DIEZ PUNTO SESENTA Y CINCO" → "1010.65"
         function convNumeros(texto) {
             var UNIDADES = {'CERO':0,'UNO':1,'DOS':2,'TRES':3,'CUATRO':4,'CINCO':5,'SEIS':6,'SIETE':7,'OCHO':8,'NUEVE':9};
             var ESPECIALES = {'DIEZ':10,'ONCE':11,'DOCE':12,'TRECE':13,'CATORCE':14,'QUINCE':15,
@@ -5857,8 +5851,6 @@ function iniciarVoz() {
             var palabras = texto.split(/\s+/);
             var resultado = []; var i = 0;
             while (i < palabras.length) {
-                var w = palabras[i];
-                // Si la siguiente palabra es también número, intentar acumular
                 var num = 0; var miles = 0; var hayNum = false; var j = i;
                 while (j < palabras.length) {
                     var p = palabras[j];
@@ -5868,32 +5860,38 @@ function iniciarVoz() {
                     else break;
                 }
                 if (hayNum) { resultado.push(String(miles+num)); i=j; }
-                else { resultado.push(w); i++; }
+                else { resultado.push(palabras[i]); i++; }
             }
             return resultado.join(' ');
         }
 
-        // ── Detectar si es modo dígito a dígito ──
-        // Si TODAS las palabras (ignorando PUNTO) son dígitos unitarios → modo dígito
+        // Detectar modo dígito a dígito
         var palabras = raw.split(/\s+/);
         var todasDigitos = palabras.every(function(p) { return DIGITOS[p] !== undefined || p === 'PUNTO'; });
 
         var transcript;
         if (todasDigitos) {
-            // Modo dígito a dígito: concatenar directamente
             transcript = palabras.map(function(p) { return p === 'PUNTO' ? '.' : DIGITOS[p]; }).join('');
         } else {
-            // Modo compuesto: convertir números y procesar PUNTO como decimal
-            transcript = convNumeros(raw);
-            // Convertir PUNTO entre números como decimal
+            // PASO 1: sustituir palabras clave de cámara y rack (no interfieren con números)
+            transcript = raw
+                .replace(/\bPOLLOS?\b/g,   'P')
+                .replace(/\bCORTES\b/g,     'C')
+                .replace(/\bDERECHA\b/g,    'D')
+                .replace(/\bIZQUIERDA\b/g,  'I')
+                .replace(/\bCENTROS?\b/g,   'C');
+
+            // PASO 2: convertir números en palabras a dígitos
+            // DEBE ir ANTES de las letras sueltas (DE, CE, BE, etc.)
+            // para que DOS→2 antes de que DE→D pueda interferir
+            transcript = convNumeros(transcript);
+
+            // PASO 3: procesar PUNTO como decimal
             transcript = transcript.replace(/(\d+)\s+PUNTO\s+(\d+)/g, '$1.$2');
-            // Sustituir palabras clave de rack/cámara
+
+            // PASO 4: sustituir letras sueltas que Chrome pronuncia como sílabas
+            // Ahora es seguro porque los números ya fueron convertidos
             transcript = transcript
-                .replace(/\bPOLLOS?\b/g,    'P')
-                .replace(/\bCORTES\b/g,      'C')
-                .replace(/\bDERECHA\b/g,     'D')
-                .replace(/\bIZQUIERDA\b/g,   'I')
-                .replace(/\bCENTROS?\b/g,    'C')
                 .replace(/\bDE\b/g,  'D').replace(/\bBE\b/g,  'B').replace(/\bBI\b/g,  'B')
                 .replace(/\bCE\b/g,  'C').replace(/\bCI\b/g,  'C').replace(/\bEFE\b/g, 'F')
                 .replace(/\bGE\b/g,  'G').replace(/\bJE\b/g,  'J').replace(/\bKA\b/g,  'K')
@@ -5901,26 +5899,22 @@ function iniciarVoz() {
                 .replace(/\bPE\b/g,  'P').replace(/\bCU\b/g,  'Q').replace(/\bERRE\b/g,'R')
                 .replace(/\bESE\b/g, 'S').replace(/\bTE\b/g,  'T').replace(/\bUVE\b/g, 'V')
                 .replace(/\bEQUIS\b/g,'X').replace(/\bIGRIEGA\b/g,'Y').replace(/\bZETA\b/g,'Z');
-            // Reemplazar coma decimal (20,5 → 20.5)
+
+            // PASO 5: reemplazar coma decimal (20,5 → 20.5)
             transcript = transcript.replace(/(\d),(\d)/g, '$1.$2');
-            // Limpiar espacios y comas sobrantes, preservar punto decimal
+
+            // PASO 6: limpiar espacios y comas, preservar punto decimal entre dígitos
             transcript = transcript.replace(/,/g,'').replace(/\s+/g,'').replace(/(?<!\d)\.(?!\d)/g,'');
         }
 
         input.value = transcript;
-
         if (btn) {
-            btn.style.background = 'linear-gradient(135deg, #2e7d32, #43a047)';
-            btn.style.boxShadow = '0 0 30px rgba(46, 125, 50, 0.8)';
+            btn.style.background = 'linear-gradient(135deg,#2e7d32,#43a047)';
+            btn.style.boxShadow = '0 0 30px rgba(46,125,50,0.8)';
             btn.textContent = '✅';
         }
-
-        // Mostrar botones confirmar y borrar
-        var btnConfirmar = document.getElementById('btn-confirmar-voz');
-        if (btnConfirmar) btnConfirmar.style.display = 'flex';
-        var btnBorrar = document.getElementById('btn-borrar-voz');
-        if (btnBorrar) btnBorrar.style.display = 'flex';
-
+        var btnC = document.getElementById('btn-confirmar-voz'); if (btnC) btnC.style.display = 'flex';
+        var btnB = document.getElementById('btn-borrar-voz');    if (btnB) btnB.style.display = 'flex';
         mostrarFeedback('🎤 ' + transcript, 3000);
     };
 

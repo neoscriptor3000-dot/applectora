@@ -97,6 +97,8 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <input type="file" id="input-excel" accept=".xlsx,.xls" onchange="cargarExcel(event)" style="display:none">
 <button class="btn btn-excel" onclick="document.getElementById('input-json').click()">📂 Cargar Datos</button>
 <input type="file" id="input-json" accept=".json" onchange="cargarDatosJSON(event)" style="display:none">
+<button class="btn btn-excel" onclick="document.getElementById('input-claves-excel').click()" style="background:#4a148c;">🔑 Importar Claves</button>
+<input type="file" id="input-claves-excel" accept=".xlsx,.xls" onchange="importarClavesExcel(event)" style="display:none">
 <button class="btn btn-excel" onclick="descargarBackupManual()" style="background:#e65100;">💾 DESCARGAR BACKUP</button>
 <button class="btn btn-excel" onclick="descargarExcel()">📤 Descargar Tabla Actualizada</button>
 </div>
@@ -120,6 +122,12 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <div id="salida-masiva-resumen" style="font-size:12px;color:#90caf9;margin:10px 0;"></div>
 
 <div id="salida-masiva-acciones" style="display:none;margin-top:10px;">
+<label style="color:#90a4ae;font-size:12px;">📍 UBICACIÓN SELECCIONADA</label>
+<input type="text" id="salida-ubicacion-seleccionada" placeholder="Seleccione o escanee ubicación..."
+    style="font-size:15px;font-weight:bold;text-align:center;margin-bottom:6px;"
+    onchange="seleccionarUbicacionDesdeInput()"
+    onkeydown="if(event.key==='Enter') seleccionarUbicacionDesdeInput()">
+
 <label style="color:#ff9800;font-size:12px;">📍 SELECCIONE DESTINO</label>
 <select id="salida-destino" style="font-size:14px;padding:10px;margin:6px 0;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:8px;">
 <option value="">Seleccione destino...</option>
@@ -216,6 +224,21 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
     <button class="btn" id="sp-btn-confirmar" onclick="confirmarSalidaPistoleo()" style="background:linear-gradient(135deg,#b71c1c,#e53935);display:none;">📤 CONFIRMAR SALIDA</button>
 </div>
 <button class="btn btn-volver" onclick="reiniciarPistoleo();mostrarMenu();">⬅ VOLVER</button>
+</div>
+
+<!-- MODAL ÉXITO SALIDA PISTOLEO -->
+<div id="modal-exito-pistoleo" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#1a1a2e;border:2px solid #69f0ae;border-radius:12px;padding:28px;max-width:320px;width:100%;text-align:center;box-shadow:0 0 30px rgba(105,240,174,0.4);">
+        <div style="font-size:50px;margin-bottom:10px;">✅</div>
+        <div style="color:#69f0ae;font-size:18px;font-weight:bold;margin-bottom:16px;">¡SALIDA REGISTRADA!</div>
+        <div style="background:rgba(105,240,174,0.1);border-radius:8px;padding:12px;margin-bottom:20px;">
+            <div style="font-size:32px;font-weight:bold;color:#fff;" id="mep-pallets">0</div>
+            <div style="color:#90a4ae;font-size:12px;">pallets</div>
+            <div style="margin-top:8px;font-size:13px;color:#4fc3f7;">⚖️ <span id="mep-kg">0</span> kg</div>
+            <div style="margin-top:4px;font-size:13px;color:#ffb300;">📍 <span id="mep-destino"></span></div>
+        </div>
+        <button onclick="document.getElementById('modal-exito-pistoleo').style.display='none';mostrarMenu();" style="width:100%;background:linear-gradient(135deg,#1b5e20,#43a047);color:#fff;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:bold;cursor:pointer;">👍 ACEPTAR</button>
+    </div>
 </div>
 
 <!-- MODAL CONFIRMACIÓN SALIDA PISTOLEO -->
@@ -3031,6 +3054,15 @@ function mostrarSalidaPallet() {
         document.getElementById('salida-masiva-acciones').style.display = 'block';
         document.querySelector('#salida-masiva-acciones .btn-salida').style.display = 'block';
         document.getElementById('salida-destino').style.display = 'block';
+
+        // Sincronizar campo de ubicación visible
+        var campoUb = document.getElementById('salida-ubicacion-seleccionada');
+        if (campoUb) {
+            campoUb.value = (p.ubicacion && p.ubicacion !== '— (NUEVO)') ? p.ubicacion : '';
+            campoUb.style.borderColor = (p.ubicacion && p.ubicacion !== '— (NUEVO)') ? '#69f0ae' : 'rgba(79,195,247,0.3)';
+            campoUb.style.color = (p.ubicacion && p.ubicacion !== '— (NUEVO)') ? '#69f0ae' : '#fff';
+        }
+
         if (p.destino) {
             var select = document.getElementById('salida-destino');
             for (var i = 0; i < select.options.length; i++) {
@@ -3070,13 +3102,39 @@ function actualizarListaPendientes() {
     document.getElementById('salida-masiva-lista').innerHTML = html;
 }
 
+function seleccionarUbicacionDesdeInput() {
+    var ub = document.getElementById('salida-ubicacion-seleccionada').value.toUpperCase().trim();
+    document.getElementById('salida-ubicacion-seleccionada').value = ub;
+    if (!ub) return;
+    if (!esUbicacionValida(ub)) {
+        mostrarFeedback('❌ Ubicación ' + ub + ' no existe en el almacén.');
+        document.getElementById('salida-ubicacion-seleccionada').style.borderColor = '#ef9a9a';
+        return;
+    }
+    var p = listaSalida[indexSalida];
+    if (!p) return;
+    p.ubicacion = ub;
+    var u = buscarEnTabla(ub);
+    if (u) p._ubicacionEncontrada = u;
+    document.getElementById('salida-ubicacion-seleccionada').style.borderColor = '#69f0ae';
+    document.getElementById('salida-ubicacion-seleccionada').style.color = '#69f0ae';
+    mostrarFeedback('✅ Ubicación: ' + ub);
+}
+
 function seleccionarUbicacionCompleta(ubicacion) {
     var p = listaSalida[indexSalida];
     if (!p) return;
     p.ubicacion = ubicacion;
     var u = buscarEnTabla(ubicacion);
     if (u) p._ubicacionEncontrada = u;
-    mostrarSalidaPallet();
+
+    // Mostrar ubicación seleccionada en el campo visible
+    var campoUb = document.getElementById('salida-ubicacion-seleccionada');
+    if (campoUb) {
+        campoUb.value = ubicacion;
+        campoUb.style.borderColor = '#69f0ae';
+        campoUb.style.color = '#69f0ae';
+    }
     mostrarFeedback('✅ Ubicación seleccionada: ' + ubicacion);
 }
 
@@ -3359,8 +3417,15 @@ function confirmarSalidaPallet() {
         return;
     }
     if (!p.ubicacion || p.ubicacion === '' || p.ubicacion === '— (NUEVO)') {
-        alert('⚠️ Primero debe seleccionar una ubicación para este pallet.');
-        return;
+        // Try to read from the visible field as fallback
+        var campoUb = document.getElementById('salida-ubicacion-seleccionada');
+        if (campoUb && campoUb.value.trim()) {
+            seleccionarUbicacionDesdeInput();
+        }
+        if (!p.ubicacion || p.ubicacion === '' || p.ubicacion === '— (NUEVO)') {
+            alert('⚠️ Primero debe seleccionar una ubicación para este pallet.');
+            return;
+        }
     }
     var nombreDestino = document.getElementById('salida-destino').options[document.getElementById('salida-destino').selectedIndex]?.text || destino;
     if (p.ubicacion === '— (NUEVO)') {
@@ -3960,10 +4025,13 @@ function ejecutarSalidaPistoleo() {
     document.getElementById('modal-confirmacion-pistoleo').style.display = 'none';
     var fecha = new Date().toLocaleDateString('es-PE');
     var hora  = new Date().toLocaleTimeString('es-PE');
+    var totalPallets = spPalletsPistoleados.length;
+    var totalKg = 0;
     spPalletsPistoleados.forEach(function(p) {
         var slot = buscarEnTabla(p.ubicacion);
         if (slot && slot.codigo) {
             var uAnt = slot.und, kAnt = slot.kg;
+            totalKg += kAnt;
             slot.codigo=''; slot.producto=''; slot.lote=''; slot.und=0; slot.kg=0; slot.vence=''; slot.linea='';
             historialMovimientos.push({ fecha:fecha, hora:hora, tipo:'SALIDA', ubicacion:p.ubicacion, codigo:p.codigo, producto:p.producto, lote:p.lote, undAnt:uAnt, undDesp:0, kgAnt:kAnt, kgDesp:0 });
             historialSalidas.push({ fecha:fecha, hora:hora, tipo:'SALIDA', ubicacion:p.ubicacion, codigo:p.codigo, producto:p.producto, lote:p.lote, und:uAnt, kg:kAnt, destino:spDestino, nombreDestino:spDestinoNombre });
@@ -3974,10 +4042,22 @@ function ejecutarSalidaPistoleo() {
     guardarCatalogoClaves();
     localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     localStorage.setItem('historialSalidas', JSON.stringify(historialSalidas));
-    mostrarFeedback('✅ Salida registrada: ' + spPalletsPistoleados.length + ' pallet(s)');
-    reiniciarPistoleo();
-    actualizarIndicadorCobertura();
-    mostrarMenu();
+
+    // Mostrar modal de éxito antes de volver al menú
+    var modal = document.getElementById('modal-exito-pistoleo');
+    if (modal) {
+        document.getElementById('mep-pallets').textContent = totalPallets;
+        document.getElementById('mep-destino').textContent = spDestinoNombre;
+        document.getElementById('mep-kg').textContent = totalKg.toFixed(2);
+        modal.style.display = 'flex';
+        reiniciarPistoleo();
+        actualizarIndicadorCobertura();
+    } else {
+        mostrarFeedback('✅ Salida registrada: ' + totalPallets + ' pallet(s)');
+        reiniciarPistoleo();
+        actualizarIndicadorCobertura();
+        mostrarMenu();
+    }
 }
 
 // ============================================================
@@ -4193,6 +4273,100 @@ function cargarDatosJSON(event) {
         }
     };
     reader.readAsText(file);
+}
+
+// ============================================================
+// IMPORTAR CLAVES DESDE EXCEL (acumulativo, no toca inventario)
+// ============================================================
+function importarClavesExcel(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+    event.target.value = '';
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            var workbook = XLSX.read(e.target.result, { type: 'binary' });
+            var sheet = workbook.Sheets[workbook.SheetNames[0]];
+            var rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+            var nuevas = 0;
+            var actualizadas = 0;
+            var sinCoincidencia = 0;
+            var duplicadas = 0;
+
+            // Procesar desde fila 1 (saltar encabezado)
+            for (var i = 1; i < rows.length; i++) {
+                var r = rows[i];
+                var clave = String(r[4] || '').trim();
+                var cod   = String(r[5] || '').trim().toUpperCase();
+                var prod  = String(r[7] || '').trim();
+                var und   = parsearNumero(r[8]);
+                var kg    = parsearNumero(r[9]);
+                var lote  = String(r[17] || '').trim().substring(0, 4);
+
+                if (!clave || !cod) continue;
+
+                // Si la clave ya existe en el catálogo
+                if (catalogoClaves[clave]) {
+                    // Actualizar datos si le faltaban
+                    if (!catalogoClaves[clave].lote && lote) catalogoClaves[clave].lote = lote;
+                    duplicadas++;
+                    continue;
+                }
+
+                // Buscar coincidencia en tablaDatos por código + kg (±2 kg)
+                var candidatos = tablaDatos.filter(function(s) {
+                    return s.codigo === cod && s.ubicacion && s.codigo &&
+                           Math.abs(s.kg - kg) <= 2 &&
+                           (!und || Math.abs(s.und - und) <= 1);
+                });
+
+                if (candidatos.length === 1) {
+                    // Coincidencia única — asociar clave a esa ubicación
+                    catalogoClaves[clave] = {
+                        codigo: cod,
+                        producto: candidatos[0].producto || prod,
+                        und: candidatos[0].und || und,
+                        kg: candidatos[0].kg || kg,
+                        lote: candidatos[0].lote || lote,
+                        vence: candidatos[0].vence || '',
+                        linea: candidatos[0].linea || '',
+                        ubicacion: candidatos[0].ubicacion
+                    };
+                    nuevas++;
+                } else {
+                    // Sin coincidencia única — guardar clave sin ubicación
+                    catalogoClaves[clave] = {
+                        codigo: cod,
+                        producto: prod,
+                        und: und,
+                        kg: kg,
+                        lote: lote,
+                        vence: '',
+                        linea: '',
+                        ubicacion: ''
+                    };
+                    if (candidatos.length === 0) sinCoincidencia++;
+                    else nuevas++; // múltiples candidatos, queda sin ubicación
+                }
+            }
+
+            guardarCatalogoClaves();
+            actualizarIndicadorCobertura();
+
+            var msg = '🔑 Importación completada:\n';
+            msg += '✅ Claves nuevas: ' + nuevas + '\n';
+            msg += '⚠️ Sin coincidencia en inventario: ' + sinCoincidencia + '\n';
+            msg += '🔄 Ya existían (actualizadas): ' + duplicadas;
+            alert(msg);
+            mostrarMenu();
+
+        } catch(err) {
+            alert('❌ Error al procesar el archivo: ' + err.message);
+        }
+    };
+    reader.readAsBinaryString(file);
 }
 
 function descargarBackupManual() {

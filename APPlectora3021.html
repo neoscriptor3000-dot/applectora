@@ -489,6 +489,25 @@ var historialMovimientos = [];
 var historialSalidas = [];
 var catalogoClaves = {};
 
+function cargarCatalogoClaves() {
+    try { catalogoClaves = JSON.parse(localStorage.getItem('catalogoClaves') || '{}'); }
+    catch(e) { catalogoClaves = {}; }
+}
+
+function guardarCatalogoClaves() {
+    try { localStorage.setItem('catalogoClaves', JSON.stringify(catalogoClaves)); }
+    catch(e) { console.error('Error guardando catálogo:', e); }
+}
+
+function obtenerCoberturaCatalogo() {
+    var ocupados = tablaDatos.filter(function(s) { return s.codigo && s.ubicacion; });
+    var total = ocupados.length;
+    var ubicacionesConClave = {};
+    Object.values(catalogoClaves).forEach(function(e) { if (e.ubicacion) ubicacionesConClave[e.ubicacion] = true; });
+    var conClave = ocupados.filter(function(s) { return ubicacionesConClave[s.ubicacion]; }).length;
+    return { total: total, conClave: conClave, sinClave: total - conClave };
+}
+
 // ============================================================
 // FUNCIONES DE CARGA Y GUARDADO
 // ============================================================
@@ -525,6 +544,7 @@ function guardarEnLocalStorage() {
 }
 
 cargarDatosDesdeLocalStorage();
+cargarCatalogoClaves();
 
 function parsearNumero(val) {
     var s = String(val || '').trim();
@@ -4393,15 +4413,15 @@ function descargarBackupManual() {
 // FUNCIONES DE PICKING
 // ============================================================
 function calcularPicking() {
-    var undIni = parseFloat(document.getElementById('pick-und-ini').textContent) || 0;
-    var kgIni = parseFloat(document.getElementById('pick-kg-ini').textContent) || 0;
+    var undIni  = parseFloat(document.getElementById('pick-und-ini').textContent) || 0;
+    var kgIni   = parseFloat(document.getElementById('pick-kg-ini').textContent) || 0;
     var bandIni = parseFloat(document.getElementById('pick-band-ini').textContent) || 0;
-    var undDesp = parseFloat(document.getElementById('pick-und-desp').value) || 0;
-    var kgDesp = parseFloat(document.getElementById('pick-kg-desp').value) || 0;
+    var undDesp  = parseFloat(document.getElementById('pick-und-desp').value) || 0;
+    var kgDesp   = parseFloat(document.getElementById('pick-kg-desp').value) || 0;
     var bandDesp = parseFloat(document.getElementById('pick-band-desp').value) || 0;
-    document.getElementById('pick-und-fin').textContent = Math.max(0, undIni - undDesp);
-    document.getElementById('pick-kg-fin').textContent = Math.max(0, kgIni - kgDesp);
-    document.getElementById('pick-band-fin').textContent = Math.max(0, bandIni - bandDesp);
+    document.getElementById('pick-und-fin').textContent  = Math.max(0, Math.round((undIni  - undDesp)  * 100) / 100);
+    document.getElementById('pick-kg-fin').textContent   = Math.max(0, Math.round((kgIni   - kgDesp)   * 100) / 100).toFixed(2);
+    document.getElementById('pick-band-fin').textContent = Math.max(0, Math.round((bandIni - bandDesp) * 100) / 100);
 }
 
 function guardarPicking() {
@@ -4426,8 +4446,8 @@ function guardarPicking() {
     var undIni = encontrado.und;
     var kgIni = encontrado.kg;
     var bandIni = encontrado.bandejas || 0;
-    var undFin = Math.max(0, undIni - undDesp);
-    var kgFin = Math.max(0, kgIni - kgDesp);
+    var undFin = Math.max(0, Math.round((undIni - undDesp) * 100) / 100);
+    var kgFin  = Math.max(0, Math.round((kgIni  - kgDesp)  * 100) / 100);
     var bandFin = Math.max(0, bandIni - bandDesp);
     if (undDesp === 0 && kgDesp === 0 && bandDesp === 0) {
         alert('⚠️ Debe retirar al menos una unidad, kilo o bandeja.');

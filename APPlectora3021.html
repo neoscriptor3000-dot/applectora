@@ -97,8 +97,6 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <input type="file" id="input-excel" accept=".xlsx,.xls" onchange="cargarExcel(event)" style="display:none">
 <button class="btn btn-excel" onclick="document.getElementById('input-json').click()">📂 Cargar Datos</button>
 <input type="file" id="input-json" accept=".json" onchange="cargarDatosJSON(event)" style="display:none">
-<button class="btn btn-excel" onclick="document.getElementById('input-claves-excel').click()" style="background:#4a148c;">🔑 Importar Claves</button>
-<input type="file" id="input-claves-excel" accept=".xlsx,.xls" onchange="importarClavesExcel(event)" style="display:none">
 <button class="btn btn-excel" onclick="descargarBackupManual()" style="background:#e65100;">💾 DESCARGAR BACKUP</button>
 <button class="btn btn-excel" onclick="descargarExcel()">📤 Descargar Tabla Actualizada</button>
 </div>
@@ -570,17 +568,23 @@ function actualizarIndicadorCobertura() {
     var indicador = document.getElementById('indicador-cobertura-claves');
     if (!indicador) return;
     var cob = obtenerCoberturaCatalogo();
+    var totalCatalogo = Object.keys(catalogoClaves).length;
+    var conUbicacion = Object.values(catalogoClaves).filter(function(e) { return e.ubicacion; }).length;
     var pct = cob.total > 0 ? Math.round((cob.conClave / cob.total) * 100) : 0;
     var color = pct >= 80 ? '#69f0ae' : pct >= 40 ? '#ffb300' : '#ef9a9a';
     indicador.innerHTML =
         '<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;margin:8px 0;font-size:11px;">' +
-        '<div style="color:#90a4ae;margin-bottom:4px;">📊 Cobertura catálogo de claves</div>' +
-        '<div style="display:flex;justify-content:space-between;">' +
-        '<span>✅ Con clave: <b style="color:#69f0ae;">' + cob.conClave + '</b></span>' +
+        '<div style="color:#90a4ae;margin-bottom:6px;">📊 Catálogo de claves</div>' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">' +
+        '<span>🗄️ Total en catálogo: <b style="color:#fff;">' + totalCatalogo + '</b></span>' +
+        '<span>📍 Con ubicación: <b style="color:#4fc3f7;">' + conUbicacion + '</b></span>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">' +
+        '<span>✅ En cámara c/clave: <b style="color:#69f0ae;">' + cob.conClave + '</b></span>' +
         '<span>⚠️ Sin clave: <b style="color:#ef9a9a;">' + cob.sinClave + '</b></span>' +
         '<span style="color:' + color + ';font-weight:bold;">' + pct + '%</span>' +
         '</div>' +
-        '<div style="background:rgba(0,0,0,0.3);border-radius:4px;height:4px;margin-top:6px;">' +
+        '<div style="background:rgba(0,0,0,0.3);border-radius:4px;height:4px;">' +
         '<div style="background:' + color + ';width:' + pct + '%;height:4px;border-radius:4px;"></div>' +
         '</div></div>';
 }
@@ -1586,7 +1590,8 @@ function cargarListaIngreso(event) {
                 linea: lineaVal,
                 procesado: false,
                 ubicacion: '',
-                bandejas: '0'
+                bandejas: '0',
+                clave: String(r[4] || '').trim()
             });
         }
         if (listaIngreso.length === 0) {
@@ -1851,6 +1856,21 @@ function confirmarIngresoMasivo() {
     encontrado.procedencia = procedencia;
     encontrado.linea = '';
     guardarEnLocalStorage();
+
+    // Guardar clave en catálogo si el pallet tiene CLAVE
+    if (p.clave) {
+        catalogoClaves[p.clave] = {
+            codigo: p.codigo,
+            producto: p.producto,
+            und: p.und,
+            kg: p.kg,
+            lote: p.lote,
+            vence: p.vence,
+            linea: p.linea || '',
+            ubicacion: ub
+        };
+        guardarCatalogoClaves();
+    }
     historialMovimientos.push({
         fecha: new Date().toLocaleDateString('es-PE'),
         hora: new Date().toLocaleTimeString('es-PE'),

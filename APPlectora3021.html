@@ -4319,7 +4319,7 @@ function importarClavesExcel(event) {
             for (var i = 1; i < rows.length; i++) {
                 var r = rows[i];
                 var clave = String(r[4] || '').trim();
-                var cod   = String(r[5] || '').trim().toUpperCase();
+                var cod   = String(parseInt(r[5]) || r[5] || '').trim().toUpperCase();
                 var prod  = String(r[7] || '').trim();
                 var und   = parsearNumero(r[8]);
                 var kg    = parsearNumero(r[9]);
@@ -4329,9 +4329,24 @@ function importarClavesExcel(event) {
 
                 // Si la clave ya existe en el catálogo
                 if (catalogoClaves[clave]) {
+                    var entry = catalogoClaves[clave];
                     // Actualizar datos si le faltaban
-                    if (!catalogoClaves[clave].lote && lote) catalogoClaves[clave].lote = lote;
-                    duplicadas++;
+                    if (!entry.lote && lote) entry.lote = lote;
+                    // Si ya tiene ubicación, contar como duplicada y saltar
+                    if (entry.ubicacion) { duplicadas++; continue; }
+                    // Si NO tiene ubicación, intentar cruzar con tablaDatos ahora
+                    var candidatos2 = tablaDatos.filter(function(s) {
+                        return s.codigo === cod && s.ubicacion && s.codigo &&
+                               Math.abs(s.kg - kg) <= 2 &&
+                               (!und || Math.abs(s.und - und) <= 1);
+                    });
+                    if (candidatos2.length === 1) {
+                        entry.ubicacion = candidatos2[0].ubicacion;
+                        entry.producto = candidatos2[0].producto || entry.producto;
+                        actualizadas++;
+                    } else {
+                        duplicadas++;
+                    }
                     continue;
                 }
 
@@ -4376,9 +4391,10 @@ function importarClavesExcel(event) {
             actualizarIndicadorCobertura();
 
             var msg = '🔑 Importación completada:\n';
-            msg += '✅ Claves nuevas: ' + nuevas + '\n';
+            msg += '✅ Claves nuevas con ubicación: ' + nuevas + '\n';
+            msg += '🔗 Claves existentes actualizadas con ubicación: ' + actualizadas + '\n';
             msg += '⚠️ Sin coincidencia en inventario: ' + sinCoincidencia + '\n';
-            msg += '🔄 Ya existían (actualizadas): ' + duplicadas;
+            msg += '🔄 Ya existían con ubicación (sin cambios): ' + duplicadas;
             alert(msg);
             mostrarMenu();
 

@@ -106,7 +106,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ man</div>
+<div>Ing. PERCY S. TEJADA VALDEZ XXX</div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -1269,6 +1269,12 @@ function accionRapidaConDestino(ubicacion, tipo) {
         encontrado.und = 0; encontrado.kg = 0; encontrado.vence = ''; encontrado.linea = '';
         encontrado.bandejas = 0;
         guardarEnLocalStorage();
+
+if (encontrado && encontrado.codigo && catalogoClaves[encontrado.codigo]) {
+    delete catalogoClaves[encontrado.codigo];
+    guardarCatalogoClaves();
+}
+
         historialSalidas.push({
             fecha: new Date().toLocaleDateString('es-PE'),
             hora: new Date().toLocaleTimeString('es-PE'),
@@ -3761,6 +3767,13 @@ function confirmarPickingSuelto() {
             nombreDestino: nombreDestino
         });
         guardarEnLocalStorage();
+
+// Borrar la clave del catálogo si existe
+if (p.codigo && catalogoClaves[p.codigo]) {
+    delete catalogoClaves[p.codigo];
+    guardarCatalogoClaves();
+}
+
         mostrarFeedback('✅ Suelto COMPLETADO: ' + p.codigo);
         var siguiente = -1;
         for (var i = indexSalida + 1; i < listaSalida.length; i++) {
@@ -3853,6 +3866,13 @@ function confirmarSalidaPallet() {
             nombreDestino: nombreDestino
         });
         guardarEnLocalStorage();
+
+// Borrar la clave del catálogo si existe
+if (p.codigo && catalogoClaves[p.codigo]) {
+    delete catalogoClaves[p.codigo];
+    guardarCatalogoClaves();
+}
+
         historialSalidas.push({
             fecha: new Date().toLocaleDateString('es-PE'),
             hora: new Date().toLocaleTimeString('es-PE'),
@@ -4204,6 +4224,13 @@ function confirmarManual() {
         esManual: true
     });
     guardarEnLocalStorage();
+
+// Borrar la clave del catálogo si existe
+if (codigo && catalogoClaves[codigo]) {
+    delete catalogoClaves[codigo];
+    guardarCatalogoClaves();
+}
+
     mostrarFeedback('✅ Salida manual registrada en ' + ubicacion);
     var manualHtml = '<div style="background:rgba(255,255,255,0.05);padding:15px;border-radius:8px;margin:10px 0;">';
     manualHtml += '<h4 style="color:#ff9800;">✅ TODOS LOS PALLETS PROCESADOS</h4>';

@@ -106,7 +106,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ Super</div>
+<div>Ing. PERCY S. TEJADA VALDEZ papi</div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -1640,8 +1640,23 @@ function cargarListaIngreso(event) {
         palletsIngresados = [];
         indexIngreso = 0;
         
-        // 6. Mostrar la tabla detallada para editar lotes/fechas
-        mostrarTablaDetallada();
+ // 6. Recuperar correcciones de lote/fecha si existen
+var correccionesRecuperadas = recuperarProgresoCorrecciones();
+if (correccionesRecuperadas) {
+    palletsNuevos.forEach(function(p, i) {
+        if (correccionesRecuperadas[i]) {
+            if (correccionesRecuperadas[i].lote) p.lote = correccionesRecuperadas[i].lote;
+            if (correccionesRecuperadas[i].vence) p.vence = correccionesRecuperadas[i].vence;
+        }
+    });
+    mostrarFeedback('📌 Se recuperaron correcciones de lote/fecha para ' + palletsNuevos.length + ' pallet(s).', 3000);
+}
+
+// 7. Mostrar la tabla detallada para editar lotes/fechas
+mostrarTablaDetallada();       
+
+
+
     };
     reader.readAsArrayBuffer(file);
 }
@@ -2148,25 +2163,18 @@ function completarLoteVencDetallado() {
 function guardarProgresoConCorrecciones() {
     if (!listaIngreso || listaIngreso.length === 0) return;
     
-    // Generar una clave de progreso basada en las claves de los pallets
+    // Usar las claves de los pallets para generar una clave única de progreso
     var claves = listaIngreso.map(function(p) { return p.clave; }).sort().join('|');
     var fecha = new Date().toLocaleDateString('es-PE');
     var progresoKey = 'ingreso_progreso_correcciones_' + claves.substring(0, 100) + '_' + fecha;
     
-    // Guardar el estado actual de listaIngreso (con lotes y fechas corregidos)
+    // Guardar SOLO los datos que nos interesan (lote y vence)
     var datosGuardar = {
         pallets: listaIngreso.map(function(p) {
             return {
-                codigo: p.codigo,
-                producto: p.producto,
-                und: p.und,
-                kg: p.kg,
-                lote: p.lote,
-                vence: p.vence,
                 clave: p.clave,
-                procesado: p.procesado || false,
-                ubicacion: p.ubicacion || '',
-                bandejas: p.bandejas || '0'
+                lote: p.lote || '',
+                vence: p.vence || ''
             };
         }),
         fecha: fecha,
@@ -2176,7 +2184,32 @@ function guardarProgresoConCorrecciones() {
     try {
         localStorage.setItem(progresoKey, JSON.stringify(datosGuardar));
     } catch(e) {
-        console.error('Error guardando progreso de correcciones:', e);
+        console.error('Error guardando correcciones:', e);
+    }
+}
+
+
+function recuperarProgresoCorrecciones() {
+    if (!listaIngreso || listaIngreso.length === 0) return null;
+    
+    // Generar la misma clave que se usó para guardar
+    var claves = listaIngreso.map(function(p) { return p.clave; }).sort().join('|');
+    var fecha = new Date().toLocaleDateString('es-PE');
+    var progresoKey = 'ingreso_progreso_correcciones_' + claves.substring(0, 100) + '_' + fecha;
+    
+    try {
+        var data = localStorage.getItem(progresoKey);
+        if (!data) return null;
+        var parsed = JSON.parse(data);
+        
+        // Verificar que los datos sean válidos
+        if (parsed.pallets && parsed.pallets.length === listaIngreso.length) {
+            return parsed.pallets;
+        }
+        return null;
+    } catch(e) {
+        console.error('Error recuperando correcciones:', e);
+        return null;
     }
 }
 

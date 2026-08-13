@@ -1542,17 +1542,9 @@ function cargarListaIngreso(event) {
         var wb = XLSX.read(data, {type:'array'});
         var ws = wb.Sheets[wb.SheetNames[0]];
         var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-        huellaIngresoMasivo = '';
-        var filasParaHuella = [];
-        for (var h = 0; h < Math.min(rows.length, 50); h++) {
-            if (rows[h] && rows[h].length > 0) {
-                var filaStr = rows[h].join('|').toUpperCase();
-                if (filaStr.includes('CODIGO') || filaStr.includes('CLAVE') || filaStr.includes('PRODUCTO')) continue;
-                filasParaHuella.push(filaStr);
-            }
-        }
-        huellaIngresoMasivo = filasParaHuella.join('|||').substring(0, 200);
-        listaIngreso = [];
+        
+        // 1. Leer el Excel y extraer todos los pallets
+        var palletsDelExcel = [];
         for (var i = 1; i < rows.length; i++) {
             var r = rows[i];
             if (!r || r.length < 19) continue;
@@ -1565,90 +1557,91 @@ function cargarListaIngreso(event) {
                 var jsDate = new Date(excelEpoch.getTime() + venc * 24 * 60 * 60 * 1000);
                 fechaVenc = String(jsDate.getDate()).padStart(2,'0') + '/' + String(jsDate.getMonth()+1).padStart(2,'0') + '/' + jsDate.getFullYear();
             } else {
-                fechaVenc = String(venc || '');
+                fechaVenc = String(venc || '').trim();
             }
             cod = cod.replace(/^0+/, '');
-            var lineaVal = '';
-            for (var td = 0; td < tablaDatos.length; td++) {
-                if (tablaDatos[td].codigo === cod && tablaDatos[td].linea) {
-                    lineaVal = tablaDatos[td].linea;
-                    break;
-                }
-            }
-            if (!lineaVal) {
-                var prodNom = String(r[7] || '').toUpperCase();
-                var esPollo = prodNom.includes('POLLO') || prodNom.includes('GALLINA') || prodNom.includes('PECHUGA') || prodNom.includes('PIERNA') || prodNom.includes('PESCUEZ') || prodNom.includes('ALA') || prodNom.includes('CODITO') || prodNom.includes('MASCARA') || prodNom.includes('COGOTE') || prodNom.includes('MENUDO') || prodNom.includes('GALLO') || prodNom.includes('HIGADO') || prodNom.includes('MOLLEJA') || prodNom.includes('CORAZON');
-                lineaVal = esPollo ? 'PBA_POLLOS' : 'PDC_CORTES';
-            }
-            listaIngreso.push({
+            
+            // Extraer clave única (columna 4)
+            var clave = String(r[4] || '').trim();
+            
+            var pallet = {
                 codigo: cod,
                 producto: String(r[7] || '').trim(),
                 und: parseFloat(r[8]) || 0,
                 kg: parseFloat(r[9]) || 0,
                 lote: String(r[17] || '').trim().substring(0, 4),
                 vence: fechaVenc,
-                linea: lineaVal,
+                linea: '',
                 procesado: false,
                 ubicacion: '',
                 bandejas: '0',
-                clave: String(r[4] || '').trim()
-            });
+                clave: clave,
+                yaIngresado: false,
+                fechaIngreso: '',
+                ubicacionIngreso: ''
+            };
+            palletsDelExcel.push(pallet);
         }
-        if (listaIngreso.length === 0) {
+        
+        if (palletsDelExcel.length === 0) {
             alert('⚠️ No se encontraron pallets en el archivo.');
             return;
         }
-        var progresoKey = 'ingreso_progreso_' + huellaIngresoMasivo;
-        var progresoGuardado = localStorage.getItem(progresoKey);
+        
+        // 2. Verificar cada pallet contra el catálogo de claves
+        var palletsNuevos = [];
+        var palletsYaIngresados = [];
+        
+        palletsDelExcel.forEach(function(p) {
+            if (p.clave && catalogoClaves[p.clave]) {
+                // Ya está ingresado
+                p.yaIngresado = true;
+                p.fechaIngreso = catalogoClaves[p.clave].fechaIngreso || '';
+                p.ubicacionIngreso = catalogoClaves[p.clave].ubicacion || '';
+                // Recuperar datos del catálogo
+                p.codigo = catalogoClaves[p.clave].codigo || p.codigo;
+                p.producto = catalogoClaves[p.clave].producto || p.producto;
+                p.und = catalogoClaves[p.clave].und || p.und;
+                p.kg = catalogoClaves[p.clave].kg || p.kg;
+                p.lote = catalogoClaves[p.clave].lote || p.lote;
+                p.vence = catalogoClaves[p.clave].vence || p.vence;
+                palletsYaIngresados.push(p);
+            } else {
+                // Es nuevo
+                p.yaIngresado = false;
+                palletsNuevos.push(p);
+            }
+        });
+        
+        // 3. Mostrar mensaje con el resumen
+        var total = palletsDelExcel.length;
+        var yaIngresados = palletsYaIngresados.length;
+        var nuevos = palletsNuevos.length;
+        
+        if (nuevos === 0) {
+            alert('✅ Todos los ' + total + ' pallets de este Excel ya fueron ingresados anteriormente.\n\n' +
+                  '📅 Fecha de ingreso: ' + (palletsYaIngresados[0]?.fechaIngreso || '—') + '\n' +
+                  '📍 Ubicación: ' + (palletsYaIngresados[0]?.ubicacionIngreso || '—'));
+            document.getElementById('input-lista-ingreso').value = '';
+            return;
+        }
+        
+        // 4. Mostrar mensaje de progreso
+        var mensaje = '📌 ' + yaIngresados + ' pallets ya están ingresados.\n';
+        mensaje += '📌 ' + nuevos + ' pallets NUEVOS detectados.\n';
+        if (yaIngresados > 0) {
+            mensaje += '📍 Primer pallet ingresado en: ' + (palletsYaIngresados[0]?.ubicacionIngreso || '—') + '\n';
+            mensaje += '📅 Fecha: ' + (palletsYaIngresados[0]?.fechaIngreso || '—');
+        }
+        alert(mensaje);
+        
+        // 5. Guardar los pallets nuevos en la variable global
+        listaIngreso = palletsNuevos;
         palletsIngresados = [];
-        if (progresoGuardado) {
-            try {
-                var datosProgreso = JSON.parse(progresoGuardado);
-                var palletsProcesados = datosProgreso.palletsProcesados || [];
-                if (palletsProcesados.length > 0 && palletsProcesados.length < listaIngreso.length) {
-                    palletsProcesados.forEach(function(pp) {
-                        for (var i = 0; i < listaIngreso.length; i++) {
-                            var p = listaIngreso[i];
-                            if (p.codigo === pp.codigo && Math.round(p.kg * 100) / 100 === Math.round(pp.kg * 100) / 100 &&
-                                Math.round(p.und * 100) / 100 === Math.round(pp.und * 100) / 100 &&
-                                (p.lote || '') === (pp.lote || '')) {
-                                p.procesado = true;
-                                p.ubicacion = pp.ubicacion || '—';
-                                p.bandejas = pp.bandejas || '0';
-                                palletsIngresados.push({
-                                    indice: i,
-                                    ubicacion: p.ubicacion,
-                                    codigo: p.codigo,
-                                    producto: p.producto,
-                                    lote: p.lote,
-                                    und: p.und,
-                                    kg: p.kg,
-                                    bandejas: p.bandejas
-                                });
-                                break;
-                            }
-                        }
-                    });
-                    var procesados = listaIngreso.filter(function(p) { return p.procesado; }).length;
-                    mostrarFeedback('📌 Progreso encontrado: ' + procesados + ' de ' + listaIngreso.length + ' pallets');
-                } else if (palletsProcesados.length >= listaIngreso.length) {
-                    alert('✅ Todos los pallets de este Excel ya fueron ingresados.');
-                    document.getElementById('input-lista-ingreso').value = '';
-                    return;
-                }
-            } catch(e) {}
-        }
-        if (progresoGuardado) {
-            try {
-                var datosProgresoCheck = JSON.parse(progresoGuardado);
-                if (datosProgresoCheck.palletsProcesados.length >= listaIngreso.length) {
-                    alert('✅ Todos los pallets de este Excel ya fueron ingresados.');
-                    document.getElementById('input-lista-ingreso').value = '';
-                    return;
-                }
-            } catch(e) {}
-        }
-        mostrarResumenIngreso();
+        indexIngreso = 0;
+        
+        // 6. Mostrar la tabla detallada para editar lotes/fechas
+        mostrarTablaDetallada();
     };
     reader.readAsArrayBuffer(file);
 }
@@ -1737,14 +1730,35 @@ function editarLoteProducto(codigo) {
 }
 
 function irASeleccionarCamara() {
+    // Verificar que todos los pallets tengan lote y fecha
+    var incompletos = listaIngreso.filter(function(p) { return !p.lote || !p.vence; });
+    if (incompletos.length > 0) {
+        mostrarFeedback('⚠️ Hay ' + incompletos.length + ' pallet(s) sin lote o fecha. Complete primero.');
+        mostrarTablaDetallada();
+        return;
+    }
+    
+    // Guardar el progreso de las correcciones antes de continuar
+    guardarProgresoConCorrecciones();
+    
+    // Ocultar paneles anteriores
+    var panelDetallado = document.getElementById('panel-tabla-detallada');
+    if (panelDetallado) panelDetallado.remove();
+    var panelConsolidado = document.getElementById('panel-tabla-consolidada');
+    if (panelConsolidado) panelConsolidado.remove();
+    
+    // Mostrar selección de cámara
     document.getElementById('panel-resumen-ingreso').style.display = 'none';
     document.getElementById('ing-masivo-camara-panel').style.display = 'block';
 }
+
 
 function seleccionarCamaraIngreso(cam) {
     window._ingCamara = cam;
     document.getElementById('ing-masivo-camara-panel').style.display = 'none';
     document.getElementById('panel-ingreso-masivo').style.display = 'block';
+    
+    // Buscar el primer pallet NO procesado
     indexIngreso = 0;
     for (var i = 0; i < listaIngreso.length; i++) {
         if (!listaIngreso[i].procesado) {
@@ -1752,41 +1766,95 @@ function seleccionarCamaraIngreso(cam) {
             break;
         }
     }
+    
     if (listaIngreso.every(function(p) { return p.procesado; })) {
         indexIngreso = listaIngreso.length;
     }
+    
+    // Si ya se recuperó progreso de sesión anterior, usar ese índice
+    if (window._progresoRecuperado && window._progresoRecuperado.index !== undefined) {
+        indexIngreso = window._progresoRecuperado.index;
+    }
+    
     mostrarPalletIngreso();
 }
 
+
 function mostrarPalletIngreso() {
     if (indexIngreso >= listaIngreso.length) {
+        // Verificar si hay pallets pendientes
+        var pendientes = listaIngreso.filter(function(p) { return !p.procesado; });
+        if (pendientes.length > 0) {
+            // Buscar el primer pendiente
+            for (var i = 0; i < listaIngreso.length; i++) {
+                if (!listaIngreso[i].procesado) {
+                    indexIngreso = i;
+                    mostrarPalletIngreso();
+                    return;
+                }
+            }
+        }
+        
+        // Todos los pallets están procesados
         document.getElementById('input-lista-ingreso').value = '';
         document.getElementById('ing-masivo-info').innerHTML = '✅ TODOS LOS PALLETS INGRESADOS';
-        setTimeout(function() { verIngresados(); }, 1500);
         document.getElementById('ing-masivo-detalle').innerHTML = '';
         document.getElementById('ing-masivo-sugerencias').innerHTML = '';
         document.getElementById('ing-masivo-ubicacion').style.display = 'none';
+        document.getElementById('ing-masivo-bandejas').style.display = 'none';
+        document.getElementById('ing-masivo-procedencia').style.display = 'none';
+        document.querySelector('#panel-ingreso-masivo .btn-ingreso').style.display = 'none';
+        document.querySelector('#panel-ingreso-masivo .btn-ubicacion').style.display = 'none';
+        
+        // Limpiar progreso de correcciones al completar todo
+        var claves = listaIngreso.map(function(p) { return p.clave; }).sort().join('|');
+        var fecha = new Date().toLocaleDateString('es-PE');
+        var progresoKey = 'ingreso_progreso_correcciones_' + claves.substring(0, 100) + '_' + fecha;
+        try {
+            localStorage.removeItem(progresoKey);
+        } catch(e) {}
         return;
     }
+    
     var p = listaIngreso[indexIngreso];
     var yaIngresado = palletsIngresados.find(function(pi) { return pi.indice === indexIngreso; });
+    
     if (yaIngresado) {
-        document.getElementById('ing-masivo-info').innerHTML = '✅ YA INGRESADO';
-        document.getElementById('ing-masivo-detalle').innerHTML = '<b>' + yaIngresado.codigo + '</b> — ' + yaIngresado.producto + '<br>📏 ' + p.und + ' und | ⚖️ ' + p.kg + ' kg<br>🔢 Lote: ' + p.lote + ' | 📅 Vence: ' + p.vence + '<br>📍 ' + yaIngresado.ubicacion + ' <span style="color:#69f0ae;">✅ INGRESADO</span>';
+        document.getElementById('ing-masivo-info').innerHTML = '✅ YA INGRESADO - PALLET ' + (indexIngreso + 1) + ' de ' + listaIngreso.length;
+        document.getElementById('ing-masivo-detalle').innerHTML = '<b>' + yaIngresado.codigo + '</b> — ' + yaIngresado.producto +
+            '<br>📏 ' + p.und + ' und | ⚖️ ' + p.kg + ' kg' +
+            '<br>🔢 Lote: ' + p.lote + ' | 📅 Vence: ' + p.vence +
+            '<br>📍 ' + yaIngresado.ubicacion + ' <span style="color:#69f0ae;">✅ INGRESADO</span>';
         document.getElementById('ing-masivo-ubicacion').style.display = 'none';
+        document.getElementById('ing-masivo-bandejas').style.display = 'none';
+        document.getElementById('ing-masivo-procedencia').style.display = 'none';
+        document.querySelector('#panel-ingreso-masivo .btn-ingreso').style.display = 'none';
+        document.querySelector('#panel-ingreso-masivo .btn-ubicacion').style.display = 'none';
         document.getElementById('ing-masivo-sugerencias').innerHTML = '<button onclick="retirarIngresadoPorIndice(' + indexIngreso + ')" class="btn-rojo" style="padding:8px;">↩ RETIRAR DE ' + yaIngresado.ubicacion + '</button>';
         return;
     }
+    
+    // Mostrar pallet normal
     document.getElementById('ing-masivo-info').innerHTML = '📦 PALLET ' + (indexIngreso + 1) + ' de ' + listaIngreso.length;
-    document.getElementById('ing-masivo-detalle').innerHTML = '<b>' + p.codigo + '</b> — ' + p.producto + '<br>📏 ' + p.und + ' und | ⚖️ ' + p.kg + ' kg<br>🔢 Lote: ' + p.lote + ' | 📅 Vence: ' + p.vence;
+    document.getElementById('ing-masivo-detalle').innerHTML = '<b>' + p.codigo + '</b> — ' + p.producto +
+        '<br>📏 ' + p.und + ' und | ⚖️ ' + p.kg + ' kg' +
+        '<br>🔢 Lote: ' + p.lote + ' | 📅 Vence: ' + p.vence;
+    
     document.getElementById('ing-masivo-ubicacion').value = '';
     document.getElementById('ing-masivo-ubicacion').style.display = 'block';
     document.getElementById('ing-masivo-bandejas').value = '0';
+    document.getElementById('ing-masivo-bandejas').style.display = 'block';
+    document.getElementById('ing-masivo-procedencia').style.display = 'block';
+    document.querySelector('#panel-ingreso-masivo .btn-ingreso').style.display = 'block';
+    document.querySelector('#panel-ingreso-masivo .btn-ubicacion').style.display = 'flex';
+    
     if (window._ultimaProcedencia) {
         document.getElementById('ing-masivo-procedencia').value = window._ultimaProcedencia;
     } else {
         document.getElementById('ing-masivo-procedencia').value = '';
     }
+    
+    // Sugerencias de ubicación
     var sugerencias = buscarSugerenciasIngreso(p.codigo, p.lote);
     var html = '';
     if (sugerencias.length > 0) {
@@ -1803,6 +1871,8 @@ function mostrarPalletIngreso() {
     document.getElementById('ing-masivo-sugerencias').innerHTML = html;
     document.getElementById('ing-masivo-ubicacion').focus();
 }
+
+
 
 function navegarPallet(dir) {
     indexIngreso += dir;
@@ -1826,7 +1896,16 @@ function confirmarIngresoMasivo() {
         document.getElementById('ing-masivo-ubicacion').focus();
         return;
     }
+    
     var p = listaIngreso[indexIngreso];
+    if (!p) return;
+    
+    // Verificar que la clave no esté ya en el catálogo
+    if (p.clave && catalogoClaves[p.clave]) {
+        alert('⚠️ Este pallet (clave ' + p.clave + ') ya fue ingresado anteriormente.');
+        return;
+    }
+    
     var existente = buscarEnTabla(ub);
     if (existente && existente.codigo) {
         alert('⚠️ Ubicación OCUPADA: ' + ub + '\n\n' + existente.codigo + ' - ' + existente.producto + '\nLote: ' + existente.lote + '\n' + existente.und + ' und | ' + existente.kg + ' kg');
@@ -1834,6 +1913,7 @@ function confirmarIngresoMasivo() {
         document.getElementById('ing-masivo-ubicacion').focus();
         return;
     }
+    
     var procedencia = document.getElementById('ing-masivo-procedencia').value.trim();
     if (!procedencia) {
         alert('⚠️ Debe seleccionar una procedencia antes de confirmar el ingreso.');
@@ -1841,11 +1921,14 @@ function confirmarIngresoMasivo() {
         return;
     }
     window._ultimaProcedencia = procedencia;
+    
     var encontrado = buscarEnTabla(ub);
     if (!encontrado) {
         encontrado = { ubicacion: ub, codigo: '', producto: '', lote: '', und: 0, kg: 0, vence: '', linea: '' };
         tablaDatos.push(encontrado);
     }
+    
+    // Guardar datos del pallet
     encontrado.codigo = p.codigo;
     encontrado.producto = p.producto;
     encontrado.lote = p.lote;
@@ -1856,8 +1939,8 @@ function confirmarIngresoMasivo() {
     encontrado.procedencia = procedencia;
     encontrado.linea = '';
     guardarEnLocalStorage();
-
-    // Guardar clave en catálogo si el pallet tiene CLAVE
+    
+    // Guardar en el catálogo de claves (PERMANENTE)
     if (p.clave) {
         catalogoClaves[p.clave] = {
             codigo: p.codigo,
@@ -1867,10 +1950,16 @@ function confirmarIngresoMasivo() {
             lote: p.lote,
             vence: p.vence,
             linea: p.linea || '',
-            ubicacion: ub
+            ubicacion: ub,
+            bandejas: encontrado.bandejas || '0',
+            fechaIngreso: new Date().toLocaleDateString('es-PE'),
+            horaIngreso: new Date().toLocaleTimeString('es-PE'),
+            activo: true
         };
         guardarCatalogoClaves();
     }
+    
+    // Registrar en historial
     historialMovimientos.push({
         fecha: new Date().toLocaleDateString('es-PE'),
         hora: new Date().toLocaleTimeString('es-PE'),
@@ -1886,9 +1975,12 @@ function confirmarIngresoMasivo() {
         kgDesp: p.kg
     });
     localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    
+    // Marcar como procesado
     p.procesado = true;
     p.ubicacion = ub;
     p.bandejas = encontrado.bandejas || '0';
+    
     palletsIngresados.push({
         indice: indexIngreso,
         ubicacion: ub,
@@ -1899,35 +1991,274 @@ function confirmarIngresoMasivo() {
         kg: p.kg,
         bandejas: p.bandejas
     });
-    if (huellaIngresoMasivo) {
-        var progresoKey = 'ingreso_progreso_' + huellaIngresoMasivo;
-        var procesadosGuardar = [];
-        for (var pi = 0; pi < listaIngreso.length; pi++) {
-            if (listaIngreso[pi].procesado) {
-                procesadosGuardar.push({
-                    codigo: listaIngreso[pi].codigo,
-                    producto: listaIngreso[pi].producto,
-                    lote: listaIngreso[pi].lote || '',
-                    und: listaIngreso[pi].und,
-                    kg: listaIngreso[pi].kg,
-                    ubicacion: listaIngreso[pi].ubicacion || '—',
-                    bandejas: listaIngreso[pi].bandejas || '0'
-                });
-            }
-        }
-        localStorage.setItem(progresoKey, JSON.stringify({ palletsProcesados: procesadosGuardar, index: indexIngreso, fecha: new Date().toISOString() }));
-    }
+    
+    // Mostrar feedback
     var panel = document.getElementById('panel-ingreso-masivo');
     var colorOriginal = panel.style.background;
     panel.style.background = '#1b5e20';
     document.getElementById('ing-masivo-info').innerHTML = '✅ INGRESADO en ' + ub;
     document.getElementById('ing-masivo-ubicacion').style.display = 'none';
+    document.querySelector('#panel-ingreso-masivo .btn-ingreso').style.display = 'none';
+    document.querySelector('#panel-ingreso-masivo .btn-ubicacion').style.display = 'none';
     mostrarFeedback('✅ Ingreso masivo guardado');
+    
+    // Avanzar al siguiente
     setTimeout(function() {
         panel.style.background = colorOriginal;
         indexIngreso++;
         mostrarPalletIngreso();
     }, 1200);
+}
+
+
+
+function mostrarTablaDetallada() {
+    // Ocultar menú y otros paneles
+    document.getElementById('menu-principal').style.display = 'none';
+    document.querySelectorAll('.panel').forEach(function(p) { p.style.display = 'none'; });
+    
+    // Crear un panel temporal para la tabla detallada
+    var panel = document.createElement('div');
+    panel.id = 'panel-tabla-detallada';
+    panel.className = 'panel';
+    panel.style.display = 'block';
+    panel.style.background = 'rgba(10,14,39,0.95)';
+    panel.style.border = '1px solid rgba(79,195,247,0.3)';
+    panel.style.borderRadius = '12px';
+    panel.style.padding = '15px';
+    panel.style.margin = '10px 0';
+    document.body.appendChild(panel);
+    
+    var html = '<h3 style="color:#4fc3f7;font-size:15px;margin-bottom:10px;">📋 TABLA DETALLADA - PALLETS NUEVOS</h3>';
+    html += '<div style="font-size:11px;color:#90caf9;margin-bottom:8px;">Total: ' + listaIngreso.length + ' pallets nuevos</div>';
+    
+    // Botón para completar lote/fecha
+    var conDatos = listaIngreso.filter(function(p) { return p.lote && p.vence; });
+    var sinDatos = listaIngreso.filter(function(p) { return !p.lote || !p.vence; });
+    if (sinDatos.length > 0 && conDatos.length > 0) {
+        html += '<button onclick="completarLoteVencDetallado()" style="background:linear-gradient(135deg,#1565c0,#1e88e5);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:bold;cursor:pointer;margin-bottom:10px;">📝 Completar Lote/Venc.</button>';
+    }
+    if (sinDatos.length > 0) {
+        html += '<div style="background:rgba(255,152,0,0.15);border:1px solid #ff9800;border-radius:8px;padding:6px 10px;margin-bottom:10px;font-size:11px;color:#ff9800;">⚠️ ' + sinDatos.length + ' pallet(s) sin lote o fecha de vencimiento.</div>';
+    }
+    
+    // Tabla detallada
+    html += '<table style="width:100%;border-collapse:collapse;font-size:10px;">';
+    html += '<tr style="color:#607d8b;border-bottom:2px solid rgba(79,195,247,0.3);">';
+    html += '<th>#</th><th>CÓDIGO</th><th>PRODUCTO</th><th>UND</th><th>KG</th><th>LOTE</th><th>VENCE</th><th>CLAVE</th><th>✏️</th>';
+    html += '</tr>';
+    
+    listaIngreso.forEach(function(p, i) {
+        var loteDisplay = p.lote || '<span style="color:#ff9800;">⚠️</span>';
+        var venceDisplay = p.vence || '<span style="color:#ff9800;">⚠️</span>';
+        var colorFila = (p.lote && p.vence) ? 'rgba(255,255,255,0.03)' : 'rgba(255,152,0,0.08)';
+        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.03);background:' + colorFila + ';">';
+        html += '<td>' + (i + 1) + '</td>';
+        html += '<td style="color:#4fc3f7;">' + p.codigo + '</td>';
+        html += '<td style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + p.producto + '</td>';
+        html += '<td style="text-align:right;">' + p.und + '</td>';
+        html += '<td style="text-align:right;">' + p.kg + '</td>';
+        html += '<td>' + loteDisplay + '</td>';
+        html += '<td>' + venceDisplay + '</td>';
+        html += '<td style="font-size:8px;color:#607d8b;">' + (p.clave || '—') + '</td>';
+        html += '<td><button onclick="editarLoteFechaPallet(' + i + ')" style="background:rgba(79,195,247,0.2);border:1px solid #4fc3f7;color:#fff;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:12px;">✏️</button></td>';
+        html += '</tr>';
+    });
+    
+    html += '</table>';
+    
+    // Botones de acción
+    var todosCompletos = listaIngreso.every(function(p) { return p.lote && p.vence; });
+    html += '<div style="margin-top:15px;display:flex;gap:8px;">';
+    if (todosCompletos) {
+        html += '<button onclick="mostrarTablaConsolidada()" style="flex:1;background:#2e7d32;border:none;color:#fff;padding:12px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">✅ CONTINUAR</button>';
+    } else {
+        html += '<button style="flex:1;background:#455a64;border:none;color:#888;padding:12px;border-radius:8px;font-size:14px;font-weight:bold;cursor:not-allowed;" disabled>⚠️ Complete lotes y fechas</button>';
+    }
+    html += '<button onclick="cancelarIngresoMasivo()" style="flex:1;background:#c62828;border:none;color:#fff;padding:12px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">❌ CANCELAR</button>';
+    html += '</div>';
+    
+    panel.innerHTML = html;
+}
+
+
+function editarLoteFechaPallet(index) {
+    var p = listaIngreso[index];
+    if (!p) return;
+    
+    var nuevoLote = prompt('✏️ Ingrese lote para el pallet ' + (index + 1) + ' (' + p.codigo + ' - ' + p.producto + '):', p.lote || '');
+    if (nuevoLote === null) return;
+    
+    var nuevaFecha = prompt('📅 Ingrese fecha de vencimiento (ej: 31/05/2028):', p.vence || '');
+    if (nuevaFecha === null) return;
+    
+    p.lote = nuevoLote.trim();
+    p.vence = nuevaFecha.trim();
+    
+    // Guardar progreso de las correcciones
+    guardarProgresoConCorrecciones();
+    
+    // Refrescar la tabla
+    mostrarTablaDetallada();
+    mostrarFeedback('✅ Lote y fecha actualizados para el pallet ' + (index + 1));
+}
+
+function completarLoteVencDetallado() {
+    var conDatos = listaIngreso.filter(function(p) { return p.lote && p.vence; });
+    if (conDatos.length === 0) {
+        mostrarFeedback('⚠️ No hay pallets con lote y fecha para usar como referencia. Use ✏️ para ingresar manualmente.', 4000);
+        return;
+    }
+    
+    var lotesUnicos = {};
+    conDatos.forEach(function(p) {
+        var key = p.lote + '|||' + p.vence;
+        if (!lotesUnicos[key]) {
+            lotesUnicos[key] = { lote: p.lote, vence: p.vence, count: 0 };
+        }
+        lotesUnicos[key].count++;
+    });
+    
+    var keys = Object.keys(lotesUnicos);
+    if (keys.length > 1) {
+        mostrarFeedback('⚠️ No se puede: existen ' + keys.length + ' lotes/fechas distintos. Use ✏️ por pallet.', 4000);
+        return;
+    }
+    
+    var loteRef = lotesUnicos[keys[0]].lote;
+    var venceRef = lotesUnicos[keys[0]].vence;
+    var actualizados = 0;
+    var sinDatos = listaIngreso.filter(function(p) { return !p.lote || !p.vence; });
+    
+    sinDatos.forEach(function(p) {
+        p.lote = loteRef;
+        p.vence = venceRef;
+        actualizados++;
+    });
+    
+    guardarProgresoConCorrecciones();
+    mostrarTablaDetallada();
+    mostrarFeedback('✅ Lote ' + loteRef + ' y fecha ' + venceRef + ' aplicados a ' + actualizados + ' pallet(s).', 4000);
+}
+
+
+function guardarProgresoConCorrecciones() {
+    if (!listaIngreso || listaIngreso.length === 0) return;
+    
+    // Generar una clave de progreso basada en las claves de los pallets
+    var claves = listaIngreso.map(function(p) { return p.clave; }).sort().join('|');
+    var fecha = new Date().toLocaleDateString('es-PE');
+    var progresoKey = 'ingreso_progreso_correcciones_' + claves.substring(0, 100) + '_' + fecha;
+    
+    // Guardar el estado actual de listaIngreso (con lotes y fechas corregidos)
+    var datosGuardar = {
+        pallets: listaIngreso.map(function(p) {
+            return {
+                codigo: p.codigo,
+                producto: p.producto,
+                und: p.und,
+                kg: p.kg,
+                lote: p.lote,
+                vence: p.vence,
+                clave: p.clave,
+                procesado: p.procesado || false,
+                ubicacion: p.ubicacion || '',
+                bandejas: p.bandejas || '0'
+            };
+        }),
+        fecha: fecha,
+        timestamp: new Date().toISOString()
+    };
+    
+    try {
+        localStorage.setItem(progresoKey, JSON.stringify(datosGuardar));
+    } catch(e) {
+        console.error('Error guardando progreso de correcciones:', e);
+    }
+}
+
+
+function mostrarTablaConsolidada() {
+    // Verificar que todos tengan lote y fecha
+    var incompletos = listaIngreso.filter(function(p) { return !p.lote || !p.vence; });
+    if (incompletos.length > 0) {
+        mostrarFeedback('⚠️ Hay ' + incompletos.length + ' pallet(s) sin lote o fecha. Complete primero.');
+        mostrarTablaDetallada();
+        return;
+    }
+    
+    // Ocultar panel detallado
+    var panelDetallado = document.getElementById('panel-tabla-detallada');
+    if (panelDetallado) panelDetallado.remove();
+    
+    // Crear panel consolidado
+    var panel = document.createElement('div');
+    panel.id = 'panel-tabla-consolidada';
+    panel.className = 'panel';
+    panel.style.display = 'block';
+    panel.style.background = 'rgba(10,14,39,0.95)';
+    panel.style.border = '1px solid rgba(79,195,247,0.3)';
+    panel.style.borderRadius = '12px';
+    panel.style.padding = '15px';
+    panel.style.margin = '10px 0';
+    document.body.appendChild(panel);
+    
+    // Consolidar por código + lote
+    var consolidado = {};
+    listaIngreso.forEach(function(p) {
+        var key = p.codigo + '|||' + p.lote;
+        if (!consolidado[key]) {
+            consolidado[key] = {
+                codigo: p.codigo,
+                producto: p.producto,
+                lote: p.lote,
+                vence: p.vence,
+                cantidad: 0,
+                und: 0,
+                kg: 0
+            };
+        }
+        consolidado[key].cantidad++;
+        consolidado[key].und += p.und;
+        consolidado[key].kg += p.kg;
+    });
+    
+    var html = '<h3 style="color:#4fc3f7;font-size:15px;margin-bottom:10px;">📊 TABLA CONSOLIDADA - VERIFICACIÓN</h3>';
+    html += '<div style="font-size:11px;color:#90caf9;margin-bottom:8px;">Total: ' + listaIngreso.length + ' pallets | ' + Object.keys(consolidado).length + ' grupos</div>';
+    
+    html += '<table style="width:100%;border-collapse:collapse;font-size:10px;">';
+    html += '<tr style="color:#607d8b;border-bottom:2px solid rgba(79,195,247,0.3);">';
+    html += '<th>CÓDIGO</th><th>PRODUCTO</th><th>LOTE</th><th>PALLETS</th><th>UND</th><th>KG</th><th>VENCE</th>';
+    html += '</tr>';
+    
+    var keys = Object.keys(consolidado).sort();
+    keys.forEach(function(key) {
+        var r = consolidado[key];
+        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">';
+        html += '<td style="color:#4fc3f7;">' + r.codigo + '</td>';
+        html += '<td>' + r.producto + '</td>';
+        html += '<td>' + r.lote + '</td>';
+        html += '<td style="text-align:center;color:#69f0ae;">' + r.cantidad + '</td>';
+        html += '<td style="text-align:right;">' + r.und + '</td>';
+        html += '<td style="text-align:right;">' + r.kg + '</td>';
+        html += '<td>' + r.vence + '</td>';
+        html += '</tr>';
+    });
+    
+    html += '</table>';
+    
+    html += '<div style="margin-top:15px;display:flex;gap:8px;">';
+    html += '<button onclick="volverATablaDetallada()" style="flex:1;background:#455a64;border:none;color:#fff;padding:12px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">◀ VOLVER</button>';
+    html += '<button onclick="irASeleccionarCamara()" style="flex:1;background:#2e7d32;border:none;color:#fff;padding:12px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">✅ INICIAR INGRESO</button>';
+    html += '</div>';
+    
+    panel.innerHTML = html;
+}
+
+function volverATablaDetallada() {
+    var panelConsolidado = document.getElementById('panel-tabla-consolidada');
+    if (panelConsolidado) panelConsolidado.remove();
+    mostrarTablaDetallada();
 }
 
 function verIngresados() {

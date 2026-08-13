@@ -2011,13 +2011,18 @@ function confirmarIngresoMasivo() {
 }
 
 
-
 function mostrarTablaDetallada() {
     // Ocultar menú y otros paneles
     document.getElementById('menu-principal').style.display = 'none';
     document.querySelectorAll('.panel').forEach(function(p) { p.style.display = 'none'; });
     
-    // Crear un panel temporal para la tabla detallada
+    // Eliminar paneles anteriores si existen
+    var panelDetallado = document.getElementById('panel-tabla-detallada');
+    if (panelDetallado) panelDetallado.remove();
+    var panelConsolidado = document.getElementById('panel-tabla-consolidada');
+    if (panelConsolidado) panelConsolidado.remove();
+    
+    // Crear el panel
     var panel = document.createElement('div');
     panel.id = 'panel-tabla-detallada';
     panel.className = 'panel';
@@ -2027,45 +2032,43 @@ function mostrarTablaDetallada() {
     panel.style.borderRadius = '12px';
     panel.style.padding = '15px';
     panel.style.margin = '10px 0';
+    panel.style.maxHeight = '85vh';
+    panel.style.overflowY = 'auto';
     document.body.appendChild(panel);
+    
+    // Contar pallets sin lote/fecha
+    var sinDatos = listaIngreso.filter(function(p) { return !p.lote || !p.vence; });
+    var conDatos = listaIngreso.filter(function(p) { return p.lote && p.vence; });
     
     var html = '<h3 style="color:#4fc3f7;font-size:15px;margin-bottom:10px;">📋 TABLA DETALLADA - PALLETS NUEVOS</h3>';
     html += '<div style="font-size:11px;color:#90caf9;margin-bottom:8px;">Total: ' + listaIngreso.length + ' pallets nuevos</div>';
     
     // Botón para completar lote/fecha
-    var conDatos = listaIngreso.filter(function(p) { return p.lote && p.vence; });
-    var sinDatos = listaIngreso.filter(function(p) { return !p.lote || !p.vence; });
     if (sinDatos.length > 0 && conDatos.length > 0) {
         html += '<button onclick="completarLoteVencDetallado()" style="background:linear-gradient(135deg,#1565c0,#1e88e5);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:bold;cursor:pointer;margin-bottom:10px;">📝 Completar Lote/Venc.</button>';
     }
     if (sinDatos.length > 0) {
-        html += '<div style="background:rgba(255,152,0,0.15);border:1px solid #ff9800;border-radius:8px;padding:6px 10px;margin-bottom:10px;font-size:11px;color:#ff9800;">⚠️ ' + sinDatos.length + ' pallet(s) sin lote o fecha de vencimiento.</div>';
+        html += '<div style="background:rgba(255,152,0,0.15);border:1px solid #ff9800;border-radius:8px;padding:6px 10px;margin-bottom:10px;font-size:11px;color:#ff9800;">⚠️ ' + sinDatos.length + ' pallet(s) sin lote.</div>';
     }
     
-    // Tabla detallada
-    html += '<table style="width:100%;border-collapse:collapse;font-size:10px;">';
-    html += '<tr style="color:#607d8b;border-bottom:2px solid rgba(79,195,247,0.3);">';
-    html += '<th>#</th><th>CÓDIGO</th><th>PRODUCTO</th><th>UND</th><th>KG</th><th>LOTE</th><th>VENCE</th><th>CLAVE</th><th>✏️</th>';
-    html += '</tr>';
-    
+    // Mostrar tarjetas (una por pallet)
     listaIngreso.forEach(function(p, i) {
-        var loteDisplay = p.lote || '<span style="color:#ff9800;">⚠️</span>';
-        var venceDisplay = p.vence || '<span style="color:#ff9800;">⚠️</span>';
-        var colorFila = (p.lote && p.vence) ? 'rgba(255,255,255,0.03)' : 'rgba(255,152,0,0.08)';
-        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.03);background:' + colorFila + ';">';
-        html += '<td>' + (i + 1) + '</td>';
-        html += '<td style="color:#4fc3f7;">' + p.codigo + '</td>';
-        html += '<td style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + p.producto + '</td>';
-        html += '<td style="text-align:right;">' + p.und + '</td>';
-        html += '<td style="text-align:right;">' + p.kg + '</td>';
-        html += '<td>' + loteDisplay + '</td>';
-        html += '<td>' + venceDisplay + '</td>';
-        html += '<td style="font-size:8px;color:#607d8b;">' + (p.clave || '—') + '</td>';
-        html += '<td><button onclick="editarLoteFechaPallet(' + i + ')" style="background:rgba(79,195,247,0.2);border:1px solid #4fc3f7;color:#fff;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:12px;">✏️</button></td>';
-        html += '</tr>';
+        var loteDisplay = p.lote || '<span style="color:#ff9800;">⚠️ Sin lote</span>';
+        var colorFila = (p.lote) ? 'rgba(255,255,255,0.03)' : 'rgba(255,152,0,0.08)';
+        
+        html += '<div style="background:' + colorFila + ';border:1px solid rgba(79,195,247,0.2);border-radius:8px;padding:10px;margin-bottom:8px;">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
+        html += '<div style="flex:1;min-width:0;">';
+        html += '<div style="font-size:13px;font-weight:bold;color:#4fc3f7;word-break:break-word;">' + p.codigo + ' — ' + p.producto + '</div>';
+        html += '<div style="font-size:11px;color:#c0c0c0;margin-top:2px;">🧺 1 pallet  📦 ' + p.und + ' und  ⚖️ ' + p.kg + ' kg</div>';
+        html += '<div style="font-size:11px;color:#fff;margin-top:2px;">🔢 Lote: ' + loteDisplay + '</div>';
+        html += '</div>';
+        html += '<div style="flex-shrink:0;margin-left:8px;">';
+        html += '<button onclick="editarLoteFechaPallet(' + i + ')" style="background:rgba(79,195,247,0.2);border:1px solid #4fc3f7;color:#fff;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:14px;">✏️</button>';
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
     });
-    
-    html += '</table>';
     
     // Botones de acción
     var todosCompletos = listaIngreso.every(function(p) { return p.lote && p.vence; });
@@ -2073,7 +2076,7 @@ function mostrarTablaDetallada() {
     if (todosCompletos) {
         html += '<button onclick="mostrarTablaConsolidada()" style="flex:1;background:#2e7d32;border:none;color:#fff;padding:12px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">✅ CONTINUAR</button>';
     } else {
-        html += '<button style="flex:1;background:#455a64;border:none;color:#888;padding:12px;border-radius:8px;font-size:14px;font-weight:bold;cursor:not-allowed;" disabled>⚠️ Complete lotes y fechas</button>';
+        html += '<button style="flex:1;background:#455a64;border:none;color:#888;padding:12px;border-radius:8px;font-size:14px;font-weight:bold;cursor:not-allowed;" disabled>⚠️ Complete lotes</button>';
     }
     html += '<button onclick="cancelarIngresoMasivo()" style="flex:1;background:#c62828;border:none;color:#fff;padding:12px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">❌ CANCELAR</button>';
     html += '</div>';
@@ -2179,15 +2182,15 @@ function guardarProgresoConCorrecciones() {
 
 
 function mostrarTablaConsolidada() {
-    // Verificar que todos tengan lote y fecha
+    // Verificar que todos tengan lote
     var incompletos = listaIngreso.filter(function(p) { return !p.lote || !p.vence; });
     if (incompletos.length > 0) {
-        mostrarFeedback('⚠️ Hay ' + incompletos.length + ' pallet(s) sin lote o fecha. Complete primero.');
+        mostrarFeedback('⚠️ Hay ' + incompletos.length + ' pallet(s) sin lote. Complete primero.');
         mostrarTablaDetallada();
         return;
     }
     
-    // Ocultar panel detallado
+    // Ocultar y eliminar panel detallado
     var panelDetallado = document.getElementById('panel-tabla-detallada');
     if (panelDetallado) panelDetallado.remove();
     
@@ -2201,6 +2204,8 @@ function mostrarTablaConsolidada() {
     panel.style.borderRadius = '12px';
     panel.style.padding = '15px';
     panel.style.margin = '10px 0';
+    panel.style.maxHeight = '85vh';
+    panel.style.overflowY = 'auto';
     document.body.appendChild(panel);
     
     // Consolidar por código + lote
@@ -2212,7 +2217,6 @@ function mostrarTablaConsolidada() {
                 codigo: p.codigo,
                 producto: p.producto,
                 lote: p.lote,
-                vence: p.vence,
                 cantidad: 0,
                 und: 0,
                 kg: 0
@@ -2226,27 +2230,18 @@ function mostrarTablaConsolidada() {
     var html = '<h3 style="color:#4fc3f7;font-size:15px;margin-bottom:10px;">📊 TABLA CONSOLIDADA - VERIFICACIÓN</h3>';
     html += '<div style="font-size:11px;color:#90caf9;margin-bottom:8px;">Total: ' + listaIngreso.length + ' pallets | ' + Object.keys(consolidado).length + ' grupos</div>';
     
-    html += '<table style="width:100%;border-collapse:collapse;font-size:10px;">';
-    html += '<tr style="color:#607d8b;border-bottom:2px solid rgba(79,195,247,0.3);">';
-    html += '<th>CÓDIGO</th><th>PRODUCTO</th><th>LOTE</th><th>PALLETS</th><th>UND</th><th>KG</th><th>VENCE</th>';
-    html += '</tr>';
-    
+    // Mostrar tarjetas consolidadas
     var keys = Object.keys(consolidado).sort();
     keys.forEach(function(key) {
         var r = consolidado[key];
-        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">';
-        html += '<td style="color:#4fc3f7;">' + r.codigo + '</td>';
-        html += '<td>' + r.producto + '</td>';
-        html += '<td>' + r.lote + '</td>';
-        html += '<td style="text-align:center;color:#69f0ae;">' + r.cantidad + '</td>';
-        html += '<td style="text-align:right;">' + r.und + '</td>';
-        html += '<td style="text-align:right;">' + r.kg + '</td>';
-        html += '<td>' + r.vence + '</td>';
-        html += '</tr>';
+        html += '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(79,195,247,0.2);border-radius:8px;padding:10px;margin-bottom:8px;">';
+        html += '<div style="font-size:13px;font-weight:bold;color:#4fc3f7;word-break:break-word;">📦 ' + r.codigo + ' — ' + r.producto + '</div>';
+        html += '<div style="font-size:11px;color:#c0c0c0;margin-top:2px;">🧺 ' + r.cantidad + ' pallets  📦 ' + r.und + ' und  ⚖️ ' + r.kg + ' kg</div>';
+        html += '<div style="font-size:11px;color:#fff;margin-top:2px;">🔢 Lote: ' + r.lote + '</div>';
+        html += '</div>';
     });
     
-    html += '</table>';
-    
+    // Botones de acción
     html += '<div style="margin-top:15px;display:flex;gap:8px;">';
     html += '<button onclick="volverATablaDetallada()" style="flex:1;background:#455a64;border:none;color:#fff;padding:12px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">◀ VOLVER</button>';
     html += '<button onclick="irASeleccionarCamara()" style="flex:1;background:#2e7d32;border:none;color:#fff;padding:12px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">✅ INICIAR INGRESO</button>';
@@ -2255,11 +2250,16 @@ function mostrarTablaConsolidada() {
     panel.innerHTML = html;
 }
 
+
 function volverATablaDetallada() {
+    // Eliminar panel consolidado
     var panelConsolidado = document.getElementById('panel-tabla-consolidada');
     if (panelConsolidado) panelConsolidado.remove();
+    
+    // Volver a mostrar la tabla detallada
     mostrarTablaDetallada();
 }
+
 
 function verIngresados() {
     var html = '<table style="width:100%;border-collapse:collapse;font-size:10px;">';

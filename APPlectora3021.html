@@ -58,6 +58,10 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <div class="subtitulo">Corporación Rico</div>
 <div id="indicador-cobertura-claves"></div>
 
+<div id="contador-catalogo" style="text-align:center;background:rgba(79,195,247,0.1);border:1px solid #4fc3f7;border-radius:8px;padding:8px;margin:8px 0;font-size:14px;color:#4fc3f7;">
+    📋 Catálogo: <span id="num-claves" style="font-weight:bold;font-size:18px;color:#69f0ae;">0</span> pallets
+</div>
+
 <div class="menu-grupo" onclick="toggleMenuApp('menu-ubicaciones')">📍 UBICACIONES ▾</div>
 <div id="menu-ubicaciones" class="menu-items-app">
 <button class="btn btn-ubicacion" onclick="mostrarPanel('panel-escanear')">📍 Escanear Ubicación</button>
@@ -98,6 +102,9 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <button class="btn btn-excel" onclick="document.getElementById('input-json').click()">📂 Cargar Datos</button>
 <input type="file" id="input-json" accept=".json" onchange="cargarDatosJSON(event)" style="display:none">
 <button class="btn btn-excel" onclick="descargarBackupManual()" style="background:#e65100;">💾 DESCARGAR BACKUP</button>
+
+<button class="btn btn-excel" onclick="exportarCatalogo()" style="background:#00838f;">📋 EXPORTAR CATÁLOGO</button>
+
 <button class="btn btn-excel" onclick="descargarExcel()">📤 Descargar Tabla Actualizada</button>
 </div>
 
@@ -492,10 +499,16 @@ function cargarCatalogoClaves() {
     catch(e) { catalogoClaves = {}; }
 }
 
+
 function guardarCatalogoClaves() {
-    try { localStorage.setItem('catalogoClaves', JSON.stringify(catalogoClaves)); }
-    catch(e) { console.error('Error guardando catálogo:', e); }
+    try {
+        localStorage.setItem('catalogoClaves', JSON.stringify(catalogoClaves));
+        actualizarIndicadorCobertura();
+    } catch(e) {
+        console.error('Error guardando catálogo:', e);
+    }
 }
+
 
 function obtenerCoberturaCatalogo() {
     var ocupados = tablaDatos.filter(function(s) { return s.codigo && s.ubicacion; });
@@ -572,6 +585,12 @@ function actualizarIndicadorCobertura() {
     var conUbicacion = Object.values(catalogoClaves).filter(function(e) { return e.ubicacion; }).length;
     var pct = cob.total > 0 ? Math.round((cob.conClave / cob.total) * 100) : 0;
     var color = pct >= 80 ? '#69f0ae' : pct >= 40 ? '#ffb300' : '#ef9a9a';
+
+// Actualizar contador de catálogo
+var totalClaves = Object.keys(catalogoClaves).length;
+var numClavesEl = document.getElementById('num-claves');
+if (numClavesEl) numClavesEl.textContent = totalClaves;
+
     indicador.innerHTML =
         '<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;margin:8px 0;font-size:11px;">' +
         '<div style="color:#90a4ae;margin-bottom:6px;">📊 Catálogo de claves</div>' +
@@ -4822,6 +4841,45 @@ function importarClavesExcel(event) {
     };
     reader.readAsBinaryString(file);
 }
+
+function exportarCatalogo() {
+    var total = Object.keys(catalogoClaves).length;
+    if (total === 0) {
+        alert('📭 El catálogo está vacío. No hay claves para exportar.');
+        return;
+    }
+    
+    // Crear un array con los datos del catálogo
+    var datos = [];
+    datos.push(['CLAVE', 'CÓDIGO', 'PRODUCTO', 'UND', 'KG', 'LOTE', 'VENCE', 'UBICACIÓN', 'BANDEJAS', 'FECHA INGRESO', 'HORA INGRESO', 'ACTIVO']);
+    
+    Object.keys(catalogoClaves).forEach(function(clave) {
+        var entry = catalogoClaves[clave];
+        datos.push([
+            clave,
+            entry.codigo || '',
+            entry.producto || '',
+            entry.und || 0,
+            entry.kg || 0,
+            entry.lote || '',
+            entry.vence || '',
+            entry.ubicacion || '',
+            entry.bandejas || '0',
+            entry.fechaIngreso || '',
+            entry.horaIngreso || '',
+            entry.activo !== false ? 'ACTIVO' : 'INACTIVO'
+        ]);
+    });
+    
+    // Convertir a Excel
+    var ws = XLSX.utils.aoa_to_sheet(datos);
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Catalogo');
+    XLSX.writeFile(wb, 'catalogo_claves_' + new Date().toISOString().slice(0,10) + '.xlsx');
+    
+    mostrarFeedback('📋 Catálogo exportado: ' + total + ' claves');
+}
+
 
 function descargarBackupManual() {
     guardarEnLocalStorage();

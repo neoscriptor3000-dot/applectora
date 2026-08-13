@@ -106,7 +106,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ papi</div>
+<div>Ing. PERCY S. TEJADA VALDEZ papito</div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -2350,7 +2350,14 @@ function editarBandejasIngresado(index) {
     verIngresados();
 }
 
+
 function volverAIngreso() {
+    // Eliminar tabla detallada y consolidada si existen
+    var panelDetallado = document.getElementById('panel-tabla-detallada');
+    if (panelDetallado) panelDetallado.remove();
+    var panelConsolidado = document.getElementById('panel-tabla-consolidada');
+    if (panelConsolidado) panelConsolidado.remove();
+    
     document.getElementById('panel-ingresados').style.display = 'none';
     document.getElementById('panel-ingreso-masivo').style.display = 'block';
     mostrarPalletIngreso();

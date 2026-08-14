@@ -113,7 +113,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ XXX</div>
+<div>Ing. PERCY S. TEJADA VALDEZ BELLO</div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -161,10 +161,12 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 
 <button class="btn btn-salida" onclick="confirmarSalidaPallet()" style="width:100%;background:#2e7d32;margin-top:8px;">✅ CONFIRMAR SALIDA</button>
 <button class="btn btn-excel" onclick="verPendientesSalida()" style="margin-top:5px;">📋 VER PENDIENTES</button>
+
+<button class="btn btn-ubicacion" onclick="verPalletsProcesadosSalida()" style="background:#00838f;margin-top:5px;">📋 VER PROCESADOS</button>
+
 </div>
 <div style="display:flex;gap:8px;margin-top:8px;">
 <button class="btn btn-volver" onclick="salirSalidaMasiva()" style="flex:1;background:#455a64;">🚪 SALIR</button>
-<button class="btn btn-volver" onclick="cancelarSalidaMasiva()" style="flex:1;background:#c62828;">❌ CANCELAR</button>
 </div>
 </div>
 
@@ -4106,6 +4108,140 @@ function verPendientesSalida() {
     document.getElementById('panel-salida-masiva').style.display = 'none';
     document.getElementById('panel-salidas-pendientes').style.display = 'block';
 }
+
+
+function verPalletsProcesadosSalida() {
+    if (palletsSalidos.length === 0) {
+        alert('📭 No hay pallets procesados en esta sesión.');
+        return;
+    }
+    
+    var html = '<div style="background:rgba(10,14,39,0.95);border:1px solid rgba(79,195,247,0.3);border-radius:12px;padding:15px;margin:10px 0;">';
+    html += '<h3 style="color:#4fc3f7;font-size:15px;margin-bottom:10px;">📋 PALLETS PROCESADOS</h3>';
+    html += '<div style="font-size:11px;color:#90caf9;margin-bottom:8px;">Total: ' + palletsSalidos.length + ' pallets</div>';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:10px;">';
+    html += '<tr style="color:#607d8b;"><th>#</th><th>UBICACIÓN</th><th>CÓDIGO</th><th>UND</th><th>KG</th><th></th></tr>';
+    
+    palletsSalidos.forEach(function(p, i) {
+        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">';
+        html += '<td>' + (i + 1) + '</td>';
+        html += '<td style="color:#4fc3f7;">' + p.ubicacion + '</td>';
+        html += '<td>' + p.codigo + '</td>';
+        html += '<td style="text-align:right;">' + p.und + '</td>';
+        html += '<td style="text-align:right;">' + p.kg + '</td>';
+        html += '<td><button onclick="devolverPalletSalida(' + i + ')" style="background:#c62828;color:#fff;border:none;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:10px;">↩ DEVOLVER</button></td>';
+        html += '</tr>';
+    });
+    html += '</table>';
+    html += '<button class="btn btn-volver" onclick="cerrarPalletsProcesadosSalida()" style="margin-top:10px;">⬅ CERRAR</button>';
+    html += '</div>';
+    
+    // Mostrar en un panel flotante
+    var panel = document.createElement('div');
+    panel.id = 'panel-procesados-salida';
+    panel.style.position = 'fixed';
+    panel.style.top = '0';
+    panel.style.left = '0';
+    panel.style.right = '0';
+    panel.style.bottom = '0';
+    panel.style.background = 'rgba(0,0,0,0.8)';
+    panel.style.zIndex = '9999';
+    panel.style.overflowY = 'auto';
+    panel.style.padding = '20px';
+    panel.innerHTML = html;
+    document.body.appendChild(panel);
+}
+
+function cerrarPalletsProcesadosSalida() {
+    var panel = document.getElementById('panel-procesados-salida');
+    if (panel) panel.remove();
+}
+
+function devolverPalletSalida(index) {
+    if (index < 0 || index >= palletsSalidos.length) return;
+    if (!confirm('¿Devolver el pallet ' + palletsSalidos[index].codigo + ' a la ubicación ' + palletsSalidos[index].ubicacion + '?')) return;
+    
+    var p = palletsSalidos[index];
+    
+    // 1. Devolver el pallet a la tabla (ubicación)
+    var encontrado = buscarEnTabla(p.ubicacion);
+    if (encontrado) {
+        encontrado.codigo = p.codigo;
+        encontrado.producto = p.producto;
+        encontrado.lote = p.lote || '';
+        encontrado.und = p.und;
+        encontrado.kg = p.kg;
+        encontrado.vence = p.vence || '';
+        encontrado.linea = p.linea || '';
+        encontrado.bandejas = p.bandejas || '';
+    } else {
+        // Si la ubicación no existe, crearla
+        tablaDatos.push({
+            ubicacion: p.ubicacion,
+            codigo: p.codigo,
+            producto: p.producto,
+            lote: p.lote || '',
+            und: p.und,
+            kg: p.kg,
+            vence: p.vence || '',
+            linea: p.linea || '',
+            bandejas: p.bandejas || ''
+        });
+    }
+    
+    // 2. Devolver la clave al catálogo (si se borró)
+    if (p.clave && p.codigo) {
+        catalogoClaves[p.clave] = {
+            codigo: p.codigo,
+            producto: p.producto,
+            und: p.und,
+            kg: p.kg,
+            lote: p.lote || '',
+            vence: p.vence || '',
+            linea: p.linea || '',
+            ubicacion: p.ubicacion,
+            bandejas: p.bandejas || '',
+            fechaIngreso: new Date().toLocaleDateString('es-PE'),
+            horaIngreso: new Date().toLocaleTimeString('es-PE'),
+            activo: true
+        };
+        guardarCatalogoClaves();
+    }
+    
+    // 3. Eliminar del historial de salidas (el último registro que coincida)
+    for (var i = historialSalidas.length - 1; i >= 0; i--) {
+        var s = historialSalidas[i];
+        if (s.ubicacion === p.ubicacion && s.codigo === p.codigo && s.und === p.und && s.kg === p.kg) {
+            historialSalidas.splice(i, 1);
+            break;
+        }
+    }
+    localStorage.setItem('historialSalidas', JSON.stringify(historialSalidas));
+    
+    // 4. Eliminar del historial de movimientos
+    for (var j = historialMovimientos.length - 1; j >= 0; j--) {
+        var m = historialMovimientos[j];
+        if (m.ubicacion === p.ubicacion && m.codigo === p.codigo && m.undAnt === p.und && m.kgAnt === p.kg) {
+            historialMovimientos.splice(j, 1);
+            break;
+        }
+    }
+    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    
+    // 5. Quitar de la lista de pallets salidos
+    palletsSalidos.splice(index, 1);
+    
+    // 6. Guardar todo
+    guardarEnLocalStorage();
+    
+    // 7. Actualizar la vista
+    cerrarPalletsProcesadosSalida();
+    verPalletsProcesadosSalida();
+    mostrarSalidaPallet();
+    mostrarFeedback('↩ Pallet devuelto a ' + p.ubicacion);
+}
+
+
 
 function volverASalidaMasiva() {
     document.getElementById('panel-salidas-pendientes').style.display = 'none';

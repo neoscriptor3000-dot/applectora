@@ -113,7 +113,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ honey</div>
+<div>Ing. PERCY S. TEJADA VALDEZ </div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -1663,12 +1663,10 @@ function ejecutarTraslado() {
     if (!ubDestino || !trasladoOrigenData) return;
     document.getElementById('traslado-destino').value = '';
 
-    // ❌ No permitir mover a PASADIZO
-    if (ubDestino === "PASADIZO") {
-        document.getElementById('traslado-msg').innerHTML = '<span style="color:#ff6b35;">❌ No se puede trasladar a PASADIZO. Use el ingreso normal.</span>';
-        document.getElementById('traslado-destino').focus();
-        return;
-    }
+// Permitir mover a PASADIZO (si está vacío o no, se agrega un nuevo pallet)
+if (ubDestino === "PASADIZO") {
+    // No hay validación de ocupado, solo continuar
+}
 
     if (!esUbicacionValida(ubDestino)) {
         document.getElementById('traslado-msg').innerHTML = '<span style="color:#ef9a9a;">❌ Ubicación destino <b>' + ubDestino + '</b> no existe en el almacén.</span>';

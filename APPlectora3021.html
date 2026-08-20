@@ -702,12 +702,6 @@ function mostrarMenu() {
 
 
 function buscarEnTabla(ubicacion) {
-    // Si es PASADIZO, devolver siempre "vacío" (para permitir múltiples ingresos)
-    if (ubicacion === "PASADIZO") {
-        return { ubicacion: "PASADIZO", codigo: '', producto: '', lote: '', und: 0, kg: 0, vence: '', linea: '', bandejas: '', procedencia: '' };
-    }
-    
-    // Para las demás ubicaciones, comportamiento normal
     for (var i = 0; i < tablaDatos.length; i++) {
         if (tablaDatos[i].ubicacion === ubicacion) return tablaDatos[i];
     }
@@ -1494,7 +1488,7 @@ if (ub === "PASADIZO") {
     }
     
 var existente = buscarEnTabla(ub);
-if (existente && existente.codigo) {
+if (ub !== "PASADIZO" && existente && existente.codigo) {
     alert('⚠️ Ubicación OCUPADA: ' + ub + '\n\n' + existente.codigo + ' - ' + existente.producto + '\nLote: ' + existente.lote + '\n' + existente.und + ' und | ' + existente.kg + ' kg');
     document.getElementById('ing-ubicacion').value = '';
     document.getElementById('ing-ubicacion').focus();
@@ -2192,8 +2186,8 @@ if (p.clave && catalogoClaves[p.clave]) {
     // Si confirma, continúa con el ingreso
 }
 
-  var existente = buscarEnTabla(ub);
-if (existente && existente.codigo) {
+var existente = buscarEnTabla(ub);
+if (ub !== "PASADIZO" && existente && existente.codigo) {
     alert('⚠️ Ubicación OCUPADA: ' + ub + '\n\n' + existente.codigo + ' - ' + existente.producto + '\nLote: ' + existente.lote + '\n' + existente.und + ' und | ' + existente.kg + ' kg');
     document.getElementById('ing-masivo-ubicacion').value = '';
     document.getElementById('ing-masivo-ubicacion').focus();
@@ -3037,7 +3031,7 @@ if (ubicacion === "PASADIZO") {
     }
     
 var existente = buscarEnTabla(ubicacion);
-if (existente && existente.codigo) {
+if (ubicacion !== "PASADIZO" && existente && existente.codigo) {
     alert('⚠️ Ubicación OCUPADA: ' + ubicacion + '\n\n' + existente.codigo + ' - ' + existente.producto + '\nLote: ' + existente.lote + '\n' + existente.und + ' und | ' + existente.kg + ' kg');
     document.getElementById('ing-etiqueta-ubicacion').value = '';
     document.getElementById('ing-etiqueta-ubicacion').focus();

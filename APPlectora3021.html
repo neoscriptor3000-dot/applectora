@@ -5795,8 +5795,12 @@ window.addEventListener('load', function() {
 </div>
 
 <!-- BOTONES FLOTANTES DE VOZ -->
-<button id="btn-borrar-voz" onclick="borrarCampoVoz()" style="position:fixed;bottom:230px;right:20px;width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#b71c1c,#e53935);border:2px solid #e53935;color:#fff;font-size:28px;cursor:pointer;z-index:9999;box-shadow:0 4px 20px rgba(229,57,53,0.6);display:none;align-items:center;justify-content:center;">🗑</button>
-<button id="btn-confirmar-voz" onclick="confirmarVoz()" style="position:fixed;bottom:160px;right:20px;width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#0d6f2e,#1db954);border:2px solid #1db954;color:#fff;font-size:28px;cursor:pointer;z-index:9999;box-shadow:0 4px 20px rgba(29,185,84,0.7);display:none;align-items:center;justify-content:center;">▶</button>
-<button id="btn-voz-flotante" onclick="iniciarVoz()" style="position:fixed;bottom:90px;right:20px;width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#4a148c,#7b1fa2);border:2px solid #9c27b0;color:#fff;font-size:28px;cursor:pointer;z-index:9999;box-shadow:0 4px 20px rgba(156,39,176,0.6);transition:all 0.3s;display:flex;align-items:center;justify-content:center;pointer-events:all;">🎤</button>
+
+<button id="btn-borrar-voz" onclick="borrarCampoVoz()" style="position:fixed;bottom:230px;right:20px;width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#b71c1c,#e53935);border:2px solid #e53935;color:#fff;font-size:28px;cursor:pointer;z-index:10001;box-shadow:0 4px 20px rgba(229,57,53,0.6);display:none;align-items:center;justify-content:center;">🗑</button>
+
+<button id="btn-confirmar-voz" onclick="confirmarVoz()" style="position:fixed;bottom:160px;right:20px;width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#0d6f2e,#1db954);border:2px solid #1db954;color:#fff;font-size:28px;cursor:pointer;z-index:10001;box-shadow:0 4px 20px rgba(29,185,84,0.7);display:none;align-items:center;justify-content:center;">▶</button>
+
+<button id="btn-voz-flotante" onclick="iniciarVoz()" style="position:fixed;bottom:90px;right:20px;width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#4a148c,#7b1fa2);border:2px solid #9c27b0;color:#fff;font-size:28px;cursor:pointer;z-index:10001;box-shadow:0 4px 20px rgba(156,39,176,0.6);transition:all 0.3s;display:flex;align-items:center;justify-content:center;pointer-events:all;">🎤</button>
+
 </body>
 </html>

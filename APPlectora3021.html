@@ -2202,12 +2202,18 @@ if (ub !== "PASADIZO" && existente && existente.codigo) {
     }
     window._ultimaProcedencia = procedencia;
     
+// Si es PASADIZO, siempre crear un nuevo registro (no reutilizar)
+if (ub === "PASADIZO") {
+    encontrado = { ubicacion: ub, codigo: '', producto: '', lote: '', und: 0, kg: 0, vence: '', linea: '', bandejas: '', procedencia: '' };
+    tablaDatos.push(encontrado);
+} else {
     var encontrado = buscarEnTabla(ub);
     if (!encontrado) {
-        encontrado = { ubicacion: ub, codigo: '', producto: '', lote: '', und: 0, kg: 0, vence: '', linea: '' };
+        encontrado = { ubicacion: ub, codigo: '', producto: '', lote: '', und: 0, kg: 0, vence: '', linea: '', bandejas: '', procedencia: '' };
         tablaDatos.push(encontrado);
     }
-    
+}
+ 
     // Guardar datos del pallet
     encontrado.codigo = p.codigo;
     encontrado.producto = p.producto;

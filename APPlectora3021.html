@@ -3550,11 +3550,17 @@ function mostrarSalidaPallet() {
             window._ubicacionesSalida = exactas;
             p.ubicacion = '';
         } else {
-            detalleHtml += '<br><span style="color:#ff6b35;">❌ No se encontró ubicación para este pallet</span>';
-            detalleHtml += '<br><button onclick="registrarNuevoCompleto()" style="background:#e65100;border:none;color:#fff;padding:6px 12px;border-radius:4px;cursor:pointer;margin-top:4px;">📦 Registrar como NUEVO</button>';
-            detalleHtml += '<br><span style="color:#90caf9;font-size:10px;">O escanea una ubicación manual:</span>';
-            detalleHtml += '<input type="text" id="completo-ubicacion-manual-nuevo" placeholder="Escanee ubicación..." style="font-size:14px;text-align:center;margin-top:4px;">';
-            detalleHtml += '<button onclick="seleccionarUbicacionManualParaNuevo()" style="background:#00838f;border:none;color:#fff;padding:6px;border-radius:4px;cursor:pointer;font-size:12px;width:100%;margin-top:4px;">✅ USAR ESTA UBICACIÓN</button>';
+            
+detalleHtml += '<br><span style="color:#ff6b35;">❌ No se encontró ubicación para este pallet</span>';
+detalleHtml += '<div style="margin-top:8px;display:flex;gap:8px;">';
+detalleHtml += '<button onclick="registrarNuevoCompleto()" style="flex:1;background:#e65100;border:none;color:#fff;padding:8px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;">📦 Registrar como NUEVO</button>';
+detalleHtml += '<button onclick="mostrarSalidaManual()" style="flex:1;background:#1565c0;border:none;color:#fff;padding:8px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;">🔍 Salida Manual</button>';
+detalleHtml += '</div>';
+detalleHtml += '<br><span style="color:#90caf9;font-size:10px;">O escanea una ubicación manual:</span>';
+detalleHtml += '<input type="text" id="completo-ubicacion-manual-nuevo" placeholder="Escanee ubicación..." style="font-size:14px;text-align:center;margin-top:4px;">';
+detalleHtml += '<button onclick="seleccionarUbicacionManualParaNuevo()" style="background:#00838f;border:none;color:#fff;padding:6px;border-radius:4px;cursor:pointer;font-size:12px;width:100%;margin-top:4px;">✅ USAR ESTA UBICACIÓN</button>';
+
+
             p.ubicacion = '— (NUEVO)';
             p._ubicacionEncontrada = null;
         }
@@ -3644,6 +3650,249 @@ function seleccionarUbicacionCompleta(ubicacion) {
         campoUb.style.color = '#69f0ae';
     }
     mostrarFeedback('✅ Ubicación seleccionada: ' + ubicacion);
+}
+
+function mostrarSalidaManual() {
+    var p = listaSalida[indexSalida];
+    if (!p) return;
+    
+    var html = '<div style="background:rgba(10,14,39,0.95);border:1px solid rgba(79,195,247,0.3);border-radius:12px;padding:15px;margin:10px 0;">';
+    html += '<h3 style="color:#4fc3f7;font-size:15px;margin-bottom:10px;">🔍 SALIDA MANUAL</h3>';
+    html += '<div style="font-size:12px;color:#fff;margin-bottom:8px;">📦 <b>' + p.codigo + '</b> — ' + p.producto + '</div>';
+    html += '<div style="font-size:11px;color:#90caf9;margin-bottom:8px;">📏 ' + p.und + ' und | ⚖️ ' + p.kg + ' kg | 🔢 Lote: ' + (p.lote || '—') + '</div>';
+    html += '<div style="font-size:11px;color:#ff9800;margin-bottom:8px;">⬆️ Estos son los datos CORRECTOS del Excel</div>';
+    html += '<label style="color:#90caf9;font-size:12px;display:block;margin-top:8px;">📍 ESCANEE O DIGITE LA UBICACIÓN</label>';
+    html += '<input type="text" id="salida-manual-ubicacion" placeholder="Escanee ubicación..." style="font-size:16px;text-align:center;padding:10px;">';
+    html += '<button onclick="verUbicacionParaSalidaManual()" style="width:100%;background:#00838f;border:none;color:#fff;padding:10px;border-radius:6px;cursor:pointer;font-weight:bold;margin-top:6px;">🔍 VER UBICACIÓN</button>';
+    html += '<div id="salida-manual-contenido" style="margin-top:10px;"></div>';
+    html += '<button onclick="cancelarSalidaManual()" style="width:100%;background:#455a64;border:none;color:#fff;padding:10px;border-radius:6px;cursor:pointer;font-weight:bold;margin-top:6px;">❌ CANCELAR</button>';
+    html += '</div>';
+    
+    var panel = document.createElement('div');
+    panel.id = 'panel-salida-manual';
+    panel.style.position = 'fixed';
+    panel.style.top = '0';
+    panel.style.left = '0';
+    panel.style.right = '0';
+    panel.style.bottom = '0';
+    panel.style.background = 'rgba(0,0,0,0.85)';
+    panel.style.zIndex = '9999';
+    panel.style.overflowY = 'auto';
+    panel.style.padding = '20px';
+    panel.innerHTML = html;
+    document.body.appendChild(panel);
+    
+    setTimeout(function() {
+        document.getElementById('salida-manual-ubicacion').focus();
+    }, 300);
+}
+
+function verUbicacionParaSalidaManual() {
+    var ubicacion = document.getElementById('salida-manual-ubicacion').value.toUpperCase().trim();
+    if (!ubicacion) {
+        mostrarFeedback('⚠️ Escanee o digite una ubicación.');
+        return;
+    }
+    
+    if (!esUbicacionValida(ubicacion)) {
+        mostrarFeedback('❌ Ubicación ' + ubicacion + ' no existe en el almacén.');
+        return;
+    }
+    
+    var encontrado = buscarEnTabla(ubicacion);
+    var contenido = document.getElementById('salida-manual-contenido');
+    
+    if (!encontrado || !encontrado.codigo) {
+        contenido.innerHTML = '<div style="background:rgba(255,152,0,0.1);border:1px solid #ff9800;border-radius:8px;padding:10px;margin-top:8px;color:#ffb300;">⚠️ La ubicación ' + ubicacion + ' está VACÍA.<br>No se puede realizar una salida manual de una ubicación vacía.</div>';
+        return;
+    }
+    
+    var p = listaSalida[indexSalida];
+    var html = '<div style="background:rgba(255,255,255,0.05);border:1px solid #4fc3f7;border-radius:8px;padding:12px;margin-top:8px;">';
+    html += '<div style="color:#4fc3f7;font-weight:bold;font-size:14px;">📍 ' + ubicacion + '</div>';
+    html += '<div style="font-size:12px;color:#fff;margin-top:4px;">📦 ' + encontrado.codigo + ' — ' + encontrado.producto + '</div>';
+    html += '<div style="font-size:11px;color:#90caf9;margin-top:2px;">⚖️ ' + encontrado.kg + ' kg  📦 ' + encontrado.und + ' und</div>';
+    html += '<div style="font-size:11px;color:#90caf9;margin-top:2px;">🔢 Lote: ' + (encontrado.lote || '—') + '  📅 Vence: ' + (encontrado.vence || '—') + '</div>';
+    html += '<div style="margin-top:8px;color:#ff9800;font-size:12px;font-weight:bold;">⬆️ Estos son los datos ACTUALES en la ubicación (TABLA_3D)</div>';
+    html += '<div style="margin-top:4px;color:#69f0ae;font-size:12px;">📋 Datos CORRECTOS del Excel:</div>';
+    html += '<div style="font-size:11px;color:#fff;">⚖️ ' + p.kg + ' kg  📦 ' + p.und + ' und  🔢 Lote: ' + (p.lote || '—') + '</div>';
+    
+    // Detectar diferencias
+    var diferencias = [];
+    if (encontrado.kg !== p.kg) diferencias.push('peso (' + encontrado.kg + ' kg → ' + p.kg + ' kg)');
+    if (encontrado.und !== p.und) diferencias.push('unidades (' + encontrado.und + ' → ' + p.und + ')');
+    if (encontrado.lote !== p.lote) diferencias.push('lote (' + (encontrado.lote || '—') + ' → ' + (p.lote || '—') + ')');
+    
+    if (diferencias.length > 0) {
+        html += '<div style="margin-top:6px;color:#ff6b35;font-size:11px;background:rgba(255,107,53,0.1);padding:4px 8px;border-radius:4px;">⚠️ Diferencias detectadas: ' + diferencias.join(', ') + '</div>';
+        html += '<div style="margin-top:4px;color:#69f0ae;font-size:11px;">✅ Se corregirán automáticamente antes de la salida.</div>';
+    } else {
+        html += '<div style="margin-top:6px;color:#69f0ae;font-size:11px;">✅ Los datos coinciden. La salida se realizará normalmente.</div>';
+    }
+    
+    html += '<div style="margin-top:10px;display:flex;gap:8px;">';
+    html += '<button onclick="confirmarSalidaManual(\'' + ubicacion + '\')" style="flex:1;background:#2e7d32;border:none;color:#fff;padding:10px;border-radius:4px;cursor:pointer;font-weight:bold;">✅ CONFIRMAR SALIDA</button>';
+    html += '<button onclick="cancelarSalidaManual()" style="flex:1;background:#455a64;border:none;color:#fff;padding:10px;border-radius:4px;cursor:pointer;">❌ CANCELAR</button>';
+    html += '</div>';
+    html += '</div>';
+    
+    contenido.innerHTML = html;
+}
+
+function confirmarSalidaManual(ubicacion) {
+    if (!confirm('⚠️ ¿Está seguro de retirar el pallet de ' + ubicacion + '?\n\n' +
+                 '📋 Datos del Excel (CORRECTOS):\n' +
+                 '   📦 ' + listaSalida[indexSalida].codigo + ' — ' + listaSalida[indexSalida].producto + '\n' +
+                 '   ⚖️ ' + listaSalida[indexSalida].kg + ' kg  📦 ' + listaSalida[indexSalida].und + ' und\n' +
+                 '   🔢 Lote: ' + (listaSalida[indexSalida].lote || '—') + '\n\n' +
+                 '📍 Ubicación: ' + ubicacion + '\n' +
+                 '⚠️ Los datos de la ubicación se corregirán con los del Excel antes de la salida.')) return;
+    
+    var p = listaSalida[indexSalida];
+    if (!p) return;
+    
+    // 1. CORREGIR los datos de la ubicación con los datos del Excel (correctos)
+    var encontrado = buscarEnTabla(ubicacion);
+    if (encontrado) {
+        encontrado.codigo = p.codigo;
+        encontrado.producto = p.producto;
+        encontrado.lote = p.lote || '';
+        encontrado.und = p.und;
+        encontrado.kg = p.kg;
+        encontrado.vence = p.vence || '';
+        encontrado.linea = p.linea || '';
+        encontrado.bandejas = p.bandejas || '';
+        encontrado.procedencia = p.procedencia || '';
+        // Guardar la corrección
+        guardarEnLocalStorage();
+    } else {
+        // Si la ubicación no existe, crearla con los datos correctos
+        encontrado = {
+            ubicacion: ubicacion,
+            codigo: p.codigo,
+            producto: p.producto,
+            lote: p.lote || '',
+            und: p.und,
+            kg: p.kg,
+            vence: p.vence || '',
+            linea: p.linea || '',
+            bandejas: p.bandejas || '',
+            procedencia: p.procedencia || ''
+        };
+        tablaDatos.push(encontrado);
+        guardarEnLocalStorage();
+    }
+    
+    // 2. Registrar la salida (la ubicación se vacía)
+    var destino = document.getElementById('salida-destino').value || 'MANUAL';
+    var nombreDestino = document.getElementById('salida-destino').options[document.getElementById('salida-destino').selectedIndex]?.text || 'MANUAL';
+    
+    // Guardar los datos correctos en el historial
+    historialSalidas.push({
+        fecha: new Date().toLocaleDateString('es-PE'),
+        hora: new Date().toLocaleTimeString('es-PE'),
+        tipo: 'SALIDA (MANUAL)',
+        destino: destino,
+        nombreDestino: nombreDestino,
+        ubicacion: ubicacion,
+        codigo: p.codigo,
+        producto: p.producto,
+        lote: p.lote || '',
+        und: p.und,
+        kg: p.kg,
+        bandejas: p.bandejas || '',
+        anulado: false
+    });
+    localStorage.setItem('historialSalidas', JSON.stringify(historialSalidas));
+    
+    historialMovimientos.push({
+        fecha: new Date().toLocaleDateString('es-PE'),
+        hora: new Date().toLocaleTimeString('es-PE'),
+        tipo: 'SALIDA (MANUAL)',
+        ubicacion: ubicacion,
+        codigo: p.codigo,
+        producto: p.producto,
+        lote: p.lote || '',
+        destino: destino,
+        nombreDestino: nombreDestino,
+        undAnt: p.und,
+        undDesp: 0,
+        kgAnt: p.kg,
+        kgDesp: 0
+    });
+    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    
+    // 3. VACIAR la ubicación
+    if (encontrado) {
+        encontrado.codigo = '';
+        encontrado.producto = '';
+        encontrado.lote = '';
+        encontrado.und = 0;
+        encontrado.kg = 0;
+        encontrado.vence = '';
+        encontrado.linea = '';
+        encontrado.bandejas = '';
+        encontrado.procedencia = '';
+        guardarEnLocalStorage();
+    }
+    
+    // 4. Borrar la clave del catálogo (si existe)
+    if (p.clave && catalogoClaves[p.clave]) {
+        delete catalogoClaves[p.clave];
+        guardarCatalogoClaves();
+    }
+    
+    // 5. Marcar como procesado
+    p.procesado = true;
+    p.ubicacion = ubicacion;
+    palletsSalidos.push({
+        codigo: p.codigo,
+        producto: p.producto,
+        lote: p.lote || '',
+        und: p.und,
+        kg: p.kg,
+        ubicacion: ubicacion,
+        destino: destino,
+        nombreDestino: nombreDestino,
+        bandejas: p.bandejas || '',
+        esManual: true,
+        datosCorregidos: true
+    });
+    
+    guardarEnLocalStorage();
+    
+    // 6. Cerrar panel y mostrar feedback
+    cerrarSalidaManual();
+    mostrarFeedback('✅ Salida manual registrada en ' + ubicacion + ' (datos corregidos)');
+    
+    // 7. Avanzar al siguiente pallet
+    var siguiente = -1;
+    for (var i = indexSalida + 1; i < listaSalida.length; i++) {
+        if (!listaSalida[i].procesado) {
+            siguiente = i;
+            break;
+        }
+    }
+    if (siguiente === -1) {
+        for (var j = 0; j < indexSalida; j++) {
+            if (!listaSalida[j].procesado) {
+                siguiente = j;
+                break;
+            }
+        }
+    }
+    indexSalida = (siguiente !== -1) ? siguiente : listaSalida.length;
+    mostrarSalidaPallet();
+}
+
+function cerrarSalidaManual() {
+    var panel = document.getElementById('panel-salida-manual');
+    if (panel) panel.remove();
+}
+
+function cancelarSalidaManual() {
+    cerrarSalidaManual();
+    mostrarFeedback('Salida manual cancelada.');
 }
 
 function seleccionarUbicacionManualParaNuevo() {

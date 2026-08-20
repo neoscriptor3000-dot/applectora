@@ -1484,13 +1484,14 @@ if (ub === "PASADIZO") {
         document.getElementById('ing-ubicacion').focus();
         return;
     }
-    var existente = buscarEnTabla(ub);
-    if (existente && existente.codigo) {
-        alert('⚠️ Ubicación OCUPADA: ' + ub + '\n\n' + existente.codigo + ' - ' + existente.producto + '\nLote: ' + existente.lote + '\n' + existente.und + ' und | ' + existente.kg + ' kg');
-        document.getElementById('ing-ubicacion').value = '';
-        document.getElementById('ing-ubicacion').focus();
-        return;
-    }
+    
+var existente = buscarEnTabla(ub);
+if (ub !== "PASADIZO" && existente && existente.codigo) {
+    alert('⚠️ Ubicación OCUPADA: ' + ub + '\n\n' + existente.codigo + ' - ' + existente.producto + '\nLote: ' + existente.lote + '\n' + existente.und + ' und | ' + existente.kg + ' kg');
+    document.getElementById('ing-ubicacion').value = '';
+    document.getElementById('ing-ubicacion').focus();
+    return;
+}
 
 // Verificar si la clave ya existe en el catálogo
 var codigoIngreso = document.getElementById('ing-codigo').value.trim();
@@ -2183,15 +2184,14 @@ if (p.clave && catalogoClaves[p.clave]) {
     // Si confirma, continúa con el ingreso
 }
 
-  
-    var existente = buscarEnTabla(ub);
-    if (existente && existente.codigo) {
-        alert('⚠️ Ubicación OCUPADA: ' + ub + '\n\n' + existente.codigo + ' - ' + existente.producto + '\nLote: ' + existente.lote + '\n' + existente.und + ' und | ' + existente.kg + ' kg');
-        document.getElementById('ing-masivo-ubicacion').value = '';
-        document.getElementById('ing-masivo-ubicacion').focus();
-        return;
-    }
-    
+  var existente = buscarEnTabla(ub);
+if (ub !== "PASADIZO" && existente && existente.codigo) {
+    alert('⚠️ Ubicación OCUPADA: ' + ub + '\n\n' + existente.codigo + ' - ' + existente.producto + '\nLote: ' + existente.lote + '\n' + existente.und + ' und | ' + existente.kg + ' kg');
+    document.getElementById('ing-masivo-ubicacion').value = '';
+    document.getElementById('ing-masivo-ubicacion').focus();
+    return;
+}
+   
     var procedencia = document.getElementById('ing-masivo-procedencia').value.trim();
     if (!procedencia) {
         alert('⚠️ Debe seleccionar una procedencia antes de confirmar el ingreso.');
@@ -3027,13 +3027,15 @@ if (ubicacion === "PASADIZO") {
         alert('⚠️ Primero debe pistolear una etiqueta.');
         return;
     }
-    var existente = buscarEnTabla(ubicacion);
-    if (existente && existente.codigo) {
-        alert('⚠️ Ubicación OCUPADA: ' + ubicacion + '\n\n' + existente.codigo + ' - ' + existente.producto + '\nLote: ' + existente.lote + '\n' + existente.und + ' und | ' + existente.kg + ' kg');
-        document.getElementById('ing-etiqueta-ubicacion').value = '';
-        document.getElementById('ing-etiqueta-ubicacion').focus();
-        return;
-    }
+    
+var existente = buscarEnTabla(ubicacion);
+if (ubicacion !== "PASADIZO" && existente && existente.codigo) {
+    alert('⚠️ Ubicación OCUPADA: ' + ubicacion + '\n\n' + existente.codigo + ' - ' + existente.producto + '\nLote: ' + existente.lote + '\n' + existente.und + ' und | ' + existente.kg + ' kg');
+    document.getElementById('ing-etiqueta-ubicacion').value = '';
+    document.getElementById('ing-etiqueta-ubicacion').focus();
+    return;
+}
+
     var procedencia = document.getElementById('ing-etiqueta-procedencia').value.trim();
     if (!procedencia) {
         alert('⚠️ Debe seleccionar una procedencia antes de confirmar el ingreso.');

@@ -1588,10 +1588,37 @@ function resetearTraslado() {
     document.getElementById('traslado-seccion-destino').style.display = 'none';
 }
 
+
 function verificarOrigen() {
     var ub = document.getElementById('traslado-origen').value.toUpperCase().trim();
     if (!ub) return;
     document.getElementById('traslado-origen').value = '';
+    
+    // Si es PASADIZO, mostrar lista de pallets para elegir
+    if (ub === "PASADIZO") {
+        var palletsPasadizo = tablaDatos.filter(function(s) { return s.ubicacion === "PASADIZO" && s.codigo; });
+        if (palletsPasadizo.length === 0) {
+            document.getElementById('traslado-info-origen').innerHTML = '<span style="color:#ff6b35;">📭 PASADIZO vacío</span>';
+            document.getElementById('traslado-seccion-destino').style.display = 'none';
+            return;
+        }
+        
+        var html = '<span style="color:#69f0ae;">📍 PASADIZO</span><br>';
+        html += '<div style="font-size:11px;color:#90caf9;margin-bottom:6px;">Seleccione el pallet a mover:</div>';
+        html += '<div style="max-height:200px;overflow-y:auto;">';
+        palletsPasadizo.forEach(function(s, index) {
+            html += '<div onclick="seleccionarPalletPasadizo(' + index + ')" style="background:rgba(79,195,247,0.1);border:1px solid rgba(79,195,247,0.3);border-radius:6px;padding:8px;margin-bottom:4px;cursor:pointer;">';
+            html += '<div style="font-size:12px;font-weight:bold;color:#4fc3f7;">📦 ' + s.codigo + ' — ' + s.producto + '</div>';
+            html += '<div style="font-size:11px;color:#c0c0c0;">⚖️ ' + s.kg + ' kg  📦 ' + s.und + ' und  🔢 Lote: ' + (s.lote || '—') + '</div>';
+            html += '</div>';
+        });
+        html += '</div>';
+        document.getElementById('traslado-info-origen').innerHTML = html;
+        document.getElementById('traslado-seccion-destino').style.display = 'none';
+        return;
+    }
+    
+    // Si no es PASADIZO, comportamiento normal
     if (!esUbicacionValida(ub)) {
         document.getElementById('traslado-info-origen').innerHTML = '<span style="color:#ef9a9a;">❌ Ubicación <b>' + ub + '</b> no existe en el almacén.</span>';
         document.getElementById('traslado-seccion-destino').style.display = 'none';
@@ -1610,15 +1637,42 @@ function verificarOrigen() {
     document.getElementById('traslado-destino').focus();
 }
 
+function seleccionarPalletPasadizo(index) {
+    var palletsPasadizo = tablaDatos.filter(function(s) { return s.ubicacion === "PASADIZO" && s.codigo; });
+    if (index < 0 || index >= palletsPasadizo.length) return;
+    
+    var pallet = palletsPasadizo[index];
+    trasladoOrigenData = { 
+        ubicacion: "PASADIZO", 
+        data: pallet,
+        esPasadizo: true,
+        indexPasadizo: index
+    };
+    
+    document.getElementById('traslado-info-origen').innerHTML = '<span style="color:#69f0ae;">✅ PASADIZO</span> — <b>' + pallet.codigo + '</b> ' + pallet.producto + '<br>Lote: ' + pallet.lote + ' | ' + pallet.und + ' und | ' + pallet.kg + ' kg';
+    document.getElementById('traslado-seccion-destino').style.display = 'block';
+    document.getElementById('traslado-destino').value = '';
+    document.getElementById('traslado-destino').focus();
+}
+
 function ejecutarTraslado() {
     var ubDestino = document.getElementById('traslado-destino').value.toUpperCase().trim();
     if (!ubDestino || !trasladoOrigenData) return;
     document.getElementById('traslado-destino').value = '';
+
+    // ❌ No permitir mover a PASADIZO
+    if (ubDestino === "PASADIZO") {
+        document.getElementById('traslado-msg').innerHTML = '<span style="color:#ff6b35;">❌ No se puede trasladar a PASADIZO. Use el ingreso normal.</span>';
+        document.getElementById('traslado-destino').focus();
+        return;
+    }
+
     if (!esUbicacionValida(ubDestino)) {
         document.getElementById('traslado-msg').innerHTML = '<span style="color:#ef9a9a;">❌ Ubicación destino <b>' + ubDestino + '</b> no existe en el almacén.</span>';
         document.getElementById('traslado-destino').focus();
         return;
     }
+
     var destino = buscarEnTabla(ubDestino);
     if (!destino) {
         destino = { ubicacion: ubDestino, codigo: '', producto: '', lote: '', und: 0, kg: 0, vence: '', linea: '', occ: false };
@@ -1629,7 +1683,11 @@ function ejecutarTraslado() {
         document.getElementById('traslado-destino').focus();
         return;
     }
+
     var orig = trasladoOrigenData.data;
+    var ubicacionOrigen = trasladoOrigenData.ubicacion;
+
+    // Guardar datos en destino
     destino.codigo = orig.codigo;
     destino.producto = orig.producto;
     destino.lote = orig.lote;
@@ -1637,14 +1695,63 @@ function ejecutarTraslado() {
     destino.kg = orig.kg;
     destino.vence = orig.vence;
     destino.linea = orig.linea;
+    destino.bandejas = orig.bandejas || '';
+    destino.procedencia = orig.procedencia || '';
     destino.occ = true;
-    orig.codigo = ''; orig.producto = ''; orig.lote = ''; orig.und = 0; orig.kg = 0; orig.vence = ''; orig.linea = ''; orig.occ = false;
+
+    // Vaciar origen (normal o PASADIZO)
+    if (ubicacionOrigen === "PASADIZO") {
+        // Eliminar el pallet específico de PASADIZO
+        for (var i = 0; i < tablaDatos.length; i++) {
+            var s = tablaDatos[i];
+            if (s.ubicacion === "PASADIZO" &&
+                s.codigo === orig.codigo &&
+                s.lote === orig.lote &&
+                Math.abs(s.kg - orig.kg) < 0.01 &&
+                s.und === orig.und) {
+                s.codigo = '';
+                s.producto = '';
+                s.lote = '';
+                s.und = 0;
+                s.kg = 0;
+                s.vence = '';
+                s.linea = '';
+                s.bandejas = '';
+                s.procedencia = '';
+                s.occ = false;
+                break;
+            }
+        }
+    } else {
+        // Ubicación normal: vaciar
+        var encontrado = buscarEnTabla(ubicacionOrigen);
+        if (encontrado) {
+            encontrado.codigo = '';
+            encontrado.producto = '';
+            encontrado.lote = '';
+            encontrado.und = 0;
+            encontrado.kg = 0;
+            encontrado.vence = '';
+            encontrado.linea = '';
+            encontrado.bandejas = '';
+            encontrado.procedencia = '';
+            encontrado.occ = false;
+        }
+    }
+
+    // Actualizar catálogo con nueva ubicación
+    if (destino.codigo && catalogoClaves[destino.codigo]) {
+        catalogoClaves[destino.codigo].ubicacion = ubDestino;
+        guardarCatalogoClaves();
+    }
+
     guardarEnLocalStorage();
+
     historialMovimientos.push({
         fecha: new Date().toLocaleDateString('es-PE'),
         hora: new Date().toLocaleTimeString('es-PE'),
         tipo: 'TRASLADO',
-        ubicacion: trasladoOrigenData.ubicacion + ' → ' + ubDestino,
+        ubicacion: ubicacionOrigen + ' → ' + ubDestino,
         codigo: destino.codigo,
         producto: destino.producto,
         lote: destino.lote,
@@ -1652,8 +1759,10 @@ function ejecutarTraslado() {
         kgAnt: 0, kgDesp: destino.kg
     });
     localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
-    document.getElementById('traslado-msg').innerHTML = '<span style="color:#69f0ae;">✅ TRASLADO: ' + trasladoOrigenData.ubicacion + ' → ' + ubDestino + '</span>';
+
+    document.getElementById('traslado-msg').innerHTML = '<span style="color:#69f0ae;">✅ TRASLADO: ' + ubicacionOrigen + ' → ' + ubDestino + '</span>';
     mostrarFeedback('✅ Traslado completado');
+
     setTimeout(function() {
         document.getElementById('traslado-seccion-destino').style.display = 'none';
         document.getElementById('traslado-destino').value = '';

@@ -707,7 +707,12 @@ function buscarEnTabla(ubicacion) {
 }
 
 // Valida formato Y existencia real en tablaDatos
+
+
 function esUbicacionValida(ub) {
+    // Aceptar PASADIZO como ubicación especial
+    if (ub === "PASADIZO") return true;
+    
     if (!/^[12][PC][IDC]\d{1,2}[A-D][1-6]$/.test(ub)) return false;
     for (var i = 0; i < tablaDatos.length; i++) {
         if (tablaDatos[i].ubicacion === ub) return true;
@@ -737,6 +742,10 @@ function buscarPorProducto(producto) {
 
 function parsearNom(nom) {
     if (!nom || nom.length < 5) return null;
+    // Si es PASADIZO, devolver un objeto especial
+    if (nom === "PASADIZO") {
+        return { grp: '0', tipo: 'P', rack: 'C', carril: 0, nivel: 'P', pos: 0, esMedio: true };
+    }
     var m = nom.match(/^([12])([PC])(I|D|C)(\d+)([A-D])(\d+)$/);
     if (!m) return null;
     return { grp: m[1], tipo: m[2], rack: m[3], carril: parseInt(m[4]), nivel: m[5], pos: parseInt(m[6]), esMedio: m[3] === 'C' };
@@ -1078,6 +1087,25 @@ function mostrarResumenPorCarrilApp() {
         }
         html += '</table>';
     });
+
+// Agregar sección de PASADIZO
+var pasadizoPallets = tablaDatos.filter(function(s) { return s.ubicacion === "PASADIZO" && s.codigo; });
+if (pasadizoPallets.length > 0) {
+    html += '<div style="color:#ffcc80;font-size:13px;font-weight:bold;margin:10px 0 6px 0;border-bottom:2px solid #ffcc80;padding-bottom:4px;">📦 PASADIZO</div>';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:9px;margin-bottom:12px;">';
+    html += '<tr style="color:#607d8b;"><th>CÓDIGO</th><th>PRODUCTO</th><th>LOTE</th><th>UND</th><th>KG</th></tr>';
+    pasadizoPallets.forEach(function(s) {
+        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">';
+        html += '<td style="color:#4fc3f7;">' + s.codigo + '</td>';
+        html += '<td>' + s.producto + '</td>';
+        html += '<td>' + (s.lote || '—') + '</td>';
+        html += '<td style="text-align:right;">' + s.und + '</td>';
+        html += '<td style="text-align:right;">' + s.kg + '</td>';
+        html += '</tr>';
+    });
+    html += '</table>';
+}
+
     document.getElementById('resumen-carril-body').innerHTML = html;
 }
 
@@ -1147,6 +1175,33 @@ function buscarProductoApp() {
 
 function verCarril() {
     var carril = document.getElementById('ver-carril-input').value.toUpperCase().trim();
+
+// Si es PASADIZO, mostrar todos los pallets de PASADIZO
+if (carril === "PASADIZO") {
+    var html = '<table style="width:100%;border-collapse:collapse;font-size:10px;">';
+    html += '<tr style="color:#607d8b;"><th>UBICACIÓN</th><th>CÓDIGO</th><th>PRODUCTO</th><th>LOTE</th><th>UND</th><th>KG</th><th>VENCE</th></tr>';
+    var encontrados = tablaDatos.filter(function(s) { return s.ubicacion === "PASADIZO" && s.codigo; });
+    if (encontrados.length === 0) {
+        html += '<tr><td colspan="7" style="text-align:center;color:#607d8b;">📭 PASADIZO vacío</td></tr>';
+    } else {
+        encontrados.forEach(function(s) {
+            html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">';
+            html += '<td style="color:#4fc3f7;">PASADIZO</td>';
+            html += '<td>' + s.codigo + '</td>';
+            html += '<td>' + (s.producto || '') + '</td>';
+            html += '<td>' + (s.lote || '') + '</td>';
+            html += '<td style="text-align:right;">' + s.und + '</td>';
+            html += '<td style="text-align:right;">' + s.kg + '</td>';
+            html += '<td style="font-size:9px;">' + s.vence + '</td>';
+            html += '</tr>';
+        });
+    }
+    html += '</table>';
+    document.getElementById('ver-carril-resultado').innerHTML = html;
+    document.getElementById('ver-carril-input').focus();
+    return;
+}
+
     if (!carril) return;
     carril = carril.replace(/[A-D]\d+$/, '');
     document.getElementById('ver-carril-input').value = '';
@@ -1207,6 +1262,29 @@ function verCarril() {
 
 function escanearUbicacion() {
     var ub = document.getElementById('input-escanear').value.toUpperCase().trim();
+
+// Si es PASADIZO, mostrar todos los pallets de PASADIZO
+if (ub === "PASADIZO") {
+    var encontrados = tablaDatos.filter(function(s) { return s.ubicacion === "PASADIZO" && s.codigo; });
+    var html = '<div class="ubicacion-display">📍 PASADIZO</div>';
+    if (encontrados.length === 0) {
+        html += '<div class="mensaje">📭 PASADIZO vacío</div>';
+    } else {
+        html += '<div style="font-size:11px;color:#90caf9;margin-bottom:8px;">Total: ' + encontrados.length + ' pallets</div>';
+        encontrados.forEach(function(s) {
+            html += '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(79,195,247,0.2);border-radius:6px;padding:8px;margin-bottom:6px;">';
+            html += '<div style="font-size:13px;font-weight:bold;color:#4fc3f7;">📦 ' + s.codigo + ' — ' + s.producto + '</div>';
+            html += '<div style="font-size:11px;color:#c0c0c0;">📏 ' + s.und + ' und  ⚖️ ' + s.kg + ' kg</div>';
+            html += '<div style="font-size:11px;color:#fff;">🔢 Lote: ' + (s.lote || '—') + '  📅 Vence: ' + (s.vence || '—') + '</div>';
+            html += '</div>';
+        });
+    }
+    document.getElementById('resultado-escanear').innerHTML = html;
+    document.getElementById('input-escanear').value = '';
+    setTimeout(function() { document.getElementById('input-escanear').focus(); }, 500);
+    return;
+}
+
     if (!ub) return;
     document.getElementById('input-escanear').value = '';
     if (!esUbicacionValida(ub)) {
@@ -1394,6 +1472,12 @@ function autocompletarProducto() {
 function confirmarIngreso() {
     var ub = document.getElementById('ing-ubicacion').value.toUpperCase().trim();
     if (!ub) return;
+
+// Si es PASADIZO, permitir el ingreso
+if (ub === "PASADIZO") {
+    // PASADIZO es válido, continuar
+} else
+
     if (!esUbicacionValida(ub)) {
         alert('❌ Ubicación ' + ub + ' no existe en el almacén.\nVerifica la nomenclatura e intenta de nuevo.');
         document.getElementById('ing-ubicacion').value = '';
@@ -1959,6 +2043,12 @@ function usarSugerenciaIngreso(ubicacion) {
 function confirmarIngresoMasivo() {
     var ub = document.getElementById('ing-masivo-ubicacion').value.toUpperCase().trim();
     if (!ub) return;
+
+// Si es PASADIZO, permitir el ingreso
+if (ub === "PASADIZO") {
+    // PASADIZO es válido, continuar
+} else
+
     if (!esUbicacionValida(ub)) {
         alert('❌ Ubicación ' + ub + ' no existe en el almacén.\nVerifica la nomenclatura e intenta de nuevo.');
         document.getElementById('ing-masivo-ubicacion').value = '';
@@ -2811,6 +2901,13 @@ function confirmarIngresoEtiqueta() {
         alert('⚠️ Debe seleccionar o pistolear una ubicación.');
         return;
     }
+
+// Si es PASADIZO, permitir el ingreso
+if (ubicacion === "PASADIZO") {
+    // PASADIZO es válido, continuar
+} else
+
+
     if (!esUbicacionValida(ubicacion)) {
         alert('❌ Ubicación ' + ubicacion + ' no existe en el almacén.\nVerifica la nomenclatura e intenta de nuevo.');
         document.getElementById('ing-etiqueta-ubicacion').value = '';
@@ -5134,7 +5231,24 @@ function cargarExcel(event) {
             else if (hn.includes('LINEA') || hn.includes('LÍNEA')) colMap.linea = idx;
             else if (hn.includes('BANDEJA')) colMap.bandejas = idx;
         });
-        tablaDatos = [];
+
+// Guardar los pallets que están en PASADIZO antes de cargar la nueva tabla
+var palletsPasadizo = [];
+tablaDatos.forEach(function(s) {
+    if (s.ubicacion === "PASADIZO" && s.codigo) {
+        palletsPasadizo.push(s);
+    }
+});
+
+tablaDatos = [];
+
+// ... (resto del código que llena tablaDatos desde el Excel) ...
+
+// Después de llenar tablaDatos con el Excel, agregar los pallets de PASADIZO
+palletsPasadizo.forEach(function(p) {
+    tablaDatos.push(p);
+});
+
         for (var i = headerRow + 1; i < rows.length; i++) {
             var r = rows[i];
             if (!r) continue;

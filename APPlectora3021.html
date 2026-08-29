@@ -5294,21 +5294,17 @@ function descargarExcel() {
     for (var f = 0; f < 6; f++) data.push(['', '', '', '', '', '', '', '', '', '', '', '', '']);
     data.push(['CAMARA', 'RACK', 'CARRIL', 'NIVEL', 'POSICION', 'PRODUCTO_CODIGO', 'PRODUCTO_NOMBRE', 'LOTE', 'CANTIDAD_UNIDADES', 'PESO_KG', 'FECHA_VENCIMIENTO', 'NOMENCLATURA', 'LINEA_PROD', 'BANDEJAS']);
     tablaDatos.forEach(function(r) {
-        var nom = r.ubicacion || '';
-        var camara = (nom[0] === '1') ? 'P' : (nom[0] === '2') ? 'C' : '';
-        var rack = '', carril = '', nivel = '', pos = '';
-        if (nom.length >= 4) {
-            var resto = nom.substring(1);
-            if (resto.startsWith('PI')) rack = 'I';
-            else if (resto.startsWith('PD')) rack = 'D';
-            else if (resto.startsWith('CI')) rack = 'I';
-            else if (resto.startsWith('CD')) rack = 'D';
-            var m1 = resto.match(/[A-Z]+(\d+)/);
-            if (m1) carril = m1[1];
-            var m2 = nom.match(/[A-D]/g);
-            if (m2) nivel = m2[m2.length - 1];
-            var m3 = nom.match(/(\d+)$/);
-            if (m3) pos = m3[1];
+        var nom = (r.ubicacion || '').trim().toUpperCase();
+        // Formato de nomenclatura: [grp 1-2][tipo P/C][rack I/D/C][carril][nivel A-D][posicion]
+        // Ej: 2PI1D5 -> grp=2, tipo=P, rack=I, carril=1, nivel=D, pos=5
+        // Ej: 2PC3C7 -> grp=2, tipo=P, rack=C (central, sin izq/der), carril=3, nivel=C, pos=7
+        var camara = '', rack = '', carril = '', nivel = '', pos = '';
+        if (/^[12][PC][IDC]/.test(nom)) {
+            camara = nom[1];
+            rack = nom[2];
+            var resto = nom.substring(3);
+            var m = resto.match(/^(\d+)([A-D])(\d+)$/);
+            if (m) { carril = m[1]; nivel = m[2]; pos = m[3]; }
         }
         data.push([camara, rack, carril, nivel, pos, r.codigo, r.producto, r.lote, r.und, r.kg, r.vence, nom, r.linea, parseInt(r.bandejas) || 0]);
     });

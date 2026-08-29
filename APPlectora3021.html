@@ -1265,24 +1265,10 @@ if (carril === "PASADIZO") {
 function escanearUbicacion() {
     var ub = document.getElementById('input-escanear').value.toUpperCase().trim();
 
-// Si es PASADIZO, mostrar todos los pallets de PASADIZO
+// Si es PASADIZO, mostrar todos los pallets de PASADIZO (seleccionables)
 if (ub === "PASADIZO") {
-    var encontrados = tablaDatos.filter(function(s) { return s.ubicacion === "PASADIZO" && s.codigo; });
-    var html = '<div class="ubicacion-display">📍 PASADIZO</div>';
-    if (encontrados.length === 0) {
-        html += '<div class="mensaje">📭 PASADIZO vacío</div>';
-    } else {
-        html += '<div style="font-size:11px;color:#90caf9;margin-bottom:8px;">Total: ' + encontrados.length + ' pallets</div>';
-        encontrados.forEach(function(s) {
-            html += '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(79,195,247,0.2);border-radius:6px;padding:8px;margin-bottom:6px;">';
-            html += '<div style="font-size:13px;font-weight:bold;color:#4fc3f7;">📦 ' + s.codigo + ' — ' + s.producto + '</div>';
-            html += '<div style="font-size:11px;color:#c0c0c0;">📏 ' + s.und + ' und  ⚖️ ' + s.kg + ' kg</div>';
-            html += '<div style="font-size:11px;color:#fff;">🔢 Lote: ' + (s.lote || '—') + '  📅 Vence: ' + (s.vence || '—') + '</div>';
-            html += '</div>';
-        });
-    }
-    document.getElementById('resultado-escanear').innerHTML = html;
     document.getElementById('input-escanear').value = '';
+    mostrarListaPasadizoEscaneo();
     setTimeout(function() { document.getElementById('input-escanear').focus(); }, 500);
     return;
 }
@@ -1435,6 +1421,7 @@ if (encontrado && encontrado.codigo && catalogoClaves[encontrado.codigo]) {
         document.getElementById('pick-producto-info').innerHTML = '<b>' + encontrado.codigo + '</b> — ' + encontrado.producto + '<br>🔢 Lote: ' + encontrado.lote + ' | 📅 Vence: ' + encontrado.vence;
         window._pickingDestino = destino;
         window._pickingNombreDestino = nombreDestino;
+        window._pickingPasadizoRef = null;
         if (encontrado.und <= 0) {
             document.getElementById('pick-und-desp').disabled = true;
             document.getElementById('pick-und-desp').placeholder = 'Solo kilos';
@@ -1454,6 +1441,164 @@ function irAIngreso(ubicacion) {
     document.getElementById('ing-ubicacion').value = ubicacion;
     mostrarPanel('panel-ingreso');
     document.getElementById('ing-codigo').focus();
+}
+
+// ============================================================
+// PASADIZO: selección de pallet específico para salida/picking
+// ============================================================
+function opcionesDestinoHTML(selectId) {
+    var html = '<select id="' + selectId + '" style="font-size:14px;padding:10px;margin:6px 0;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:8px;width:100%;">';
+    html += '<option value="">Seleccione destino...</option>';
+    html += '<option value="CUSCO_SAYLLA">ALMACEN_CUSCO_SAYLLA</option>';
+    html += '<option value="CUSCO_PARQUE">ALMACEN_CUSCO_PQUE_INDUST</option>';
+    html += '<option value="JULIACA">ALMACEN_JULIACA</option>';
+    html += '<option value="PUNO">ALMACEN_PUNO</option>';
+    html += '<option value="LIMA">ALMACEN_LIMA</option>';
+    html += '<option value="VILLA_SALVADOR">TIENDA_VILLA_EL_SALVADOR</option>';
+    html += '<option value="COSTA">COSTA</option>';
+    html += '<option value="NOCHE">NOCHE</option>';
+    html += '<option value="CAMARA_500">CAMARA 500</option>';
+    html += '<option value="ZONAS">ZONAS</option>';
+    html += '<option value="TIENDAS">TIENDAS</option>';
+    html += '<option value="PBA">PBA</option>';
+    html += '<option value="PDC">DESPOSTE (PDC)</option>';
+    html += '<option value="PREPARADOS">EMBUTIDOS (PREPARADOS)</option>';
+    html += '<option value="CAMARA_1000">CAMARA 1000</option>';
+    html += '<option value="CAMARA_2000">CAMARA 2000</option>';
+    html += '</select>';
+    return html;
+}
+
+function mostrarListaPasadizoEscaneo() {
+    var encontrados = tablaDatos.filter(function(s) { return s.ubicacion === "PASADIZO" && s.codigo; });
+    var html = '<div class="ubicacion-display">📍 PASADIZO</div>';
+    if (encontrados.length === 0) {
+        html += '<div class="mensaje">📭 PASADIZO vacío</div>';
+    } else {
+        html += '<div style="font-size:11px;color:#90caf9;margin-bottom:8px;">Total: ' + encontrados.length + ' pallets — seleccione uno para hacerle SALIDA o PICKING</div>';
+        encontrados.forEach(function(s, idx) {
+            html += '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(79,195,247,0.2);border-radius:6px;padding:8px;margin-bottom:6px;">';
+            html += '<div style="font-size:13px;font-weight:bold;color:#4fc3f7;">📦 ' + s.codigo + ' — ' + s.producto + '</div>';
+            html += '<div style="font-size:11px;color:#c0c0c0;">📏 ' + s.und + ' und  ⚖️ ' + s.kg + ' kg</div>';
+            html += '<div style="font-size:11px;color:#fff;">🔢 Lote: ' + (s.lote || '—') + '  📅 Vence: ' + (s.vence || '—') + '</div>';
+            html += '<button class="btn-naranja" style="margin-top:6px;width:100%;" onclick="seleccionarPasadizoParaAccion(' + idx + ')">✅ SELECCIONAR ESTE PALLET</button>';
+            html += '<div id="pasadizo-acciones-' + idx + '"></div>';
+            html += '</div>';
+        });
+    }
+    document.getElementById('resultado-escanear').innerHTML = html;
+}
+
+function seleccionarPasadizoParaAccion(idx) {
+    var encontrados = tablaDatos.filter(function(s) { return s.ubicacion === "PASADIZO" && s.codigo; });
+    var s = encontrados[idx];
+    var cont = document.getElementById('pasadizo-acciones-' + idx);
+    if (!s || !cont) return;
+    var html = '<div style="margin:10px 0;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;">';
+    html += '<label style="color:#ff9800;font-size:13px;font-weight:bold;">📍 SELECCIONE DESTINO *</label>';
+    html += opcionesDestinoHTML('pasadizo-destino-' + idx);
+    html += '</div>';
+    html += '<div class="acciones">';
+    html += '<button class="btn-rojo" onclick="accionPasadizoConDestino(' + idx + ',\'salida\')">📤 SALIDA</button>';
+    html += '<button class="btn-naranja" onclick="accionPasadizoConDestino(' + idx + ',\'picking\')">📏 PICKING</button>';
+    html += '</div>';
+    cont.innerHTML = html;
+}
+
+function accionPasadizoConDestino(idx, tipo) {
+    var destinoSel = document.getElementById('pasadizo-destino-' + idx);
+    var destino = destinoSel ? destinoSel.value : '';
+    if (!destino) {
+        alert('⚠️ Debe seleccionar un destino antes de continuar.');
+        if (destinoSel) destinoSel.focus();
+        return;
+    }
+    var nombreDestino = destinoSel.options[destinoSel.selectedIndex]?.text || destino;
+    var encontrados = tablaDatos.filter(function(s) { return s.ubicacion === "PASADIZO" && s.codigo; });
+    var encontrado = encontrados[idx];
+    if (!encontrado) {
+        alert('⚠️ Este pallet ya no está disponible en PASADIZO (puede haber sido movido). Actualizando lista...');
+        mostrarListaPasadizoEscaneo();
+        return;
+    }
+
+    if (tipo === 'salida') {
+        if (!confirm('¿Dar SALIDA al pallet ' + encontrado.codigo + ' — ' + encontrado.producto + ' en PASADIZO?\nDestino: ' + nombreDestino)) return;
+        var undAntes = encontrado.und, kgAntes = encontrado.kg, bandAntes = encontrado.bandejas || 0;
+        var codigo = encontrado.codigo, producto = encontrado.producto, lote = encontrado.lote;
+        encontrado.codigo = ''; encontrado.producto = ''; encontrado.lote = '';
+        encontrado.und = 0; encontrado.kg = 0; encontrado.vence = ''; encontrado.linea = '';
+        encontrado.bandejas = 0;
+        guardarEnLocalStorage();
+        if (catalogoClaves[codigo]) { delete catalogoClaves[codigo]; guardarCatalogoClaves(); }
+        historialSalidas.push({
+            fecha: new Date().toLocaleDateString('es-PE'),
+            hora: new Date().toLocaleTimeString('es-PE'),
+            tipo: 'SALIDA (LOTE)',
+            destino: destino,
+            nombreDestino: nombreDestino,
+            ubicacion: 'PASADIZO',
+            codigo: codigo,
+            producto: producto,
+            lote: lote || '',
+            und: undAntes,
+            kg: kgAntes,
+            bandejas: bandAntes,
+            anulado: false
+        });
+        localStorage.setItem('historialSalidas', JSON.stringify(historialSalidas));
+        historialMovimientos.push({
+            fecha: new Date().toLocaleDateString('es-PE'),
+            hora: new Date().toLocaleTimeString('es-PE'),
+            tipo: 'SALIDA (LOTE)',
+            ubicacion: 'PASADIZO',
+            codigo: codigo,
+            producto: producto,
+            lote: lote || '',
+            destino: destino,
+            nombreDestino: nombreDestino,
+            undAnt: undAntes || 0,
+            undDesp: 0,
+            kgAnt: kgAntes || 0,
+            kgDesp: 0,
+            bandAnt: bandAntes || 0,
+            bandDesp: 0,
+            bandFin: 0
+        });
+        localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+        mostrarFeedback('✅ Salida registrada — PASADIZO → ' + nombreDestino);
+        mostrarListaPasadizoEscaneo();
+        return;
+    }
+
+    if (tipo === 'picking') {
+        document.getElementById('pick-und-ini').textContent = encontrado.und;
+        document.getElementById('pick-kg-ini').textContent = encontrado.kg;
+        document.getElementById('pick-band-ini').textContent = encontrado.bandejas || 0;
+        document.getElementById('pick-band-desp').value = '';
+        document.getElementById('pick-band-fin').textContent = encontrado.bandejas || 0;
+        document.getElementById('pick-und-desp').value = '';
+        document.getElementById('pick-kg-desp').value = '';
+        document.getElementById('pick-und-fin').textContent = encontrado.und;
+        document.getElementById('pick-kg-fin').textContent = encontrado.kg;
+        document.getElementById('pick-ubicacion').value = 'PASADIZO';
+        document.getElementById('pick-producto-info').innerHTML = '<b>' + encontrado.codigo + '</b> — ' + encontrado.producto + '<br>🔢 Lote: ' + encontrado.lote + ' | 📅 Vence: ' + encontrado.vence;
+        window._pickingDestino = destino;
+        window._pickingNombreDestino = nombreDestino;
+        window._pickingPasadizoRef = encontrado;
+        if (encontrado.und <= 0) {
+            document.getElementById('pick-und-desp').disabled = true;
+            document.getElementById('pick-und-desp').placeholder = 'Solo kilos';
+            mostrarPanel('panel-picking');
+            setTimeout(function() { document.getElementById('pick-kg-desp').focus(); }, 200);
+        } else {
+            document.getElementById('pick-und-desp').disabled = false;
+            document.getElementById('pick-und-desp').placeholder = '0';
+            mostrarPanel('panel-picking');
+            setTimeout(function() { document.getElementById('pick-und-desp').focus(); }, 200);
+        }
+        return;
+    }
 }
 
 // ============================================================
@@ -5293,7 +5438,9 @@ function descargarExcel() {
     var data = [];
     for (var f = 0; f < 6; f++) data.push(['', '', '', '', '', '', '', '', '', '', '', '', '']);
     data.push(['CAMARA', 'RACK', 'CARRIL', 'NIVEL', 'POSICION', 'PRODUCTO_CODIGO', 'PRODUCTO_NOMBRE', 'LOTE', 'CANTIDAD_UNIDADES', 'PESO_KG', 'FECHA_VENCIMIENTO', 'NOMENCLATURA', 'LINEA_PROD', 'BANDEJAS']);
-    tablaDatos.forEach(function(r) {
+    var filasParaExportar = tablaDatos.filter(function(r) { return r.ubicacion !== 'PASADIZO'; })
+        .concat(tablaDatos.filter(function(r) { return r.ubicacion === 'PASADIZO'; }));
+    filasParaExportar.forEach(function(r) {
         var nom = (r.ubicacion || '').trim().toUpperCase();
         // Formato de nomenclatura: [grp 1-2][tipo P/C][rack I/D/C][carril][nivel A-D][posicion]
         // Ej: 2PI1D5 -> grp=2, tipo=P, rack=I, carril=1, nivel=D, pos=5
@@ -5345,22 +5492,11 @@ function cargarExcel(event) {
             else if (hn.includes('BANDEJA')) colMap.bandejas = idx;
         });
 
-// Guardar los pallets que están en PASADIZO antes de cargar la nueva tabla
-var palletsPasadizo = [];
-tablaDatos.forEach(function(s) {
-    if (s.ubicacion === "PASADIZO" && s.codigo) {
-        palletsPasadizo.push(s);
-    }
-});
-
 tablaDatos = [];
 
-// ... (resto del código que llena tablaDatos desde el Excel) ...
-
-// Después de llenar tablaDatos con el Excel, agregar los pallets de PASADIZO
-palletsPasadizo.forEach(function(p) {
-    tablaDatos.push(p);
-});
+// Nota: PASADIZO ya no se preserva manualmente aquí — se toma tal cual
+// venga en el Excel cargado, para que si el Excel no trae pasadizo,
+// la app también lo refleje (se vacía).
 
         for (var i = headerRow + 1; i < rows.length; i++) {
             var r = rows[i];
@@ -5612,7 +5748,7 @@ function guardarPicking() {
     }
     var destino = window._pickingDestino;
     var nombreDestino = window._pickingNombreDestino || destino;
-    var encontrado = buscarEnTabla(ubicacion);
+    var encontrado = window._pickingPasadizoRef || buscarEnTabla(ubicacion);
     if (!encontrado) {
         if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.textContent = '💾 GUARDAR'; }
         return;
@@ -5686,6 +5822,7 @@ function guardarPicking() {
     localStorage.setItem('historialSalidas', JSON.stringify(historialSalidas));
     window._pickingDestino = null;
     window._pickingNombreDestino = null;
+    window._pickingPasadizoRef = null;
     var html = '<div style="font-size:12px;line-height:1.8;">';
     html += '<b>UNID INIC:</b> ' + undIni + ' | <b>KG INIC:</b> ' + kgIni + ' | <b>BANDEJAS INIC:</b> ' + bandIni + '<br>';
     html += '<b style="color:#ff9800;">UNID DESP:</b> ' + undDesp + ' | <b style="color:#ff9800;">KG DESP:</b> ' + kgDesp + ' | <b style="color:#ff9800;">BAND DESP:</b> ' + bandDesp + '<br>';
@@ -5696,7 +5833,7 @@ function guardarPicking() {
     document.getElementById('pick-und-desp').value = '';
     document.getElementById('pick-kg-desp').value = '';
     document.getElementById('pick-band-desp').value = '';
-    var nuevoEncontrado = buscarEnTabla(ubicacion);
+    var nuevoEncontrado = encontrado;
     if (nuevoEncontrado) {
         document.getElementById('pick-und-ini').textContent = nuevoEncontrado.und || 0;
         document.getElementById('pick-kg-ini').textContent = nuevoEncontrado.kg || 0;

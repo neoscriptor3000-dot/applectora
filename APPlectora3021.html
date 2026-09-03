@@ -113,7 +113,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ GOAT1 </div>
+<div>Ing. PERCY S. TEJADA VALDEZ </div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -410,7 +410,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </select>
 <div class="mensaje" style="font-size:11px;color:#607d8b;">Pistolee la ubicación o toque una sugerencia</div>
 <button class="btn btn-ingreso" onclick="confirmarIngresoMasivo()" style="width:100%;background:#2e7d32;margin-top:8px;">✅ CONFIRMAR INGRESO</button>
-<div style="display:flex;gap:8px;margin-top:8px;"><button class="btn btn-ubicacion" onclick="navegarPallet(-1)" style="flex:1;">◀ ANTERIOR</button><button class="btn btn-ubicacion" onclick="navegarPallet(1)" style="flex:1;">SIGUIENTE ▶</button></div><button class="btn btn-excel" onclick="verIngresados()" style="margin-top:5px;">📋 VER INGRESADOS</button><div class="acciones" style="margin-top:8px;"><button class="btn-rojo" onclick="cancelarIngresoMasivo()">❌ CANCELAR</button></div></div>
+<div style="display:flex;gap:8px;margin-top:8px;"><button id="btn-pallet-anterior" class="btn btn-ubicacion" onclick="navegarPallet(-1)" style="flex:1;">◀ ANTERIOR</button><button id="btn-pallet-siguiente" class="btn btn-ubicacion" onclick="navegarPallet(1)" style="flex:1;">SIGUIENTE ▶</button></div><button class="btn btn-excel" onclick="verIngresados()" style="margin-top:5px;">📋 VER INGRESADOS</button><div class="acciones" style="margin-top:8px;"><button class="btn-rojo" onclick="cancelarIngresoMasivo()">❌ CANCELAR</button></div></div>
 
 <!-- ===== PANEL DE INGRESO POR ETIQUETA ===== -->
 <div id="panel-ingreso-etiqueta" class="panel">
@@ -2231,7 +2231,8 @@ function mostrarPalletIngreso() {
         document.getElementById('ing-masivo-bandejas').style.display = 'none';
         document.getElementById('ing-masivo-procedencia').style.display = 'none';
         document.querySelector('#panel-ingreso-masivo .btn-ingreso').style.display = 'none';
-        document.querySelector('#panel-ingreso-masivo .btn-ubicacion').style.display = 'none';
+        document.getElementById('btn-pallet-anterior').style.display = 'none';
+        document.getElementById('btn-pallet-siguiente').style.display = 'none';
         
         // Limpiar progreso de correcciones al completar todo
         var claves = listaIngreso.map(function(p) { return p.clave; }).sort().join('|');
@@ -2256,7 +2257,8 @@ function mostrarPalletIngreso() {
         document.getElementById('ing-masivo-bandejas').style.display = 'none';
         document.getElementById('ing-masivo-procedencia').style.display = 'none';
         document.querySelector('#panel-ingreso-masivo .btn-ingreso').style.display = 'none';
-        document.querySelector('#panel-ingreso-masivo .btn-ubicacion').style.display = 'none';
+        document.getElementById('btn-pallet-anterior').style.display = 'none';
+        document.getElementById('btn-pallet-siguiente').style.display = 'none';
         document.getElementById('ing-masivo-sugerencias').innerHTML = '<button onclick="retirarIngresadoPorIndice(' + indexIngreso + ')" class="btn-rojo" style="padding:8px;">↩ RETIRAR DE ' + yaIngresado.ubicacion + '</button>';
         return;
     }
@@ -2273,7 +2275,8 @@ function mostrarPalletIngreso() {
     document.getElementById('ing-masivo-bandejas').style.display = 'block';
     document.getElementById('ing-masivo-procedencia').style.display = 'block';
     document.querySelector('#panel-ingreso-masivo .btn-ingreso').style.display = 'block';
-    document.querySelector('#panel-ingreso-masivo .btn-ubicacion').style.display = 'flex';
+    document.getElementById('btn-pallet-anterior').style.display = 'flex';
+    document.getElementById('btn-pallet-siguiente').style.display = 'flex';
     
     if (window._ultimaProcedencia) {
         document.getElementById('ing-masivo-procedencia').value = window._ultimaProcedencia;
@@ -2461,7 +2464,8 @@ if (p.clave && catalogoClaves[p.clave]) {
     document.getElementById('ing-masivo-info').innerHTML = '✅ INGRESADO en ' + ub;
     document.getElementById('ing-masivo-ubicacion').style.display = 'none';
     document.querySelector('#panel-ingreso-masivo .btn-ingreso').style.display = 'none';
-    document.querySelector('#panel-ingreso-masivo .btn-ubicacion').style.display = 'none';
+    document.getElementById('btn-pallet-anterior').style.display = 'none';
+        document.getElementById('btn-pallet-siguiente').style.display = 'none';
     mostrarFeedback('✅ Ingreso masivo guardado');
     
     // Avanzar al siguiente

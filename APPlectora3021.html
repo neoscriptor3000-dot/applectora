@@ -2231,8 +2231,6 @@ function mostrarPalletIngreso() {
         document.getElementById('ing-masivo-bandejas').style.display = 'none';
         document.getElementById('ing-masivo-procedencia').style.display = 'none';
         document.querySelector('#panel-ingreso-masivo .btn-ingreso').style.display = 'none';
-        document.getElementById('btn-pallet-anterior').style.display = 'none';
-        document.getElementById('btn-pallet-siguiente').style.display = 'none';
         
         // Limpiar progreso de correcciones al completar todo
         var claves = listaIngreso.map(function(p) { return p.clave; }).sort().join('|');
@@ -2257,8 +2255,6 @@ function mostrarPalletIngreso() {
         document.getElementById('ing-masivo-bandejas').style.display = 'none';
         document.getElementById('ing-masivo-procedencia').style.display = 'none';
         document.querySelector('#panel-ingreso-masivo .btn-ingreso').style.display = 'none';
-        document.getElementById('btn-pallet-anterior').style.display = 'none';
-        document.getElementById('btn-pallet-siguiente').style.display = 'none';
         document.getElementById('ing-masivo-sugerencias').innerHTML = '<button onclick="retirarIngresadoPorIndice(' + indexIngreso + ')" class="btn-rojo" style="padding:8px;">↩ RETIRAR DE ' + yaIngresado.ubicacion + '</button>';
         return;
     }
@@ -2464,8 +2460,6 @@ if (p.clave && catalogoClaves[p.clave]) {
     document.getElementById('ing-masivo-info').innerHTML = '✅ INGRESADO en ' + ub;
     document.getElementById('ing-masivo-ubicacion').style.display = 'none';
     document.querySelector('#panel-ingreso-masivo .btn-ingreso').style.display = 'none';
-    document.getElementById('btn-pallet-anterior').style.display = 'none';
-        document.getElementById('btn-pallet-siguiente').style.display = 'none';
     mostrarFeedback('✅ Ingreso masivo guardado');
     
     // Avanzar al siguiente

@@ -66,6 +66,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <div id="menu-ubicaciones" class="menu-items-app">
 <button class="btn btn-ubicacion" onclick="mostrarPanel('panel-escanear')">📍 Escanear Ubicación</button>
 <button class="btn btn-ubicacion" onclick="mostrarPanel('panel-ver-carril')">📋 Ver Carril</button>
+<button class="btn btn-ubicacion" onclick="mostrarPanel('panel-ver-acarreo')">🚚 Ver Acarreo</button>
 <button class="btn btn-ubicacion" onclick="mostrarPanel('panel-trasladar')">🔄 Trasladar Pallet</button>
 <button class="btn btn-ubicacion" onclick="mostrarPanel('panel-buscar-producto')">🔍 Buscar Producto</button>
 </div>
@@ -303,6 +304,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <div id="panel-trasladar" class="panel"><h3>🔄 TRASLADAR PALLET</h3><label style="color:#90caf9;font-size:12px;">📍 UBICACIÓN ORIGEN</label><input type="text" id="traslado-origen" placeholder="Escanee ubicación origen" onchange="verificarOrigen()" style="font-size:16px;text-align:center;"><div id="traslado-info-origen" style="font-size:12px;color:#fff;text-align:center;margin:8px 0;"></div><div id="traslado-seccion-destino" style="display:none;"><label style="color:#ff9800;font-size:12px;">📍 UBICACIÓN DESTINO</label><input type="text" id="traslado-destino" placeholder="Escanee ubicación destino" onchange="ejecutarTraslado()" style="font-size:16px;text-align:center;"></div><div id="traslado-msg" style="font-size:12px;color:#fff;text-align:center;margin:8px 0;"></div><button class="btn btn-volver" onclick="resetearTraslado();mostrarMenu();">❌ SALIR</button></div>
 <div id="panel-buscar-producto" class="panel"><h3>🔍 BUSCAR PRODUCTO</h3><input type="text" id="buscar-prod-input" placeholder="Ingrese código..." onchange="buscarProductoApp()" style="font-size:16px;text-align:center;"><div style="display:flex;gap:8px;justify-content:center;margin-bottom:8px;"><button onclick="setFiltroCamaraApp('2')" id="btn-filtro-2000" class="btn btn-ubicacion" style="padding:6px 12px;font-size:11px;">📷 2000</button><button onclick="setFiltroCamaraApp('1')" id="btn-filtro-1000" class="btn btn-ubicacion" style="padding:6px 12px;font-size:11px;">📷 1000</button><button onclick="setFiltroCamaraApp('')" id="btn-filtro-todas" class="btn btn-ubicacion" style="padding:6px 12px;font-size:11px;background:#4fc3f7;color:#000;">📷 TODAS</button></div><div class="mensaje" style="font-size:11px;color:#607d8b;">Muestra las 50 ubicaciones con lotes más antiguos</div><div id="buscar-prod-resultado" style="font-size:10px;color:#c0c0c0;max-height:400px;overflow:auto;margin-top:10px;"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
 <div id="panel-ver-carril" class="panel"><h3>📋 VER CARRIL</h3><input type="text" id="ver-carril-input" placeholder="Digite o pistolee el carril" onchange="verCarril()" style="font-size:18px;text-align:center;"><div class="mensaje" style="font-size:11px;color:#607d8b;">Ingrese el carril para ver su contenido</div><div id="ver-carril-resultado" style="font-size:10px;color:#c0c0c0;max-height:400px;overflow:auto;margin-top:10px;"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
+<div id="panel-ver-acarreo" class="panel"><h3>🚚 VER ACARREO</h3><input type="text" id="ver-acarreo-input" placeholder="Digite, pistolee o dicte la ubicación" onchange="verAcarreo()" style="font-size:18px;text-align:center;"><div class="mensaje" style="font-size:11px;color:#607d8b;">Ingrese una ubicación del carril para ver las bandejas por posición</div><div id="ver-acarreo-resultado" style="font-size:12px;color:#c0c0c0;max-height:450px;overflow:auto;margin-top:10px;"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
 <div id="panel-escanear" class="panel"><h3>📍 ESCANEAR UBICACIÓN</h3><input type="text" id="input-escanear" placeholder="Apunta y escanea aquí..." onchange="escanearUbicacion()" style="font-size:20px;text-align:center;"><div class="mensaje" style="font-size:11px;color:#607d8b;">La handheld escribirá automáticamente al escanear</div><div id="resultado-escanear"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
 <div id="panel-historial" class="panel"><h3>📋 MOVIMIENTOS DEL DÍA</h3><input type="date" id="hist-fecha" onchange="filtrarHistorial()" style="margin-bottom:8px;"><button class="btn btn-excel" onclick="exportarHistorial()" style="margin-bottom:8px;">📥 EXPORTAR MOVIMIENTOS</button>
 <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:center;">
@@ -641,6 +643,11 @@ function mostrarPanel(id) {
         document.getElementById('ver-carril-input').value = '';
         document.getElementById('ver-carril-resultado').innerHTML = '';
     }
+    if (id === 'panel-ver-acarreo') {
+        document.getElementById('ver-acarreo-input').value = '';
+        document.getElementById('ver-acarreo-resultado').innerHTML = '';
+        setTimeout(function() { document.getElementById('ver-acarreo-input').focus(); }, 200);
+    }
     if (id === 'panel-historial') {
         var hoy = new Date();
         var fechaInput = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
@@ -974,6 +981,7 @@ function mostrarResumenBandejasApp() {
         { nombre: 'CÁMARA 1000 POLLOS', grp: '1', tipo: 'P', color: '#ce93d8' },
         { nombre: 'CÁMARA 1000 CORTES', grp: '1', tipo: 'C', color: '#ce93d8' }
     ];
+    var totalCamara2000 = 0, totalCamara1000 = 0;
     camaras.forEach(function(camInfo) {
         html += '<div style="color:' + camInfo.color + ';font-size:13px;font-weight:bold;margin:10px 0 6px 0;border-bottom:2px solid ' + camInfo.color + ';padding-bottom:4px;">📦 ' + camInfo.nombre + '</div>';
         html += '<table style="width:100%;border-collapse:collapse;font-size:9px;margin-bottom:12px;">';
@@ -1020,6 +1028,7 @@ function mostrarResumenBandejasApp() {
                     else if (key === cen) totalCen += band;
                 }
             });
+            totalBandejasCam += totalIzq + totalDer + totalCen;
             function formatearDetalle(obj, total) {
                 if (!obj || Object.keys(obj).length === 0) return '';
                 var partes = [];
@@ -1042,7 +1051,17 @@ function mostrarResumenBandejasApp() {
         }
         html += '<tr style="font-weight:bold;background:rgba(255,255,255,0.05);"><td colspan="2">TOTAL ' + camInfo.nombre + '</td><td style="text-align:right;color:#69f0ae;">' + totalBandejasCam + '</td></tr>';
         html += '</table>';
+        if (camInfo.grp === '2') totalCamara2000 += totalBandejasCam;
+        else totalCamara1000 += totalBandejasCam;
     });
+    var totalGeneral = totalCamara2000 + totalCamara1000;
+    html += '<div style="margin-top:14px;border-top:2px solid #ffcc80;padding-top:8px;">';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+    html += '<tr style="font-weight:bold;background:rgba(79,195,247,0.1);"><td style="padding:6px;">TOTAL CÁMARA 2000</td><td style="padding:6px;text-align:right;color:#69f0ae;">' + totalCamara2000 + '</td></tr>';
+    html += '<tr style="font-weight:bold;background:rgba(206,147,216,0.1);"><td style="padding:6px;">TOTAL CÁMARA 1000</td><td style="padding:6px;text-align:right;color:#69f0ae;">' + totalCamara1000 + '</td></tr>';
+    html += '<tr style="font-weight:bold;background:rgba(255,204,128,0.15);"><td style="padding:6px;">TOTAL GENERAL</td><td style="padding:6px;text-align:right;color:#ffcc80;font-size:13px;">' + totalGeneral + '</td></tr>';
+    html += '</table>';
+    html += '</div>';
     document.getElementById('resumen-bandejas-body').innerHTML = html;
 }
 
@@ -1267,6 +1286,86 @@ if (esPasadizo(carril) || carril === "PASADIZO") {
     html += '</table>';
     document.getElementById('ver-carril-resultado').innerHTML = html;
     document.getElementById('ver-carril-input').focus();
+}
+
+// ============================================================
+// VER ACARREO — igual que Ver Carril (misma detección de carril
+// y misma disposición real de niveles/posiciones), pero muestra
+// una cuadrícula con la cantidad de bandejas por posición.
+// ============================================================
+function verAcarreo() {
+    var carril = document.getElementById('ver-acarreo-input').value.toUpperCase().trim();
+    if (!carril) return;
+    carril = carril.replace(/[A-D]\d+$/, '');
+    document.getElementById('ver-acarreo-input').value = '';
+    var esCentral = carril.includes('CC') || carril.includes('PC');
+    var ordenVisual;
+    if (esCentral) {
+        var numCarril = parseInt(carril.match(/(\d+)$/)[1]) || 1;
+        var posUsar = numCarril > 28 ? 2 : 1;
+        ordenVisual = [
+            {nivel:'D',pos:posUsar},{nivel:'C',pos:posUsar},{nivel:'B',pos:posUsar},{nivel:'A',pos:posUsar}
+        ];
+    } else if (carril === '1CI1' || carril === '1CI2') {
+        ordenVisual = [
+            {nivel:'D',pos:3},{nivel:'D',pos:2},{nivel:'D',pos:1},
+            {nivel:'C',pos:3},{nivel:'C',pos:2},{nivel:'C',pos:1},
+            {nivel:'B',pos:3},{nivel:'B',pos:2},{nivel:'B',pos:1},
+            {nivel:'A',pos:3},{nivel:'A',pos:2},{nivel:'A',pos:1}
+        ];
+    } else {
+        ordenVisual = [
+            {nivel:'D',pos:5},{nivel:'D',pos:4},{nivel:'D',pos:3},{nivel:'D',pos:2},{nivel:'D',pos:1},
+            {nivel:'C',pos:5},{nivel:'C',pos:4},{nivel:'C',pos:3},{nivel:'C',pos:2},{nivel:'C',pos:1},
+            {nivel:'B',pos:5},{nivel:'B',pos:4},{nivel:'B',pos:3},{nivel:'B',pos:2},{nivel:'B',pos:1},
+            {nivel:'A',pos:6},{nivel:'A',pos:5},{nivel:'A',pos:4},{nivel:'A',pos:3},{nivel:'A',pos:2},{nivel:'A',pos:1}
+        ];
+    }
+
+    var niveles = ['D', 'C', 'B', 'A'];
+    var posicionesUsadas = [];
+    ordenVisual.forEach(function(o) { if (posicionesUsadas.indexOf(o.pos) === -1) posicionesUsadas.push(o.pos); });
+    posicionesUsadas.sort(function(a, b) { return b - a; });
+
+    var datos = {};
+    var total = 0;
+    ordenVisual.forEach(function(o) {
+        var ub = carril + o.nivel + o.pos;
+        var encontrado = buscarEnTabla(ub);
+        var band = (encontrado && encontrado.codigo) ? (parseInt(encontrado.bandejas) || 0) : null;
+        if (!datos[o.nivel]) datos[o.nivel] = {};
+        datos[o.nivel][o.pos] = band;
+        if (band) total += band;
+    });
+
+    var html = '<div style="display:flex;gap:10px;margin-bottom:12px;">';
+    html += '<div style="flex:1;border:2px solid #4fc3f7;border-radius:8px;padding:10px;text-align:center;font-size:22px;font-weight:bold;color:#4fc3f7;">' + carril + '</div>';
+    html += '<div style="border:2px solid #69f0ae;border-radius:8px;padding:10px;text-align:center;min-width:90px;"><div style="font-size:11px;color:#90caf9;">TOTAL</div><div style="font-size:20px;font-weight:bold;color:#69f0ae;">' + total + '</div></div>';
+    html += '</div>';
+
+    html += '<table style="width:100%;border-collapse:collapse;text-align:center;">';
+    html += '<tr><td style="width:26px;"></td>';
+    posicionesUsadas.forEach(function(p) { html += '<td style="padding:4px;color:#90caf9;font-weight:bold;">' + p + '</td>'; });
+    html += '</tr>';
+    niveles.forEach(function(niv) {
+        if (!datos[niv]) return;
+        html += '<tr>';
+        html += '<td style="padding:6px;font-weight:bold;color:#4fc3f7;">' + niv + '</td>';
+        posicionesUsadas.forEach(function(p) {
+            if (!datos[niv].hasOwnProperty(p)) { html += '<td></td>'; return; }
+            var band = datos[niv][p];
+            if (band) {
+                html += '<td style="padding:12px 6px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);font-weight:bold;">' + band + '</td>';
+            } else {
+                html += '<td style="padding:12px 6px;border:1px solid rgba(255,255,255,0.12);"></td>';
+            }
+        });
+        html += '</tr>';
+    });
+    html += '</table>';
+
+    document.getElementById('ver-acarreo-resultado').innerHTML = html;
+    document.getElementById('ver-acarreo-input').focus();
 }
 
 function escanearUbicacion() {
@@ -5465,7 +5564,7 @@ function exportarHistorialSalidas() {
 // ============================================================
 function descargarExcel() {
     var data = [];
-    for (var f = 0; f < 6; f++) data.push(['', '', '', '', '', '', '', '', '', '', '', '', '']);
+    for (var f = 0; f < 6; f++) data.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '']);
     data.push(['CAMARA', 'RACK', 'CARRIL', 'NIVEL', 'POSICION', 'PRODUCTO_CODIGO', 'PRODUCTO_NOMBRE', 'LOTE', 'CANTIDAD_UNIDADES', 'PESO_KG', 'FECHA_VENCIMIENTO', 'NOMENCLATURA', 'LINEA_PROD', 'BANDEJAS']);
     var filasParaExportar = tablaDatos.filter(function(r) { return !esPasadizo(r.ubicacion); })
         .concat(tablaDatos.filter(function(r) { return esPasadizo(r.ubicacion); }));

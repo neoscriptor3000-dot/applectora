@@ -1299,14 +1299,68 @@ function verAcarreo() {
     carril = carril.replace(/[A-D]\d+$/, '');
     document.getElementById('ver-acarreo-input').value = '';
     var esCentral = carril.includes('CC') || carril.includes('PC');
-    var ordenVisual;
+    var niveles = ['D', 'C', 'B', 'A'];
+    var html = '';
+    var titulo, total = 0;
+
     if (esCentral) {
-        var numCarril = parseInt(carril.match(/(\d+)$/)[1]) || 1;
-        var posUsar = numCarril > 28 ? 2 : 1;
-        ordenVisual = [
-            {nivel:'D',pos:posUsar},{nivel:'C',pos:posUsar},{nivel:'B',pos:posUsar},{nivel:'A',pos:posUsar}
+        // Racks centrales: trabajan en PARES (carril n y n+28, ej. 12-40).
+        // Se muestran siempre juntos, cada uno en su propia columna.
+        var m = carril.match(/^(.*?)(\d+)$/);
+        var prefijo = m[1];
+        var numCarril = parseInt(m[2]) || 1;
+        var nMenor = numCarril > 28 ? numCarril - 28 : numCarril;
+        var nMayor = numCarril > 28 ? numCarril : numCarril + 28;
+        var pareja = [
+            { carrilNum: nMenor, pos: 1, col: '1' },
+            { carrilNum: nMayor, pos: 2, col: '2' }
         ];
-    } else if (carril === '1CI1' || carril === '1CI2') {
+        titulo = prefijo + nMenor + ' - ' + prefijo + nMayor;
+
+        var datosC = {};
+        pareja.forEach(function(p) {
+            niveles.forEach(function(niv) {
+                var ub = prefijo + p.carrilNum + niv + p.pos;
+                var encontrado = buscarEnTabla(ub);
+                var band = (encontrado && encontrado.codigo) ? (parseInt(encontrado.bandejas) || 0) : null;
+                if (!datosC[niv]) datosC[niv] = {};
+                datosC[niv][p.col] = band;
+                if (band) total += band;
+            });
+        });
+
+        html += '<div style="display:flex;gap:10px;margin-bottom:12px;">';
+        html += '<div style="border:2px solid #69f0ae;border-radius:8px;padding:10px;text-align:center;min-width:90px;"><div style="font-size:11px;color:#90caf9;">TOTAL</div><div style="font-size:20px;font-weight:bold;color:#69f0ae;">' + total + '</div></div>';
+        html += '<div style="flex:1;border:2px solid #4fc3f7;border-radius:8px;padding:10px;text-align:center;font-size:20px;font-weight:bold;color:#4fc3f7;">' + titulo + '</div>';
+        html += '</div>';
+
+        html += '<table style="width:100%;border-collapse:collapse;text-align:center;">';
+        html += '<tr><td style="width:26px;"></td><td style="padding:4px;color:#90caf9;font-weight:bold;">1</td><td style="padding:4px;color:#90caf9;font-weight:bold;">2</td></tr>';
+        niveles.forEach(function(niv) {
+            html += '<tr><td style="padding:6px;font-weight:bold;color:#4fc3f7;">' + niv + '</td>';
+            ['1', '2'].forEach(function(col) {
+                var band = datosC[niv] ? datosC[niv][col] : null;
+                if (band) {
+                    html += '<td style="padding:12px 6px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);font-weight:bold;">' + band + '</td>';
+                } else {
+                    html += '<td style="padding:12px 6px;border:1px solid rgba(255,255,255,0.12);"></td>';
+                }
+            });
+            html += '</tr>';
+        });
+        html += '</table>';
+
+        document.getElementById('ver-acarreo-resultado').innerHTML = html;
+        document.getElementById('ver-acarreo-input').focus();
+        return;
+    }
+
+    // Racks laterales: D/C/B usan las posiciones 6,5,4,3,2 (sin la 1);
+    // A usa las 6 posiciones (6,5,4,3,2,1). El orden de columnas se
+    // invierte según el lado: Izquierdo se lee 6→1, Derecho se lee 1→6
+    // (son estructuras espejadas entre sí).
+    var ordenVisual;
+    if (carril === '1CI1' || carril === '1CI2') {
         ordenVisual = [
             {nivel:'D',pos:3},{nivel:'D',pos:2},{nivel:'D',pos:1},
             {nivel:'C',pos:3},{nivel:'C',pos:2},{nivel:'C',pos:1},
@@ -1321,14 +1375,17 @@ function verAcarreo() {
             {nivel:'A',pos:6},{nivel:'A',pos:5},{nivel:'A',pos:4},{nivel:'A',pos:3},{nivel:'A',pos:2},{nivel:'A',pos:1}
         ];
     }
+    var ladoChar = carril.charAt(2); // 'I' = Izquierdo, 'D' = Derecho
 
-    var niveles = ['D', 'C', 'B', 'A'];
     var posicionesUsadas = [];
     ordenVisual.forEach(function(o) { if (posicionesUsadas.indexOf(o.pos) === -1) posicionesUsadas.push(o.pos); });
-    posicionesUsadas.sort(function(a, b) { return b - a; });
+    if (ladoChar === 'D') {
+        posicionesUsadas.sort(function(a, b) { return a - b; }); // Derecho: 1 → 6
+    } else {
+        posicionesUsadas.sort(function(a, b) { return b - a; }); // Izquierdo: 6 → 1
+    }
 
     var datos = {};
-    var total = 0;
     ordenVisual.forEach(function(o) {
         var ub = carril + o.nivel + o.pos;
         var encontrado = buscarEnTabla(ub);
@@ -1338,7 +1395,7 @@ function verAcarreo() {
         if (band) total += band;
     });
 
-    var html = '<div style="display:flex;gap:10px;margin-bottom:12px;">';
+    html += '<div style="display:flex;gap:10px;margin-bottom:12px;">';
     html += '<div style="flex:1;border:2px solid #4fc3f7;border-radius:8px;padding:10px;text-align:center;font-size:22px;font-weight:bold;color:#4fc3f7;">' + carril + '</div>';
     html += '<div style="border:2px solid #69f0ae;border-radius:8px;padding:10px;text-align:center;min-width:90px;"><div style="font-size:11px;color:#90caf9;">TOTAL</div><div style="font-size:20px;font-weight:bold;color:#69f0ae;">' + total + '</div></div>';
     html += '</div>';

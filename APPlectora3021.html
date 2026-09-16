@@ -1360,6 +1360,9 @@ function verAcarreo() {
     // invierte según el lado: Izquierdo se lee 6→1, Derecho se lee 1→6
     // (son estructuras espejadas entre sí).
     var ordenVisual;
+    var ladoChar = carril.charAt(2); // 'I' = Izquierdo, 'D' = Derecho
+    
+    var ordenVisual;
     if (carril === '1CI1' || carril === '1CI2') {
         ordenVisual = [
             {nivel:'D',pos:3},{nivel:'D',pos:2},{nivel:'D',pos:1},
@@ -1367,23 +1370,26 @@ function verAcarreo() {
             {nivel:'B',pos:3},{nivel:'B',pos:2},{nivel:'B',pos:1},
             {nivel:'A',pos:3},{nivel:'A',pos:2},{nivel:'A',pos:1}
         ];
-    } else {
+    } else if (ladoChar === 'I') {
+        // IZQUIERDO: pos de mayor a menor (5→1)
         ordenVisual = [
             {nivel:'D',pos:5},{nivel:'D',pos:4},{nivel:'D',pos:3},{nivel:'D',pos:2},{nivel:'D',pos:1},
             {nivel:'C',pos:5},{nivel:'C',pos:4},{nivel:'C',pos:3},{nivel:'C',pos:2},{nivel:'C',pos:1},
             {nivel:'B',pos:5},{nivel:'B',pos:4},{nivel:'B',pos:3},{nivel:'B',pos:2},{nivel:'B',pos:1},
             {nivel:'A',pos:6},{nivel:'A',pos:5},{nivel:'A',pos:4},{nivel:'A',pos:3},{nivel:'A',pos:2},{nivel:'A',pos:1}
         ];
+    } else {
+        // DERECHO: pos de menor a mayor (1→5)
+        ordenVisual = [
+            {nivel:'D',pos:1},{nivel:'D',pos:2},{nivel:'D',pos:3},{nivel:'D',pos:4},{nivel:'D',pos:5},
+            {nivel:'C',pos:1},{nivel:'C',pos:2},{nivel:'C',pos:3},{nivel:'C',pos:4},{nivel:'C',pos:5},
+            {nivel:'B',pos:1},{nivel:'B',pos:2},{nivel:'B',pos:3},{nivel:'B',pos:4},{nivel:'B',pos:5},
+            {nivel:'A',pos:1},{nivel:'A',pos:2},{nivel:'A',pos:3},{nivel:'A',pos:4},{nivel:'A',pos:5},{nivel:'A',pos:6}
+        ];
     }
-    var ladoChar = carril.charAt(2); // 'I' = Izquierdo, 'D' = Derecho
 
     var posicionesUsadas = [];
     ordenVisual.forEach(function(o) { if (posicionesUsadas.indexOf(o.pos) === -1) posicionesUsadas.push(o.pos); });
-    if (ladoChar === 'D') {
-        posicionesUsadas.sort(function(a, b) { return a - b; }); // Derecho: 1 → 6
-    } else {
-        posicionesUsadas.sort(function(a, b) { return b - a; }); // Izquierdo: 6 → 1
-    }
 
     var datos = {};
     ordenVisual.forEach(function(o) {
@@ -1400,7 +1406,7 @@ function verAcarreo() {
     html += '<div style="border:2px solid #69f0ae;border-radius:8px;padding:10px;text-align:center;min-width:90px;"><div style="font-size:11px;color:#90caf9;">TOTAL</div><div style="font-size:20px;font-weight:bold;color:#69f0ae;">' + total + '</div></div>';
     html += '</div>';
 
-    html += '<table style="width:100%;border-collapse:collapse;text-align:center;">';
+    html += '<table style="width:100%;border-collapse:collapse;text-align:center;table-layout:fixed;">';
     html += '<tr><td style="width:26px;"></td>';
     posicionesUsadas.forEach(function(p) { html += '<td style="padding:4px;color:#90caf9;font-weight:bold;">' + p + '</td>'; });
     html += '</tr>';
@@ -1409,12 +1415,12 @@ function verAcarreo() {
         html += '<tr>';
         html += '<td style="padding:6px;font-weight:bold;color:#4fc3f7;">' + niv + '</td>';
         posicionesUsadas.forEach(function(p) {
-            if (!datos[niv].hasOwnProperty(p)) { html += '<td></td>'; return; }
+            if (!datos[niv].hasOwnProperty(p)) { html += '<td style="height:40px;padding:12px 6px;border:1px solid rgba(255,255,255,0.12);"></td>'; return; }
             var band = datos[niv][p];
             if (band) {
-                html += '<td style="padding:12px 6px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);font-weight:bold;">' + band + '</td>';
+                html += '<td style="height:40px;padding:12px 6px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);font-weight:bold;">' + band + '</td>';
             } else {
-                html += '<td style="padding:12px 6px;border:1px solid rgba(255,255,255,0.12);"></td>';
+                html += '<td style="height:40px;padding:12px 6px;border:1px solid rgba(255,255,255,0.12);"></td>';
             }
         });
         html += '</tr>';

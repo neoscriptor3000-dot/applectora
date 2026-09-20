@@ -3209,22 +3209,24 @@ function mostrarResumenIngresoEtiqueta() {
         var r = resumen[key];
         totalPallets += r.cantidad;
         html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">';
-        html += '<td style="font-size:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + r.codigo + '</td><td style="font-size:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + r.producto + '</td><td style="font-size:8px;text-align:center;color:#69f0ae;">' + r.cantidad + '</td><td style="font-size:8px;text-align:right;">' + r.und + '</td><td style="font-size:8px;text-align:right;">' + r.kg + '</td>';
+        html += '<td style="font-size:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + r.codigo + '</td><td style="font-size:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + r.producto + '</td><td style="font-size:8px;text-align:center;color:#69f0ae;">' + r.cantidad + '</td><td style="font-size:8px;text-align:right;">' + r.und + '</td><td style="font-size:8px;text-align:right;">' + (parseFloat(r.kg).toFixed(2)) + '</td>';
         html += '</tr>';
     }
     html += '<tr style="font-weight:bold;background:rgba(255,255,255,0.05);"><td colspan="2">TOTAL</td><td style="color:#69f0ae;">' + totalPallets + ' pallets</td><td colspan="3"></td></tr>';
     html += '</table>';
     html += '<div style="margin-top:10px;text-align:center;">';
-    html += '<button onclick="iniciarIngresoEtiqueta()" style="background:#2e7d32;border:none;color:#fff;padding:10px 30px;border-radius:6px;cursor:pointer;font-size:14px;font-weight:bold;">✅ INICIAR INGRESO</button>';
+    html += '<button id="ing-etiqueta-btn-iniciar" onclick="iniciarIngresoEtiqueta()" style="background:#2e7d32;border:none;color:#fff;padding:10px 30px;border-radius:6px;cursor:pointer;font-size:14px;font-weight:bold;display:none;">✅ INICIAR INGRESO</button>';
     html += '</div></div>';
     document.getElementById('ing-etiqueta-info').innerHTML = html;
     document.getElementById('ing-etiqueta-camara-panel').style.display = 'block';
+    document.getElementById('ing-etiqueta-btn-iniciar').style.display = 'block';
     document.getElementById('ing-etiqueta-boton-cargar').style.display = 'none';
     document.getElementById('ing-etiqueta-contenido-principal').style.display = 'none';
 }
 
 function iniciarIngresoEtiqueta() {
     document.getElementById('ing-etiqueta-camara-panel').style.display = 'none';
+    document.getElementById('ing-etiqueta-btn-iniciar').style.display = 'none';
     document.getElementById('ing-etiqueta-info').innerHTML = '📦 ' + listaEtiqueta.length + ' pallets cargados. Pistolee una etiqueta.';
     document.getElementById('ing-etiqueta-progreso').textContent = '0 de ' + listaEtiqueta.length;
     document.getElementById('ing-etiqueta-contador').textContent = '0';
@@ -3607,6 +3609,7 @@ function cancelarIngresoEtiqueta() {
         document.getElementById('ing-etiqueta-info').innerHTML = '📦 Cargue un Excel para comenzar';
         document.getElementById('ing-etiqueta-contenido-principal').style.display = 'none';
         document.getElementById('ing-etiqueta-camara-panel').style.display = 'none';
+        document.getElementById('ing-etiqueta-btn-iniciar').style.display = 'none';
         document.getElementById('ing-etiqueta-boton-cargar').style.display = 'block';
         document.getElementById('panel-ingreso-etiqueta').style.display = 'none';
         mostrarMenu();

@@ -3182,27 +3182,8 @@ function cargarListaIngresoEtiqueta(event) {
 }
 
 function mostrarTablaDetalladaEtiqueta() {
-    // Ocultar todo y limpiar
-    document.getElementById('menu-principal').style.display = 'none';
-    document.querySelectorAll('.panel').forEach(function(p) { p.style.display = 'none'; });
-    
-    // Eliminar paneles anteriores si existen
-    var panelDetallado = document.getElementById('panel-tabla-detallada-etiqueta');
-    if (panelDetallado) panelDetallado.remove();
-    
-    // Crear el panel
-    var panel = document.createElement('div');
-    panel.id = 'panel-tabla-detallada-etiqueta';
-    panel.className = 'panel';
-    panel.style.display = 'block';
-    panel.style.background = 'rgba(10,14,39,0.95)';
-    panel.style.border = '1px solid rgba(79,195,247,0.3)';
-    panel.style.borderRadius = '12px';
-    panel.style.padding = '15px';
-    panel.style.margin = '10px 0';
-    panel.style.maxHeight = '85vh';
-    panel.style.overflowY = 'auto';
-    document.body.appendChild(panel);
+    // Ocultar botón cargar
+    document.getElementById('ing-etiqueta-boton-cargar').style.display = 'none';
     
     // Contar pallets sin lote/fecha
     var sinDatos = listaEtiqueta.filter(function(p) { return !p.lote || !p.vence; });
@@ -3249,7 +3230,9 @@ function mostrarTablaDetalladaEtiqueta() {
     html += '<button onclick="cancelarIngresoEtiqueta()" style="flex:1;background:#c62828;border:none;color:#fff;padding:12px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">❌ CANCELAR</button>';
     html += '</div>';
     
-    panel.innerHTML = html;
+    document.getElementById('ing-etiqueta-info').innerHTML = html;
+    document.getElementById('ing-etiqueta-contenido-principal').style.display = 'none';
+    window.scrollTo(0, 0);
 }
 
 function editarLoteFechaEtiqueta(index) {
@@ -3295,10 +3278,6 @@ function completarLoteVencEtiqueta() {
 }
 
 function mostrarResumenIngresoEtiqueta() {
-    // Remover panel dinámico de tabla detallada si existe
-    var panelDetallado = document.getElementById('panel-tabla-detallada-etiqueta');
-    if (panelDetallado) panelDetallado.remove();
-    
     var resumen = {};
     listaEtiqueta.forEach(function(p) {
         var key = p.codigo + '|||' + p.lote;
@@ -3328,6 +3307,8 @@ function mostrarResumenIngresoEtiqueta() {
     html += '</div></div>';
     document.getElementById('ing-etiqueta-info').innerHTML = html;
     document.getElementById('ing-etiqueta-boton-cargar').style.display = 'none';
+    document.getElementById('ing-etiqueta-contenido-principal').style.display = 'none';
+    window.scrollTo(0, 0);
 }
 
 function iniciarIngresoEtiqueta() {

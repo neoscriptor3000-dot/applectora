@@ -3176,9 +3176,122 @@ function cargarListaIngresoEtiqueta(event) {
             } catch(e) {}
         }
         window._listaEtiqueta = listaEtiqueta;
-        mostrarResumenIngresoEtiqueta();
+        mostrarTablaDetalladaEtiqueta();
     };
     reader.readAsArrayBuffer(file);
+}
+
+function mostrarTablaDetalladaEtiqueta() {
+    // Ocultar todo y limpiar
+    document.getElementById('menu-principal').style.display = 'none';
+    document.querySelectorAll('.panel').forEach(function(p) { p.style.display = 'none'; });
+    
+    // Eliminar paneles anteriores si existen
+    var panelDetallado = document.getElementById('panel-tabla-detallada-etiqueta');
+    if (panelDetallado) panelDetallado.remove();
+    
+    // Crear el panel
+    var panel = document.createElement('div');
+    panel.id = 'panel-tabla-detallada-etiqueta';
+    panel.className = 'panel';
+    panel.style.display = 'block';
+    panel.style.background = 'rgba(10,14,39,0.95)';
+    panel.style.border = '1px solid rgba(79,195,247,0.3)';
+    panel.style.borderRadius = '12px';
+    panel.style.padding = '15px';
+    panel.style.margin = '10px 0';
+    panel.style.maxHeight = '85vh';
+    panel.style.overflowY = 'auto';
+    document.body.appendChild(panel);
+    
+    // Contar pallets sin lote/fecha
+    var sinDatos = listaEtiqueta.filter(function(p) { return !p.lote || !p.vence; });
+    var conDatos = listaEtiqueta.filter(function(p) { return p.lote && p.vence; });
+    
+    var html = '<h3 style="color:#4fc3f7;font-size:15px;margin-bottom:10px;">📋 TABLA DETALLADA - PALLETS NUEVOS</h3>';
+    html += '<div style="font-size:11px;color:#90caf9;margin-bottom:8px;">Total: ' + listaEtiqueta.length + ' pallets nuevos</div>';
+    
+    // Botón para completar lote/fecha
+    if (sinDatos.length > 0 && conDatos.length > 0) {
+        html += '<button onclick="completarLoteVencEtiqueta()" style="background:linear-gradient(135deg,#1565c0,#1e88e5);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:bold;cursor:pointer;margin-bottom:10px;">📝 Completar Lote/Venc.</button>';
+    }
+    if (sinDatos.length > 0) {
+        html += '<div style="background:rgba(255,152,0,0.15);border:1px solid #ff9800;border-radius:8px;padding:6px 10px;margin-bottom:10px;font-size:11px;color:#ff9800;">⚠️ ' + sinDatos.length + ' pallet(s) sin lote.</div>';
+    }
+    
+    // Mostrar tarjetas (una por pallet)
+    listaEtiqueta.forEach(function(p, i) {
+        var loteDisplay = p.lote || '<span style="color:#ff9800;">⚠️ Sin lote</span>';
+        var colorFila = (p.lote) ? 'rgba(255,255,255,0.03)' : 'rgba(255,152,0,0.08)';
+        
+        html += '<div style="background:' + colorFila + ';border:1px solid rgba(79,195,247,0.2);border-radius:8px;padding:10px;margin-bottom:8px;">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
+        html += '<div style="flex:1;min-width:0;">';
+        html += '<div style="font-size:13px;font-weight:bold;color:#4fc3f7;word-break:break-word;">' + p.codigo + ' — ' + p.producto + '</div>';
+        html += '<div style="font-size:11px;color:#c0c0c0;margin-top:2px;">🧺 1 pallet  📦 ' + p.und + ' und  ⚖️ ' + p.kg + ' kg</div>';
+        html += '<div style="font-size:11px;color:#fff;margin-top:2px;">🔢 Lote: ' + loteDisplay + '</div>';
+        html += '</div>';
+        html += '<div style="flex-shrink:0;margin-left:8px;">';
+        html += '<button onclick="editarLoteFechaEtiqueta(' + i + ')" style="background:rgba(79,195,247,0.2);border:1px solid #4fc3f7;color:#fff;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:14px;">✏️</button>';
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
+    });
+    
+    // Botones de acción
+    var todosCompletos = listaEtiqueta.every(function(p) { return p.lote && p.vence; });
+    html += '<div style="margin-top:15px;display:flex;gap:8px;">';
+    if (todosCompletos) {
+        html += '<button onclick="mostrarResumenIngresoEtiqueta()" style="flex:1;background:#2e7d32;border:none;color:#fff;padding:12px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">✅ CONTINUAR</button>';
+    } else {
+        html += '<button style="flex:1;background:#455a64;border:none;color:#888;padding:12px;border-radius:8px;font-size:14px;font-weight:bold;cursor:not-allowed;" disabled>⚠️ Complete lotes</button>';
+    }
+    html += '<button onclick="cancelarIngresoEtiqueta()" style="flex:1;background:#c62828;border:none;color:#fff;padding:12px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">❌ CANCELAR</button>';
+    html += '</div>';
+    
+    panel.innerHTML = html;
+}
+
+function editarLoteFechaEtiqueta(index) {
+    var p = listaEtiqueta[index];
+    if (!p) return;
+    
+    var nuevoLote = prompt('✏️ Ingrese lote para el pallet ' + (index + 1) + ' (' + p.codigo + ' - ' + p.producto + '):', p.lote || '');
+    if (nuevoLote === null) return;
+    
+    var nuevaFecha = prompt('📅 Ingrese fecha de vencimiento (ej: 31/05/2028):', p.vence || '');
+    if (nuevaFecha === null) return;
+    
+    p.lote = nuevoLote.trim();
+    p.vence = nuevaFecha.trim();
+    
+    // Refrescar la tabla
+    mostrarTablaDetalladaEtiqueta();
+    mostrarFeedback('✅ Lote y fecha actualizados para el pallet ' + (index + 1));
+}
+
+function completarLoteVencEtiqueta() {
+    var conDatos = listaEtiqueta.filter(function(p) { return p.lote && p.vence; });
+    if (conDatos.length === 0) {
+        mostrarFeedback('⚠️ No hay pallets con lote y fecha para usar como referencia. Use ✏️ para ingresar manualmente.', 4000);
+        return;
+    }
+    
+    var lotesUnicos = {};
+    conDatos.forEach(function(p) {
+        lotesUnicos[p.lote] = p.vence;
+    });
+    var lotesArray = Object.keys(lotesUnicos);
+    var lotePrincipal = lotesArray[0];
+    var fechaPrincipal = lotesUnicos[lotePrincipal];
+    
+    listaEtiqueta.forEach(function(p) {
+        if (!p.lote) p.lote = lotePrincipal;
+        if (!p.vence) p.vence = fechaPrincipal;
+    });
+    
+    mostrarTablaDetalladaEtiqueta();
+    mostrarFeedback('✅ Pallets incompletos rellenados con lote: ' + lotePrincipal);
 }
 
 function mostrarResumenIngresoEtiqueta() {

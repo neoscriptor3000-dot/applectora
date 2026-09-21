@@ -3299,9 +3299,6 @@ function mostrarResumenIngresoEtiqueta() {
     var panelDetallado = document.getElementById('panel-tabla-detallada-etiqueta');
     if (panelDetallado) panelDetallado.remove();
     
-    // Mostrar contenido principal
-    document.getElementById('ing-etiqueta-contenido-principal').style.display = 'block';
-    
     var resumen = {};
     listaEtiqueta.forEach(function(p) {
         var key = p.codigo + '|||' + p.lote;

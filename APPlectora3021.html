@@ -2163,18 +2163,23 @@ function cargarListaIngreso(event) {
                 // Ya está ingresado
                 p.yaIngresado = true;
                 p.fechaIngreso = catalogoClaves[p.clave].fechaIngreso || '';
-                p.ubicacionIngreso = catalogoClaves[p.clave].ubicacion || '';
-                // Recuperar datos del catálogo
+                // Recuperar datos del catálogo INCLUYENDO lote y fecha
                 p.codigo = catalogoClaves[p.clave].codigo || p.codigo;
                 p.producto = catalogoClaves[p.clave].producto || p.producto;
                 p.und = catalogoClaves[p.clave].und || p.und;
                 p.kg = catalogoClaves[p.clave].kg || p.kg;
                 p.lote = catalogoClaves[p.clave].lote || p.lote;
                 p.vence = catalogoClaves[p.clave].vence || p.vence;
+                p.ubicacionIngreso = catalogoClaves[p.clave].ubicacion || '';
                 palletsYaIngresados.push(p);
             } else {
-                // Es nuevo
+                // Es nuevo - pero buscar si tiene datos previos parciales en catalogoClaves
                 p.yaIngresado = false;
+                // Intentar recuperar lote/fecha si existen datos parciales
+                if (p.clave && catalogoClaves[p.clave]) {
+                    p.lote = catalogoClaves[p.clave].lote || p.lote;
+                    p.vence = catalogoClaves[p.clave].vence || p.vence;
+                }
                 palletsNuevos.push(p);
             }
         });
@@ -2676,6 +2681,8 @@ function mostrarTablaDetallada() {
         html += '<div style="font-size:13px;font-weight:bold;color:#4fc3f7;word-break:break-word;">' + p.codigo + ' — ' + p.producto + '</div>';
         html += '<div style="font-size:11px;color:#c0c0c0;margin-top:2px;">🧺 1 pallet  📦 ' + p.und + ' und  ⚖️ ' + p.kg + ' kg</div>';
         html += '<div style="font-size:11px;color:#fff;margin-top:2px;">🔢 Lote: ' + loteDisplay + '</div>';
+        var fechaDisplay = p.vence || '<span style="color:#ff9800;">⚠️ Sin fecha</span>';
+        html += '<div style="font-size:11px;color:#fff;margin-top:2px;">📅 Vence: ' + fechaDisplay + '</div>';
         html += '</div>';
         html += '<div style="flex-shrink:0;margin-left:8px;">';
         html += '<button onclick="editarLoteFechaPallet(' + i + ')" style="background:rgba(79,195,247,0.2);border:1px solid #4fc3f7;color:#fff;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:14px;">✏️</button>';
@@ -3211,6 +3218,10 @@ function mostrarTablaDetalladaEtiqueta() {
         html += '<div style="font-size:13px;font-weight:bold;color:#4fc3f7;word-break:break-word;">' + p.codigo + ' — ' + p.producto + '</div>';
         html += '<div style="font-size:11px;color:#c0c0c0;margin-top:2px;">🧺 1 pallet  📦 ' + p.und + ' und  ⚖️ ' + p.kg + ' kg</div>';
         html += '<div style="font-size:11px;color:#fff;margin-top:2px;">🔢 Lote: ' + loteDisplay + '</div>';
+        var fechaDisplay = p.vence || '<span style="color:#ff9800;">⚠️ Sin fecha</span>';
+        html += '<div style="font-size:11px;color:#fff;margin-top:2px;">📅 Vence: ' + fechaDisplay + '</div>';
+        var fechaDisplay = p.vence || '<span style="color:#ff9800;">⚠️ Sin fecha</span>';
+        html += '<div style="font-size:11px;color:#fff;margin-top:2px;">📅 Vence: ' + fechaDisplay + '</div>';
         html += '</div>';
         html += '<div style="flex-shrink:0;margin-left:8px;">';
         html += '<button onclick="editarLoteFechaEtiqueta(' + i + ')" style="background:rgba(79,195,247,0.2);border:1px solid #4fc3f7;color:#fff;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:14px;">✏️</button>';
@@ -3507,6 +3518,25 @@ if (p.clave && catalogoClaves[p.clave]) {
     catalogoClaves[p.clave].horaIngreso = new Date().toLocaleTimeString('es-PE');
     guardarCatalogoClaves();
 }
+
+    // Guardar en el catálogo de claves (PERMANENTE) - INGRESO NUEVO
+    if (p.clave) {
+        catalogoClaves[p.clave] = {
+            codigo: p.codigo,
+            producto: p.producto,
+            und: p.und,
+            kg: p.kg,
+            lote: p.lote,
+            vence: p.vence,
+            linea: p.linea || '',
+            ubicacion: ubicacion,
+            bandejas: encontrado.bandejas || '0',
+            fechaIngreso: new Date().toLocaleDateString('es-PE'),
+            horaIngreso: new Date().toLocaleTimeString('es-PE'),
+            activo: true
+        };
+        guardarCatalogoClaves();
+    }
 
     historialMovimientos.push({
         fecha: new Date().toLocaleDateString('es-PE'),

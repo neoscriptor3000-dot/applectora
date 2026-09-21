@@ -114,7 +114,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ GOAT</div>
+<div>Ing. PERCY S. TEJADA VALDEZ </div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -470,7 +470,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="display:flex;gap:8px;margin-top:8px;">
 <button class="btn btn-ubicacion" onclick="verAvanceEtiqueta()" style="flex:1;background:#e65100;">📊 VER AVANCE</button>
-<button class="btn btn-volver" onclick="mostrarMenu()" style="flex:1;background:#455a64;font-size:12px;padding:8px;">⬅ VOLVER</button>
+<button class="btn btn-ubicacion" onclick="guardarYSalirIngresoEtiqueta()" style="flex:1;background:#2e7d32;font-size:12px;padding:10px;border:none;color:#fff;border-radius:6px;cursor:pointer;">💾 GUARDAR Y SALIR</button>
 </div>
 </div>
 </div>
@@ -3652,27 +3652,44 @@ function cerrarIngresadosEtiqueta() {
     mostrarMenu();
 }
 
-function cancelarIngresoEtiqueta() {
-    if (confirm('¿Salir del ingreso por etiqueta? Los pallets ya ingresados permanecerán guardados.')) {
-        if (huellaIngresoEtiqueta && listaEtiqueta.length > 0) {
-            var progresoKey = 'ingreso_etiqueta_progreso_' + huellaIngresoEtiqueta;
-            var procesadosGuardar = [];
-            for (var pi = 0; pi < listaEtiqueta.length; pi++) {
-                if (listaEtiqueta[pi].procesado) {
-                    procesadosGuardar.push({
-                        codigoBarras: listaEtiqueta[pi].codigoBarras,
-                        codigo: listaEtiqueta[pi].codigo,
-                        producto: listaEtiqueta[pi].producto,
-                        lote: listaEtiqueta[pi].lote || '',
-                        und: listaEtiqueta[pi].und,
-                        kg: listaEtiqueta[pi].kg,
-                        ubicacion: listaEtiqueta[pi].ubicacion || '—',
-                        bandejas: listaEtiqueta[pi].bandejas || '0'
-                    });
-                }
+
+function guardarYSalirIngresoEtiqueta() {
+    // Guardar el progreso antes de salir
+    if (huellaIngresoEtiqueta && listaEtiqueta.length > 0) {
+        var progresoKey = 'ingreso_etiqueta_progreso_' + huellaIngresoEtiqueta;
+        var procesadosGuardar = [];
+        var procesadosCount = 0;
+        for (var pi = 0; pi < listaEtiqueta.length; pi++) {
+            if (listaEtiqueta[pi].procesado) {
+                procesadosGuardar.push({
+                    codigoBarras: listaEtiqueta[pi].codigoBarras,
+                    codigo: listaEtiqueta[pi].codigo,
+                    producto: listaEtiqueta[pi].producto,
+                    lote: listaEtiqueta[pi].lote || '',
+                    und: listaEtiqueta[pi].und,
+                    kg: listaEtiqueta[pi].kg,
+                    ubicacion: listaEtiqueta[pi].ubicacion || '—',
+                    bandejas: listaEtiqueta[pi].bandejas || '0'
+                });
+                procesadosCount++;
             }
-            localStorage.setItem(progresoKey, JSON.stringify({ palletsProcesados: procesadosGuardar, fecha: new Date().toISOString() }));
         }
+        localStorage.setItem(progresoKey, JSON.stringify({ palletsProcesados: procesadosGuardar, fecha: new Date().toISOString() }));
+        if (procesadosCount > 0) {
+            mostrarFeedback('💾 ' + procesadosCount + ' pallet(s) guardado(s)');
+        }
+    }
+    // Limpiar sesión y volver al menú
+    listaEtiqueta = [];
+    palletsIngresadosEtiqueta = [];
+    palletEncontradoEtiqueta = null;
+    window._listaEtiqueta = [];
+    mostrarMenu();
+}
+
+function cancelarIngresoEtiqueta() {
+    if (confirm('¿Cancelar ingreso por etiqueta? Se perderá todo el progreso.')) {
+        // Limpiar TODO sin guardar
         listaEtiqueta = [];
         palletsIngresadosEtiqueta = [];
         palletEncontradoEtiqueta = null;
@@ -3689,9 +3706,7 @@ function cancelarIngresoEtiqueta() {
         document.getElementById('ing-etiqueta-info').innerHTML = '📦 Cargue un Excel para comenzar';
         document.getElementById('ing-etiqueta-contenido-principal').style.display = 'none';
         document.getElementById('ing-etiqueta-boton-cargar').style.display = 'block';
-        document.getElementById('panel-ingreso-etiqueta').style.display = 'none';
-        mostrarMenu();
-        mostrarFeedback('✅ Ingreso por etiqueta cancelado. Los datos se han limpiado.');
+        mostrarFeedback('❌ Ingreso cancelado - progreso eliminado');
     }
 }
 

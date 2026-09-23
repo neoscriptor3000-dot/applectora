@@ -1998,35 +1998,87 @@ function irAPickingEtiqueta(clave, destino) {
     // Guardar datos temporales para picking
     window._pickingClave = clave;
     window._pickingDestino = destino;
+    var nombreDestino = document.getElementById('escaneo-etiqueta-destino').options[document.getElementById('escaneo-etiqueta-destino').selectedIndex]?.text || destino;
+    window._pickingNombreDestino = nombreDestino;
     
     var pallet = catalogoClaves[clave];
+    if (!pallet) return;
+    
+    // Ocultar panel anterior
     document.getElementById('panel-escanear-etiqueta').style.display = 'none';
     
-    // Mostrar panel de picking personalizado
-    var html = '<div class="panel" style="display:block;">';
-    html += '<h3>📏 PICKING - ' + clave + '</h3>';
-    html += '<div class="info-line"><span class="info-label">Producto:</span><span class="info-value">' + pallet.producto + '</span></div>';
-    html += '<div class="info-line"><span class="info-label">Cantidad actual:</span><span class="info-value">' + pallet.und + ' unidades</span></div>';
-    html += '<div style="margin:15px 0;padding:15px;background:rgba(255,255,255,0.05);border-radius:8px;">';
-    html += '<label style="color:#ff9800;font-size:13px;font-weight:bold;">¿Cuántas unidades desea extraer?</label>';
-    html += '<input type="number" id="picking-cantidad" placeholder="Cantidad" min="1" max="' + pallet.und + '" style="font-size:16px;padding:10px;width:100%;margin:6px 0;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:8px;" onkeydown="if(event.key===\'Enter\') confirmarPickingEtiqueta()">';
-    html += '</div>';
-    html += '<div class="acciones">';
-    html += '<button class="btn-verde" onclick="confirmarPickingEtiqueta()">✅ CONFIRMAR</button>';
-    html += '<button class="btn-rojo" onclick="cancelarPickingEtiqueta()">❌ CANCELAR</button>';
-    html += '</div>';
-    html += '</div>';
-    
+    // Crear panel de picking personalizado
     var panelPicking = document.createElement('div');
     panelPicking.id = 'panel-picking-etiqueta';
+    panelPicking.className = 'panel';
+    panelPicking.style.display = 'block';
+    
+    var html = '<h3>📏 PICKING</h3>';
+    
+    // Ubicación
+    html += '<div class="mensaje" style="font-size:14px;font-weight:bold;color:#4fc3f7;margin-bottom:8px;">📍 ' + (pallet.ubicacion || '—') + '</div>';
+    
+    // Información del producto
+    html += '<div style="font-size:12px;color:#fff;text-align:center;margin-bottom:8px;">';
+    html += '<div style="font-weight:bold;color:#4fc3f7;">' + pallet.codigo + ' — ' + pallet.producto + '</div>';
+    html += '<div style="font-size:11px;color:#90caf9;">Lote: ' + (pallet.lote || '—') + ' | Vence: ' + (pallet.vence || '—') + '</div>';
+    html += '</div>';
+    
+    // Valores iniciales
+    html += '<div class="info-line"><span class="info-label">UNID INIC:</span><span class="info-value" id="pick-und-ini-etiq">' + pallet.und + '</span></div>';
+    html += '<div class="info-line"><span class="info-label">KG INIC:</span><span class="info-value" id="pick-kg-ini-etiq">' + pallet.kg + '</span></div>';
+    html += '<div class="info-line"><span class="info-label">📦 BANDEJAS INIC:</span><span class="info-value" id="pick-band-ini-etiq">' + (pallet.bandejas || '0') + '</span></div>';
+    
+    html += '<hr style="border-color:rgba(255,255,255,0.1);margin:8px 0;">';
+    
+    // Campos de entrada
+    html += '<label style="color:#ff9800;font-size:12px;">📤 UNID A RETIRAR</label>';
+    html += '<input type="number" id="pick-und-desp-etiq" placeholder="0" min="0" value="" oninput="calcularPickingEtiqueta()" style="font-size:14px;padding:10px;width:100%;margin:6px 0;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:6px;">';
+    
+    html += '<label style="color:#ff9800;font-size:12px;">📤 KG A RETIRAR</label>';
+    html += '<input type="number" id="pick-kg-desp-etiq" placeholder="0" min="0" value="" step="0.01" oninput="calcularPickingEtiqueta()" style="font-size:14px;padding:10px;width:100%;margin:6px 0;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:6px;">';
+    
+    html += '<label style="color:#ff9800;font-size:12px;">📦 BANDEJAS A RETIRAR</label>';
+    html += '<input type="number" id="pick-band-desp-etiq" placeholder="0" min="0" value="" step="1" oninput="calcularPickingEtiqueta()" style="font-size:14px;padding:10px;width:100%;margin:6px 0;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:6px;">';
+    
+    html += '<hr style="border-color:rgba(255,255,255,0.1);margin:8px 0;">';
+    
+    // Valores finales
+    html += '<div class="info-line"><span class="info-label">UNID FIN:</span><span class="info-value" id="pick-und-fin-etiq" style="color:#69f0ae;">' + pallet.und + '</span></div>';
+    html += '<div class="info-line"><span class="info-label">KG FIN:</span><span class="info-value" id="pick-kg-fin-etiq" style="color:#69f0ae;">' + pallet.kg + '</span></div>';
+    html += '<div class="info-line"><span class="info-label">📦 BANDEJAS FIN:</span><span class="info-value" id="pick-band-fin-etiq" style="color:#69f0ae;">' + (pallet.bandejas || '0') + '</span></div>';
+    
+    // Botones
+    html += '<div class="acciones">';
+    html += '<button class="btn-verde" onclick="confirmarPickingEtiqueta()" style="width:100%;background:#2e7d32;margin-top:6px;font-size:13px;padding:10px;">💾 GUARDAR</button>';
+    html += '<button class="btn-rojo" onclick="cancelarPickingEtiqueta()" style="width:100%;background:#c62828;margin-top:6px;font-size:13px;padding:10px;">⬅ CANCELAR</button>';
+    html += '</div>';
+    
+    html += '<button class="btn-rojo" onclick="mostrarMenu()" style="margin-top:10px;width:100%;padding:12px;border:none;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;background:#7d4242;">↩ DESHACER</button>';
+    
     panelPicking.innerHTML = html;
     document.body.appendChild(panelPicking);
     
-    setTimeout(function() { document.getElementById('picking-cantidad').focus(); }, 500);
+    setTimeout(function() { document.getElementById('pick-und-desp-etiq').focus(); }, 500);
+}
+
+function calcularPickingEtiqueta() {
+    var undIni  = parseFloat(document.getElementById('pick-und-ini-etiq').textContent) || 0;
+    var kgIni   = parseFloat(document.getElementById('pick-kg-ini-etiq').textContent) || 0;
+    var bandIni = parseFloat(document.getElementById('pick-band-ini-etiq').textContent) || 0;
+    var undDesp  = parseFloat(document.getElementById('pick-und-desp-etiq').value) || 0;
+    var kgDesp   = parseFloat(document.getElementById('pick-kg-desp-etiq').value) || 0;
+    var bandDesp = parseFloat(document.getElementById('pick-band-desp-etiq').value) || 0;
+    document.getElementById('pick-und-fin-etiq').textContent  = Math.max(0, Math.round((undIni  - undDesp)  * 100) / 100);
+    document.getElementById('pick-kg-fin-etiq').textContent   = Math.max(0, Math.round((kgIni   - kgDesp)   * 100) / 100).toFixed(2);
+    document.getElementById('pick-band-fin-etiq').textContent = Math.max(0, Math.round((bandIni - bandDesp) * 100) / 100);
 }
 
 function confirmarPickingEtiqueta() {
-    var cantidad = parseInt(document.getElementById('picking-cantidad').value);
+    var cantidad = parseFloat(document.getElementById('pick-und-desp-etiq').value);
+    var kg = parseFloat(document.getElementById('pick-kg-desp-etiq').value);
+    var bandejas = parseFloat(document.getElementById('pick-band-desp-etiq').value);
+    
     var clave = window._pickingClave;
     var destino = window._pickingDestino;
     var pallet = catalogoClaves[clave];
@@ -2036,13 +2088,13 @@ function confirmarPickingEtiqueta() {
         return;
     }
     
-    var nombreDestino = document.querySelector('#escaneo-etiqueta-destino')?.options[document.querySelector('#escaneo-etiqueta-destino').selectedIndex]?.text || destino;
+    var nombreDestino = window._pickingNombreDestino || destino;
     
     // Registrar picking
     historialSalidas.push({
         fecha: new Date().toLocaleDateString('es-PE'),
         hora: new Date().toLocaleTimeString('es-PE'),
-        tipo: 'PICKING',
+        tipo: 'PICKING (SALIDA)',
         destino: destino,
         nombreDestino: nombreDestino,
         ubicacion: pallet.ubicacion || '—',
@@ -2050,8 +2102,8 @@ function confirmarPickingEtiqueta() {
         producto: pallet.producto,
         lote: pallet.lote || '',
         und: cantidad,
-        kg: (pallet.kg / pallet.und * cantidad).toFixed(2),
-        bandejas: pallet.bandejas || 0,
+        kg: kg || (pallet.kg / pallet.und * cantidad).toFixed(2),
+        bandejas: bandejas || 0,
         anulado: false
     });
     localStorage.setItem('historialSalidas', JSON.stringify(historialSalidas));
@@ -2059,16 +2111,18 @@ function confirmarPickingEtiqueta() {
     historialMovimientos.push({
         fecha: new Date().toLocaleDateString('es-PE'),
         hora: new Date().toLocaleTimeString('es-PE'),
-        tipo: 'PICKING',
+        tipo: 'PICKING (SALIDA)',
         ubicacion: pallet.ubicacion || '—',
         codigo: pallet.codigo,
         producto: pallet.producto,
         lote: pallet.lote || '',
         destino: destino,
         undAnt: pallet.und,
-        undDesp: pallet.und - cantidad,
+        undDesp: Math.max(0, pallet.und - cantidad),
         kgAnt: pallet.kg,
-        kgDesp: (pallet.kg / pallet.und * (pallet.und - cantidad)).toFixed(2)
+        kgDesp: Math.max(0, kg || (pallet.kg / pallet.und * (pallet.und - cantidad))).toFixed(2),
+        bandAnt: pallet.bandejas || 0,
+        bandDesp: Math.max(0, (pallet.bandejas || 0) - (bandejas || 0))
     });
     localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     
@@ -2078,8 +2132,9 @@ function confirmarPickingEtiqueta() {
         delete catalogoClaves[clave];
     } else {
         // Reducir cantidad
-        pallet.und -= cantidad;
-        pallet.kg = (pallet.kg / (pallet.und + cantidad) * pallet.und).toFixed(2);
+        pallet.und = Math.max(0, pallet.und - cantidad);
+        pallet.kg = Math.max(0, (pallet.kg / (pallet.und + cantidad) * pallet.und)).toFixed(2);
+        pallet.bandejas = Math.max(0, (pallet.bandejas || 0) - (bandejas || 0));
         catalogoClaves[clave] = pallet;
     }
     guardarCatalogoClaves();

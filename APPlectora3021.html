@@ -2664,26 +2664,26 @@ function cargarListaIngreso(event) {
         var palletsYaIngresados = [];
         
         palletsDelExcel.forEach(function(p) {
-            if (p.clave && catalogoClaves[p.clave]) {
+            if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
                 // Ya está ingresado
                 p.yaIngresado = true;
-                p.fechaIngreso = catalogoClaves[p.clave].fechaIngreso || '';
+                p.fechaIngreso = catalogoClaves[p.codigoBarras].fechaIngreso || '';
                 // Recuperar datos del catálogo INCLUYENDO lote y fecha
-                p.codigo = catalogoClaves[p.clave].codigo || p.codigo;
-                p.producto = catalogoClaves[p.clave].producto || p.producto;
-                p.und = catalogoClaves[p.clave].und || p.und;
-                p.kg = catalogoClaves[p.clave].kg || p.kg;
-                p.lote = catalogoClaves[p.clave].lote || p.lote;
-                p.vence = catalogoClaves[p.clave].vence || p.vence;
-                p.ubicacionIngreso = catalogoClaves[p.clave].ubicacion || '';
+                p.codigo = catalogoClaves[p.codigoBarras].codigo || p.codigo;
+                p.producto = catalogoClaves[p.codigoBarras].producto || p.producto;
+                p.und = catalogoClaves[p.codigoBarras].und || p.und;
+                p.kg = catalogoClaves[p.codigoBarras].kg || p.kg;
+                p.lote = catalogoClaves[p.codigoBarras].lote || p.lote;
+                p.vence = catalogoClaves[p.codigoBarras].vence || p.vence;
+                p.ubicacionIngreso = catalogoClaves[p.codigoBarras].ubicacion || '';
                 palletsYaIngresados.push(p);
             } else {
                 // Es nuevo - pero buscar si tiene datos previos parciales en catalogoClaves
                 p.yaIngresado = false;
                 // Intentar recuperar lote/fecha si existen datos parciales
-                if (p.clave && catalogoClaves[p.clave]) {
-                    p.lote = catalogoClaves[p.clave].lote || p.lote;
-                    p.vence = catalogoClaves[p.clave].vence || p.vence;
+                if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
+                    p.lote = catalogoClaves[p.codigoBarras].lote || p.lote;
+                    p.vence = catalogoClaves[p.codigoBarras].vence || p.vence;
                 }
                 palletsNuevos.push(p);
             }
@@ -2997,9 +2997,9 @@ if (esPasadizo(ub)) {
     if (!p) return;
     
  // Verificar si la clave ya existe en el catálogo
-if (p.clave && catalogoClaves[p.clave]) {
-    var entradaExistente = catalogoClaves[p.clave];
-    var mensaje = '⚠️ Este pallet (clave: ' + p.clave + ') ya fue ingresado anteriormente.\n';
+if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
+    var entradaExistente = catalogoClaves[p.codigoBarras];
+    var mensaje = '⚠️ Este pallet (código: ' + p.codigoBarras + ') ya fue ingresado anteriormente.\n';
     mensaje += '📍 Ubicación anterior: ' + (entradaExistente.ubicacion || '—') + '\n';
     mensaje += '📅 Fecha: ' + (entradaExistente.fechaIngreso || '—') + '\n\n';
     mensaje += '¿Desea volver a ingresarlo en la ubicación ' + ub + '?\n';
@@ -3058,16 +3058,16 @@ if (esPasadizo(ub)) {
     guardarEnLocalStorage();
 
 // Actualizar la ubicación en el catálogo (reingreso)
-if (p.clave && catalogoClaves[p.clave]) {
-    catalogoClaves[p.clave].ubicacion = ub;
-    catalogoClaves[p.clave].fechaIngreso = new Date().toLocaleDateString('es-PE');
-    catalogoClaves[p.clave].horaIngreso = new Date().toLocaleTimeString('es-PE');
+if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
+    catalogoClaves[p.codigoBarras].ubicacion = ub;
+    catalogoClaves[p.codigoBarras].fechaIngreso = new Date().toLocaleDateString('es-PE');
+    catalogoClaves[p.codigoBarras].horaIngreso = new Date().toLocaleTimeString('es-PE');
     guardarCatalogoClaves();
 }
     
     // Guardar en el catálogo de claves (PERMANENTE)
-    if (p.clave) {
-        catalogoClaves[p.clave] = {
+    if (p.codigoBarras) {
+        catalogoClaves[p.codigoBarras] = {
             codigo: p.codigo,
             producto: p.producto,
             und: p.und,
@@ -3991,9 +3991,9 @@ if (esPasadizo(ubicacion)) {
     var p = palletEncontradoEtiqueta;
 
 // Verificar si la clave ya existe en el catálogo
-if (p.clave && catalogoClaves[p.clave]) {
-    var entradaExistente = catalogoClaves[p.clave];
-    var mensaje = '⚠️ Este pallet (clave: ' + p.clave + ') ya fue ingresado anteriormente.\n';
+if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
+    var entradaExistente = catalogoClaves[p.codigoBarras];
+    var mensaje = '⚠️ Este pallet (código: ' + p.codigoBarras + ') ya fue ingresado anteriormente.\n';
     mensaje += '📍 Ubicación anterior: ' + (entradaExistente.ubicacion || '—') + '\n';
     mensaje += '📅 Fecha: ' + (entradaExistente.fechaIngreso || '—') + '\n\n';
     mensaje += '¿Desea volver a ingresarlo en la ubicación ' + ubicacion + '?\n';
@@ -4016,17 +4016,17 @@ if (p.clave && catalogoClaves[p.clave]) {
     encontrado.linea = '';
     guardarEnLocalStorage();
 
-// Actualizar la ubicación en el catálogo (reingreso)
-if (p.clave && catalogoClaves[p.clave]) {
-    catalogoClaves[p.clave].ubicacion = ubicacion;
-    catalogoClaves[p.clave].fechaIngreso = new Date().toLocaleDateString('es-PE');
-    catalogoClaves[p.clave].horaIngreso = new Date().toLocaleTimeString('es-PE');
+    // Actualizar la ubicación en el catálogo (reingreso)
+if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
+    catalogoClaves[p.codigoBarras].ubicacion = ubicacion;
+    catalogoClaves[p.codigoBarras].fechaIngreso = new Date().toLocaleDateString('es-PE');
+    catalogoClaves[p.codigoBarras].horaIngreso = new Date().toLocaleTimeString('es-PE');
     guardarCatalogoClaves();
 }
 
     // Guardar en el catálogo de claves (PERMANENTE) - INGRESO NUEVO
-    if (p.clave) {
-        catalogoClaves[p.clave] = {
+    if (p.codigoBarras) {
+        catalogoClaves[p.codigoBarras] = {
             codigo: p.codigo,
             producto: p.producto,
             und: p.und,
@@ -5018,8 +5018,8 @@ function confirmarSalidaManual(ubicacion) {
     }
     
     // 4. Borrar la clave del catálogo (si existe)
-    if (p.clave && catalogoClaves[p.clave]) {
-        delete catalogoClaves[p.clave];
+    if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
+        delete catalogoClaves[p.codigoBarras];
         guardarCatalogoClaves();
     }
     
@@ -5691,7 +5691,7 @@ function devolverPalletSalida(index) {
     
     // 2. Devolver la clave al catálogo (si se borró)
     if (p.clave && p.codigo) {
-        catalogoClaves[p.clave] = {
+        catalogoClaves[p.codigoBarras] = {
             codigo: p.codigo,
             producto: p.producto,
             und: p.und,
@@ -6129,7 +6129,7 @@ function ejecutarSalidaPistoleo() {
             historialMovimientos.push({ fecha:fecha, hora:hora, tipo:'SALIDA', ubicacion:p.ubicacion, codigo:p.codigo, producto:p.producto, lote:p.lote, undAnt:uAnt, undDesp:0, kgAnt:kAnt, kgDesp:0 });
             historialSalidas.push({ fecha:fecha, hora:hora, tipo:'SALIDA', ubicacion:p.ubicacion, codigo:p.codigo, producto:p.producto, lote:p.lote, und:uAnt, kg:kAnt, destino:spDestino, nombreDestino:spDestinoNombre });
         }
-        if (p.clave) delete catalogoClaves[p.clave];
+        if (p.codigoBarras) delete catalogoClaves[p.codigoBarras];
     });
     guardarEnLocalStorage();
     guardarCatalogoClaves();

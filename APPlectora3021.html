@@ -2075,22 +2075,110 @@ function calcularPickingEtiqueta() {
 }
 
 function confirmarPickingEtiqueta() {
-    var cantidad = parseFloat(document.getElementById('pick-und-desp-etiq').value);
-    var kg = parseFloat(document.getElementById('pick-kg-desp-etiq').value);
-    var bandejas = parseFloat(document.getElementById('pick-band-desp-etiq').value);
+    var undDesp = parseFloat(document.getElementById('pick-und-desp-etiq').value) || 0;
+    var kgDesp = parseFloat(document.getElementById('pick-kg-desp-etiq').value) || 0;
+    var bandDesp = parseFloat(document.getElementById('pick-band-desp-etiq').value) || 0;
     
     var clave = window._pickingClave;
     var destino = window._pickingDestino;
+    var nombreDestino = window._pickingNombreDestino || destino;
     var pallet = catalogoClaves[clave];
     
-    if (!cantidad || cantidad <= 0 || cantidad > pallet.und) {
-        alert('⚠️ Cantidad inválida. Máximo: ' + pallet.und);
+    if (!pallet) {
+        alert('⚠️ Pallet no encontrado.');
         return;
     }
     
-    var nombreDestino = window._pickingNombreDestino || destino;
+    if (!destino) {
+        alert('⚠️ No se ha seleccionado un destino para este picking.');
+        return;
+    }
     
-    // Registrar picking
+    // Validar que hay algo que retirar
+    if (undDesp === 0 && kgDesp === 0 && bandDesp === 0) {
+        alert('⚠️ Debe retirar al menos una unidad, kilo o bandeja.');
+        return;
+    }
+    
+    var undIni = pallet.und;
+    var kgIni = pallet.kg;
+    var bandIni = pallet.bandejas || 0;
+    var undFin = Math.max(0, Math.round((undIni - undDesp) * 100) / 100);
+    var kgFin = Math.max(0, Math.round((kgIni - kgDesp) * 100) / 100);
+    var bandFin = Math.max(0, bandIni - bandDesp);
+    
+    // Guardar para poder deshacer
+    window._ultimoPicking = {
+        ubicacion: pallet.ubicacion || '',
+        und: undIni,
+        kg: kgIni,
+        bandejas: bandIni,
+        codigo: pallet.codigo,
+        producto: pallet.producto,
+        lote: pallet.lote,
+        vence: pallet.vence,
+        linea: pallet.linea || ''
+    };
+    
+    // Actualizar tablaDatos
+    var encontrado = buscarEnTabla(pallet.ubicacion);
+    if (!encontrado && pallet.ubicacion) {
+        encontrado = { ubicacion: pallet.ubicacion, codigo: '', producto: '', lote: '', und: 0, kg: 0, vence: '', linea: '', bandejas: 0 };
+        tablaDatos.push(encontrado);
+    }
+    
+    if (encontrado) {
+        if (undFin <= 0 && kgFin <= 0 && bandFin <= 0) {
+            // Limpiar el pallet si se vacía completamente
+            encontrado.codigo = '';
+            encontrado.producto = '';
+            encontrado.lote = '';
+            encontrado.und = 0;
+            encontrado.kg = 0;
+            encontrado.bandejas = 0;
+            encontrado.vence = '';
+            encontrado.linea = '';
+        } else {
+            // Actualizar con valores finales
+            encontrado.und = undFin;
+            encontrado.kg = kgFin;
+            encontrado.bandejas = bandFin;
+        }
+        guardarEnLocalStorage();
+    }
+    
+    // Actualizar catalogoClaves
+    if (undFin <= 0 && kgFin <= 0 && bandFin <= 0) {
+        delete catalogoClaves[clave];
+    } else {
+        pallet.und = undFin;
+        pallet.kg = kgFin;
+        pallet.bandejas = bandFin;
+        catalogoClaves[clave] = pallet;
+    }
+    guardarCatalogoClaves();
+    
+    // Registrar en historialMovimientos
+    historialMovimientos.push({
+        fecha: new Date().toLocaleDateString('es-PE'),
+        hora: new Date().toLocaleTimeString('es-PE'),
+        tipo: 'PICKING (SALIDA)',
+        ubicacion: pallet.ubicacion || '—',
+        codigo: pallet.codigo,
+        producto: pallet.producto,
+        lote: pallet.lote || '',
+        destino: destino,
+        nombreDestino: nombreDestino,
+        undAnt: undIni,
+        undDesp: undFin,
+        kgAnt: kgIni,
+        kgDesp: kgFin,
+        bandAnt: bandIni,
+        bandDesp: bandFin
+    });
+    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    
+    // Registrar en historialSalidas
     historialSalidas.push({
         fecha: new Date().toLocaleDateString('es-PE'),
         hora: new Date().toLocaleTimeString('es-PE'),
@@ -2101,45 +2189,16 @@ function confirmarPickingEtiqueta() {
         codigo: pallet.codigo,
         producto: pallet.producto,
         lote: pallet.lote || '',
-        und: cantidad,
-        kg: kg || (pallet.kg / pallet.und * cantidad).toFixed(2),
-        bandejas: bandejas || 0,
+        und: undDesp,
+        kg: kgDesp,
+        bandejas: bandDesp,
         anulado: false
     });
     localStorage.setItem('historialSalidas', JSON.stringify(historialSalidas));
     
-    historialMovimientos.push({
-        fecha: new Date().toLocaleDateString('es-PE'),
-        hora: new Date().toLocaleTimeString('es-PE'),
-        tipo: 'PICKING (SALIDA)',
-        ubicacion: pallet.ubicacion || '—',
-        codigo: pallet.codigo,
-        producto: pallet.producto,
-        lote: pallet.lote || '',
-        destino: destino,
-        undAnt: pallet.und,
-        undDesp: Math.max(0, pallet.und - cantidad),
-        kgAnt: pallet.kg,
-        kgDesp: Math.max(0, kg || (pallet.kg / pallet.und * (pallet.und - cantidad))).toFixed(2),
-        bandAnt: pallet.bandejas || 0,
-        bandDesp: Math.max(0, (pallet.bandejas || 0) - (bandejas || 0))
-    });
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    window._pickingDestino = null;
     
-    // Actualizar catálogo
-    if (cantidad === pallet.und) {
-        // Salida total
-        delete catalogoClaves[clave];
-    } else {
-        // Reducir cantidad
-        pallet.und = Math.max(0, pallet.und - cantidad);
-        pallet.kg = Math.max(0, (pallet.kg / (pallet.und + cantidad) * pallet.und)).toFixed(2);
-        pallet.bandejas = Math.max(0, (pallet.bandejas || 0) - (bandejas || 0));
-        catalogoClaves[clave] = pallet;
-    }
-    guardarCatalogoClaves();
-    
-    mostrarFeedback('✅ Picking registrado - ' + cantidad + ' unidades');
+    mostrarFeedback('✅ Picking registrado - ' + undDesp + ' unidades');
     
     // Limpiar
     var panelPicking = document.getElementById('panel-picking-etiqueta');

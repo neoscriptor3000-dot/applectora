@@ -65,6 +65,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <div class="menu-grupo" onclick="toggleMenuApp('menu-ubicaciones')">📍 UBICACIONES ▾</div>
 <div id="menu-ubicaciones" class="menu-items-app">
 <button class="btn btn-ubicacion" onclick="mostrarPanel('panel-escanear')">📍 Escanear Ubicación</button>
+<button class="btn btn-ubicacion" onclick="mostrarPanel('panel-escanear-etiqueta')" style="background:#1565c0;">📦 Escanear Etiqueta</button>
 <button class="btn btn-ubicacion" onclick="mostrarPanel('panel-ver-carril')">📋 Ver Carril</button>
 <button class="btn btn-ubicacion" onclick="mostrarPanel('panel-ver-acarreo')">🚚 Ver Acarreo</button>
 <button class="btn btn-ubicacion" onclick="mostrarPanel('panel-trasladar')">🔄 Trasladar Pallet</button>
@@ -306,6 +307,8 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <div id="panel-ver-carril" class="panel"><h3>📋 VER CARRIL</h3><input type="text" id="ver-carril-input" placeholder="Digite o pistolee el carril" onchange="verCarril()" style="font-size:18px;text-align:center;"><div class="mensaje" style="font-size:11px;color:#607d8b;">Ingrese el carril para ver su contenido</div><div id="ver-carril-resultado" style="font-size:10px;color:#c0c0c0;max-height:400px;overflow:auto;margin-top:10px;"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
 <div id="panel-ver-acarreo" class="panel"><h3>🚚 VER ACARREO</h3><input type="text" id="ver-acarreo-input" placeholder="Digite, pistolee o dicte la ubicación" onchange="verAcarreo()" style="font-size:18px;text-align:center;"><div class="mensaje" style="font-size:11px;color:#607d8b;">Ingrese una ubicación del carril para ver las bandejas por posición</div><div id="ver-acarreo-resultado" style="font-size:12px;color:#c0c0c0;max-height:450px;overflow:auto;margin-top:10px;"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
 <div id="panel-escanear" class="panel"><h3>📍 ESCANEAR UBICACIÓN</h3><input type="text" id="input-escanear" placeholder="Apunta y escanea aquí..." onchange="escanearUbicacion()" style="font-size:20px;text-align:center;"><div class="mensaje" style="font-size:11px;color:#607d8b;">La handheld escribirá automáticamente al escanear</div><div id="resultado-escanear"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
+
+<div id="panel-escanear-etiqueta" class="panel"><h3>📦 ESCANEAR ETIQUETA DE PALLET</h3><input type="text" id="input-escanear-etiqueta" placeholder="Apunta y escanea aquí..." onchange="escanearEtiquetaPallet()" style="font-size:20px;text-align:center;"><div class="mensaje" style="font-size:11px;color:#607d8b;">La handheld escribirá automáticamente al escanear</div><div id="resultado-escanear-etiqueta"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
 <div id="panel-historial" class="panel"><h3>📋 MOVIMIENTOS DEL DÍA</h3><input type="date" id="hist-fecha" onchange="filtrarHistorial()" style="margin-bottom:8px;"><button class="btn btn-excel" onclick="exportarHistorial()" style="margin-bottom:8px;">📥 EXPORTAR MOVIMIENTOS</button>
 <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:center;">
     <input type="text" id="hist-filtro-codigo" placeholder="Filtrar por código..." oninput="filtrarHistorial()" style="padding:6px;font-size:10px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:4px;width:120px;flex:1;min-width:100px;">
@@ -1596,6 +1599,508 @@ if (encontrado && encontrado.codigo && catalogoClaves[encontrado.codigo]) {
         }
         return;
     }
+}
+
+
+function escanearEtiquetaPallet() {
+    var clave = document.getElementById('input-escanear-etiqueta').value.trim().toUpperCase();
+    if (!clave) return;
+    document.getElementById('input-escanear-etiqueta').value = '';
+    
+    // Buscar en catalogoClaves
+    if (!catalogoClaves[clave]) {
+        // No está ingresado aún
+        var html = '<div style="background:rgba(255,152,0,0.15);border:1px solid #ff9800;border-radius:8px;padding:15px;margin-bottom:15px;text-align:center;">';
+        html += '<div style="font-size:18px;color:#ff9800;margin-bottom:10px;">⚠️ PALLET NO INGRESADO</div>';
+        html += '<div style="font-size:14px;color:#fff;margin-bottom:15px;">El pallet <b>' + clave + '</b> aún no ha sido ingresado al almacén.</div>';
+        html += '<div class="acciones">';
+        html += '<button class="btn-verde" onclick="ingresarPalletNuevo(\'' + clave + '\')">✅ INGRESAR AHORA</button>';
+        html += '<button class="btn-rojo" onclick="limpiarEscaneoEtiqueta()">❌ CANCELAR</button>';
+        html += '</div>';
+        html += '</div>';
+        document.getElementById('resultado-escanear-etiqueta').innerHTML = html;
+        setTimeout(function() { document.getElementById('input-escanear-etiqueta').focus(); }, 500);
+        return;
+    }
+    
+    var pallet = catalogoClaves[clave];
+    var html = '<div style="background:rgba(79,195,247,0.1);border:1px solid #4fc3f7;border-radius:8px;padding:15px;margin-bottom:15px;">';
+    html += '<div style="font-size:16px;font-weight:bold;color:#4fc3f7;margin-bottom:10px;">📦 ' + pallet.codigo + '</div>';
+    html += '<div class="info-line"><span class="info-label">📝 Producto:</span><span class="info-value">' + pallet.producto + '</span></div>';
+    html += '<div class="info-line"><span class="info-label">📏 Unidades:</span><span class="info-value">' + pallet.und + '</span></div>';
+    html += '<div class="info-line"><span class="info-label">⚖️ Kilos:</span><span class="info-value">' + pallet.kg + '</span></div>';
+    html += '<div class="info-line"><span class="info-label">🔢 Lote:</span><span class="info-value">' + (pallet.lote || '—') + '</span></div>';
+    
+    // Convertir fecha de vencimiento
+    var fechaVence = pallet.vence;
+    if (!isNaN(fechaVence) && fechaVence > 1000) {
+        var excelEpoch = new Date(1899, 11, 30);
+        var jsDate = new Date(excelEpoch.getTime() + fechaVence * 24 * 60 * 60 * 1000);
+        fechaVence = String(jsDate.getDate()).padStart(2,'0') + '/' + String(jsDate.getMonth()+1).padStart(2,'0') + '/' + jsDate.getFullYear();
+    }
+    html += '<div class="info-line"><span class="info-label">📅 Vence:</span><span class="info-value">' + (fechaVence || '—') + '</span></div>';
+    html += '<div class="info-line"><span class="info-label">📍 Ubicación:</span><span class="info-value">' + (pallet.ubicacion || '—') + '</span></div>';
+    html += '<div class="info-line"><span class="info-label">📦 Bandejas:</span><span class="info-value">' + (pallet.bandejas || '0') + '</span></div>';
+    
+    // Destino
+    html += '<div style="margin:10px 0;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;">';
+    html += '<label style="color:#ff9800;font-size:13px;font-weight:bold;">📍 SELECCIONE DESTINO *</label>';
+    html += '<select id="escaneo-etiqueta-destino" style="font-size:14px;padding:10px;margin:6px 0;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:8px;width:100%;">';
+    html += '<option value="">Seleccione destino...</option>';
+    html += '<option value="CUSCO_SAYLLA">ALMACEN_CUSCO_SAYLLA</option>';
+    html += '<option value="CUSCO_PARQUE">ALMACEN_CUSCO_PQUE_INDUST</option>';
+    html += '<option value="JULIACA">ALMACEN_JULIACA</option>';
+    html += '<option value="PUNO">ALMACEN_PUNO</option>';
+    html += '<option value="LIMA">ALMACEN_LIMA</option>';
+    html += '<option value="VILLA_SALVADOR">TIENDA_VILLA_EL_SALVADOR</option>';
+    html += '<option value="COSTA">COSTA</option>';
+    html += '<option value="NOCHE">NOCHE</option>';
+    html += '<option value="CAMARA_500">CAMARA 500</option>';
+    html += '<option value="ZONAS">ZONAS</option>';
+    html += '<option value="TIENDAS">TIENDAS</option>';
+    html += '<option value="PBA">PBA</option>';
+    html += '<option value="PDC">DESPOSTE (PDC)</option>';
+    html += '<option value="PREPARADOS">EMBUTIDOS (PREPARADOS)</option>';
+    html += '<option value="CAMARA_1000">CAMARA 1000</option>';
+    html += '<option value="CAMARA_2000">CAMARA 2000</option>';
+    html += '</select>';
+    html += '</div>';
+    
+    // Botones de acción
+    html += '<div class="acciones">';
+    html += '<button class="btn-rojo" onclick="accionEtiquetaSalida(\'' + clave + '\',\'salida\')">📤 SALIDA TOTAL</button>';
+    html += '<button class="btn-naranja" onclick="accionEtiquetaSalida(\'' + clave + '\',\'picking\')">📏 PICKING</button>';
+    html += '</div>';
+    html += '</div>';
+    
+    document.getElementById('resultado-escanear-etiqueta').innerHTML = html;
+    setTimeout(function() { document.getElementById('input-escanear-etiqueta').focus(); }, 500);
+}
+
+function limpiarEscaneoEtiqueta() {
+    document.getElementById('resultado-escanear-etiqueta').innerHTML = '';
+    document.getElementById('input-escanear-etiqueta').value = '';
+    document.getElementById('input-escanear-etiqueta').focus();
+}
+
+function ingresarPalletNuevo(clave) {
+    // Mostrar pantalla de ingreso manual
+    var panelIngreso = document.createElement('div');
+    panelIngreso.id = 'panel-ingreso-pallet-nuevo';
+    panelIngreso.className = 'panel';
+    panelIngreso.style.display = 'block';
+    
+    var html = '<h3>📥 INGRESAR PALLET - ' + clave + '</h3>';
+    html += '<div style="font-size:11px;color:#90caf9;margin-bottom:10px;">Complete la información del pallet 🎙️ = voz</div>';
+    
+    html += '<div style="margin:10px 0;">';
+    html += '<label style="color:#4fc3f7;font-weight:bold;">📦 Código de Producto *</label>';
+    html += '<div style="display:flex;gap:6px;">';
+    html += '<input type="text" id="ingreso-codigo" placeholder="Ej: 5501" style="flex:1;font-size:14px;padding:10px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:6px;" onchange="autoCompletarProductoNuevo()">';
+    html += '<button onclick="activarVozCampo(\'ingreso-codigo\')" style="background:#1565c0;border:none;color:#fff;padding:10px 15px;border-radius:6px;cursor:pointer;font-size:14px;">🎙️</button>';
+    html += '</div>';
+    html += '</div>';
+    
+    html += '<div style="margin:10px 0;">';
+    html += '<label style="color:#4fc3f7;font-weight:bold;">📝 Nombre del Producto (automático)</label>';
+    html += '<input type="text" id="ingreso-producto" placeholder="Se llena automáticamente" readonly style="font-size:14px;padding:10px;width:100%;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#888;border-radius:6px;">';
+    html += '</div>';
+    
+    html += '<div style="display:flex;gap:8px;margin:10px 0;">';
+    html += '<div style="flex:1;">';
+    html += '<label style="color:#4fc3f7;font-weight:bold;">📏 Unidades *</label>';
+    html += '<div style="display:flex;gap:6px;">';
+    html += '<input type="number" id="ingreso-und" placeholder="0" min="0" style="flex:1;font-size:14px;padding:10px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:6px;">';
+    html += '<button onclick="activarVozCampo(\'ingreso-und\')" style="background:#1565c0;border:none;color:#fff;padding:10px 15px;border-radius:6px;cursor:pointer;">🎙️</button>';
+    html += '</div>';
+    html += '</div>';
+    html += '<div style="flex:1;">';
+    html += '<label style="color:#4fc3f7;font-weight:bold;">⚖️ Kilos *</label>';
+    html += '<div style="display:flex;gap:6px;">';
+    html += '<input type="number" id="ingreso-kg" placeholder="0.00" min="0" step="0.01" style="flex:1;font-size:14px;padding:10px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:6px;">';
+    html += '<button onclick="activarVozCampo(\'ingreso-kg\')" style="background:#1565c0;border:none;color:#fff;padding:10px 15px;border-radius:6px;cursor:pointer;">🎙️</button>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+    
+    html += '<div style="margin:10px 0;">';
+    html += '<label style="color:#4fc3f7;font-weight:bold;">🔢 Lote *</label>';
+    html += '<div style="display:flex;gap:6px;">';
+    html += '<input type="text" id="ingreso-lote" placeholder="Ej: 2023" style="flex:1;font-size:14px;padding:10px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:6px;">';
+    html += '<button onclick="activarVozCampo(\'ingreso-lote\')" style="background:#1565c0;border:none;color:#fff;padding:10px 15px;border-radius:6px;cursor:pointer;">🎙️</button>';
+    html += '</div>';
+    html += '</div>';
+    
+    html += '<div style="display:flex;gap:8px;margin:10px 0;">';
+    html += '<div style="flex:1;">';
+    html += '<label style="color:#4fc3f7;font-weight:bold;">📅 Vencimiento *</label>';
+    html += '<div style="display:flex;gap:6px;">';
+    html += '<input type="text" id="ingreso-vence" placeholder="DD/MM/YYYY" style="flex:1;font-size:14px;padding:10px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:6px;">';
+    html += '<button onclick="activarVozCampo(\'ingreso-vence\')" style="background:#1565c0;border:none;color:#fff;padding:10px 15px;border-radius:6px;cursor:pointer;">🎙️</button>';
+    html += '</div>';
+    html += '</div>';
+    html += '<div style="flex:1;">';
+    html += '<label style="color:#4fc3f7;font-weight:bold;">📦 Bandejas</label>';
+    html += '<div style="display:flex;gap:6px;">';
+    html += '<input type="number" id="ingreso-bandejas" placeholder="0" min="0" style="flex:1;font-size:14px;padding:10px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:6px;">';
+    html += '<button onclick="activarVozCampo(\'ingreso-bandejas\')" style="background:#1565c0;border:none;color:#fff;padding:10px 15px;border-radius:6px;cursor:pointer;">🎙️</button>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+    
+    html += '<div style="margin:10px 0;">';
+    html += '<label style="color:#4fc3f7;font-weight:bold;">📍 Ubicación *</label>';
+    html += '<div style="display:flex;gap:6px;">';
+    html += '<input type="text" id="ingreso-ubicacion" placeholder="Ej: CI16D5" style="flex:1;font-size:14px;padding:10px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:6px;">';
+    html += '<button onclick="activarVozCampo(\'ingreso-ubicacion\')" style="background:#1565c0;border:none;color:#fff;padding:10px 15px;border-radius:6px;cursor:pointer;">🎙️</button>';
+    html += '</div>';
+    html += '</div>';
+    
+    html += '<div class="acciones">';
+    html += '<button class="btn-verde" onclick="confirmarIngresoPalletNuevo(\'' + clave + '\')">✅ INGRESAR</button>';
+    html += '<button class="btn-rojo" onclick="cancelarIngresoPalletNuevo()">❌ CANCELAR</button>';
+    html += '</div>';
+    
+    panelIngreso.innerHTML = html;
+    document.body.appendChild(panelIngreso);
+    
+    setTimeout(function() { document.getElementById('ingreso-codigo').focus(); }, 500);
+}
+
+function autoCompletarProductoNuevo() {
+    var codigo = document.getElementById('ingreso-codigo').value.toUpperCase().trim();
+    if (!codigo) {
+        document.getElementById('ingreso-producto').value = '';
+        return;
+    }
+    
+    // Buscar en TABLA-3D (tablaDatos)
+    var encontrado = tablaDatos.find(function(p) { return p.codigo === codigo; });
+    if (encontrado) {
+        document.getElementById('ingreso-producto').value = encontrado.producto;
+    } else {
+        document.getElementById('ingreso-producto').value = 'Producto no encontrado';
+    }
+}
+
+function activarVozCampo(campoId) {
+    if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+        alert('⚠️ Tu navegador no soporta reconocimiento de voz');
+        return;
+    }
+    
+    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var recognition = new SpeechRecognition();
+    recognition.lang = 'es-ES';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    
+    var boton = event.target;
+    boton.style.background = '#ff6f00';
+    boton.textContent = '🎤 Escuchando...';
+    
+    recognition.onstart = function() {
+        console.log('Escuchando...');
+    };
+    
+    recognition.onresult = function(event) {
+        var transcript = event.results[0][0].transcript.trim();
+        document.getElementById(campoId).value = transcript;
+        boton.style.background = '#1565c0';
+        boton.textContent = '🎙️';
+        
+        // Si es código, autocompleta producto
+        if (campoId === 'ingreso-codigo') {
+            setTimeout(autoCompletarProductoNuevo, 300);
+        }
+    };
+    
+    recognition.onerror = function(event) {
+        console.error('Error de voz:', event.error);
+        boton.style.background = '#c62828';
+        boton.textContent = '❌ Error';
+        setTimeout(function() {
+            boton.style.background = '#1565c0';
+            boton.textContent = '🎙️';
+        }, 2000);
+    };
+    
+    recognition.onend = function() {
+        boton.style.background = '#1565c0';
+        boton.textContent = '🎙️';
+    };
+    
+    recognition.start();
+}
+
+function confirmarIngresoPalletNuevo(clave) {
+    var codigo = document.getElementById('ingreso-codigo').value.trim();
+    var producto = document.getElementById('ingreso-producto').value.trim();
+    var und = parseInt(document.getElementById('ingreso-und').value) || 0;
+    var kg = parseFloat(document.getElementById('ingreso-kg').value) || 0;
+    var lote = document.getElementById('ingreso-lote').value.trim();
+    var vence = document.getElementById('ingreso-vence').value.trim();
+    var ubicacion = document.getElementById('ingreso-ubicacion').value.toUpperCase().trim();
+    var bandejas = parseInt(document.getElementById('ingreso-bandejas').value) || 0;
+    
+    // Validaciones
+    if (!codigo || !producto || !und || !kg || !lote || !vence || !ubicacion) {
+        alert('⚠️ Debe completar todos los campos requeridos (*)');
+        return;
+    }
+    
+    // Validar ubicación
+    if (!esUbicacionValida(ubicacion) && !esPasadizo(ubicacion)) {
+        alert('❌ Ubicación ' + ubicacion + ' no existe en el almacén');
+        return;
+    }
+    
+    // Guardar en catalogoClaves
+    catalogoClaves[clave] = {
+        codigo: codigo,
+        producto: producto,
+        und: und,
+        kg: kg,
+        lote: lote,
+        vence: vence,
+        linea: '',
+        ubicacion: ubicacion,
+        bandejas: bandejas,
+        fechaIngreso: new Date().toLocaleDateString('es-PE'),
+        horaIngreso: new Date().toLocaleTimeString('es-PE'),
+        activo: true
+    };
+    guardarCatalogoClaves();
+    
+    // Guardar en tablaDatos
+    var encontrado = buscarEnTabla(ubicacion);
+    if (!encontrado) {
+        encontrado = { ubicacion: ubicacion, codigo: '', producto: '', lote: '', und: 0, kg: 0, vence: '', linea: '', bandejas: 0 };
+        tablaDatos.push(encontrado);
+    }
+    encontrado.codigo = codigo;
+    encontrado.producto = producto;
+    encontrado.lote = lote;
+    encontrado.und = und;
+    encontrado.kg = kg;
+    encontrado.vence = vence;
+    encontrado.bandejas = bandejas;
+    guardarEnLocalStorage();
+    
+    // Registrar en historial
+    historialMovimientos.push({
+        fecha: new Date().toLocaleDateString('es-PE'),
+        hora: new Date().toLocaleTimeString('es-PE'),
+        tipo: 'INGRESO',
+        ubicacion: ubicacion,
+        codigo: codigo,
+        producto: producto,
+        lote: lote,
+        undAnt: 0,
+        undDesp: und,
+        kgAnt: 0,
+        kgDesp: kg
+    });
+    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    
+    mostrarFeedback('✅ Pallet ingresado correctamente - Clave: ' + clave);
+    
+    // Limpiar
+    cancelarIngresoPalletNuevo();
+    document.getElementById('resultado-escanear-etiqueta').innerHTML = '<div class="mensaje" style="color:#69f0ae;font-size:18px;">✅ INGRESO COMPLETADO</div>';
+    setTimeout(function() {
+        document.getElementById('input-escanear-etiqueta').value = '';
+        document.getElementById('resultado-escanear-etiqueta').innerHTML = '';
+        document.getElementById('input-escanear-etiqueta').focus();
+    }, 2000);
+}
+
+function cancelarIngresoPalletNuevo() {
+    var panelIngreso = document.getElementById('panel-ingreso-pallet-nuevo');
+    if (panelIngreso) panelIngreso.remove();
+    document.getElementById('input-escanear-etiqueta').focus();
+}
+
+function accionEtiquetaSalida(clave, tipo) {
+    var destino = document.getElementById('escaneo-etiqueta-destino').value;
+    if (!destino) {
+        alert('⚠️ Debe seleccionar un destino antes de continuar.');
+        document.getElementById('escaneo-etiqueta-destino').focus();
+        return;
+    }
+    
+    var pallet = catalogoClaves[clave];
+    if (!pallet) {
+        alert('⚠️ Pallet no encontrado.');
+        return;
+    }
+    
+    var nombreDestino = document.getElementById('escaneo-etiqueta-destino').options[document.getElementById('escaneo-etiqueta-destino').selectedIndex]?.text || destino;
+    
+    if (tipo === 'salida') {
+        if (!confirm('¿Dar SALIDA TOTAL al pallet ' + clave + '?\\nDestino: ' + nombreDestino)) return;
+        
+        // Registrar en historial
+        historialSalidas.push({
+            fecha: new Date().toLocaleDateString('es-PE'),
+            hora: new Date().toLocaleTimeString('es-PE'),
+            tipo: 'SALIDA (LOTE)',
+            destino: destino,
+            nombreDestino: nombreDestino,
+            ubicacion: pallet.ubicacion || '—',
+            codigo: pallet.codigo,
+            producto: pallet.producto,
+            lote: pallet.lote || '',
+            und: pallet.und,
+            kg: pallet.kg,
+            bandejas: pallet.bandejas || 0,
+            anulado: false
+        });
+        localStorage.setItem('historialSalidas', JSON.stringify(historialSalidas));
+        
+        historialMovimientos.push({
+            fecha: new Date().toLocaleDateString('es-PE'),
+            hora: new Date().toLocaleTimeString('es-PE'),
+            tipo: 'SALIDA (LOTE)',
+            ubicacion: pallet.ubicacion || '—',
+            codigo: pallet.codigo,
+            producto: pallet.producto,
+            lote: pallet.lote || '',
+            destino: destino,
+            undAnt: pallet.und,
+            undDesp: 0,
+            kgAnt: pallet.kg,
+            kgDesp: 0,
+            bandAnt: pallet.bandejas || 0,
+            bandDesp: 0
+        });
+        localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+        
+        // Remover del catálogo
+        delete catalogoClaves[clave];
+        guardarCatalogoClaves();
+        
+        mostrarFeedback('✅ Salida total registrada - Pallet: ' + clave);
+        document.getElementById('resultado-escanear-etiqueta').innerHTML = '<div class="mensaje" style="color:#69f0ae;font-size:18px;">✅ SALIDA REGISTRADA</div>';
+        setTimeout(function() {
+            document.getElementById('input-escanear-etiqueta').value = '';
+            document.getElementById('resultado-escanear-etiqueta').innerHTML = '';
+            document.getElementById('input-escanear-etiqueta').focus();
+        }, 2000);
+        
+    } else if (tipo === 'picking') {
+        // Picking (parcial)
+        irAPickingEtiqueta(clave, destino);
+    }
+}
+
+function irAPickingEtiqueta(clave, destino) {
+    // Guardar datos temporales para picking
+    window._pickingClave = clave;
+    window._pickingDestino = destino;
+    
+    var pallet = catalogoClaves[clave];
+    document.getElementById('panel-escanear-etiqueta').style.display = 'none';
+    
+    // Mostrar panel de picking personalizado
+    var html = '<div class="panel" style="display:block;">';
+    html += '<h3>📏 PICKING - ' + clave + '</h3>';
+    html += '<div class="info-line"><span class="info-label">Producto:</span><span class="info-value">' + pallet.producto + '</span></div>';
+    html += '<div class="info-line"><span class="info-label">Cantidad actual:</span><span class="info-value">' + pallet.und + ' unidades</span></div>';
+    html += '<div style="margin:15px 0;padding:15px;background:rgba(255,255,255,0.05);border-radius:8px;">';
+    html += '<label style="color:#ff9800;font-size:13px;font-weight:bold;">¿Cuántas unidades desea extraer?</label>';
+    html += '<input type="number" id="picking-cantidad" placeholder="Cantidad" min="1" max="' + pallet.und + '" style="font-size:16px;padding:10px;width:100%;margin:6px 0;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:8px;" onkeydown="if(event.key===\'Enter\') confirmarPickingEtiqueta()">';
+    html += '</div>';
+    html += '<div class="acciones">';
+    html += '<button class="btn-verde" onclick="confirmarPickingEtiqueta()">✅ CONFIRMAR</button>';
+    html += '<button class="btn-rojo" onclick="cancelarPickingEtiqueta()">❌ CANCELAR</button>';
+    html += '</div>';
+    html += '</div>';
+    
+    var panelPicking = document.createElement('div');
+    panelPicking.id = 'panel-picking-etiqueta';
+    panelPicking.innerHTML = html;
+    document.body.appendChild(panelPicking);
+    
+    setTimeout(function() { document.getElementById('picking-cantidad').focus(); }, 500);
+}
+
+function confirmarPickingEtiqueta() {
+    var cantidad = parseInt(document.getElementById('picking-cantidad').value);
+    var clave = window._pickingClave;
+    var destino = window._pickingDestino;
+    var pallet = catalogoClaves[clave];
+    
+    if (!cantidad || cantidad <= 0 || cantidad > pallet.und) {
+        alert('⚠️ Cantidad inválida. Máximo: ' + pallet.und);
+        return;
+    }
+    
+    var nombreDestino = document.querySelector('#escaneo-etiqueta-destino')?.options[document.querySelector('#escaneo-etiqueta-destino').selectedIndex]?.text || destino;
+    
+    // Registrar picking
+    historialSalidas.push({
+        fecha: new Date().toLocaleDateString('es-PE'),
+        hora: new Date().toLocaleTimeString('es-PE'),
+        tipo: 'PICKING',
+        destino: destino,
+        nombreDestino: nombreDestino,
+        ubicacion: pallet.ubicacion || '—',
+        codigo: pallet.codigo,
+        producto: pallet.producto,
+        lote: pallet.lote || '',
+        und: cantidad,
+        kg: (pallet.kg / pallet.und * cantidad).toFixed(2),
+        bandejas: pallet.bandejas || 0,
+        anulado: false
+    });
+    localStorage.setItem('historialSalidas', JSON.stringify(historialSalidas));
+    
+    historialMovimientos.push({
+        fecha: new Date().toLocaleDateString('es-PE'),
+        hora: new Date().toLocaleTimeString('es-PE'),
+        tipo: 'PICKING',
+        ubicacion: pallet.ubicacion || '—',
+        codigo: pallet.codigo,
+        producto: pallet.producto,
+        lote: pallet.lote || '',
+        destino: destino,
+        undAnt: pallet.und,
+        undDesp: pallet.und - cantidad,
+        kgAnt: pallet.kg,
+        kgDesp: (pallet.kg / pallet.und * (pallet.und - cantidad)).toFixed(2)
+    });
+    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    
+    // Actualizar catálogo
+    if (cantidad === pallet.und) {
+        // Salida total
+        delete catalogoClaves[clave];
+    } else {
+        // Reducir cantidad
+        pallet.und -= cantidad;
+        pallet.kg = (pallet.kg / (pallet.und + cantidad) * pallet.und).toFixed(2);
+        catalogoClaves[clave] = pallet;
+    }
+    guardarCatalogoClaves();
+    
+    mostrarFeedback('✅ Picking registrado - ' + cantidad + ' unidades');
+    
+    // Limpiar
+    var panelPicking = document.getElementById('panel-picking-etiqueta');
+    if (panelPicking) panelPicking.remove();
+    
+    document.getElementById('panel-escanear-etiqueta').style.display = 'block';
+    document.getElementById('resultado-escanear-etiqueta').innerHTML = '';
+    document.getElementById('input-escanear-etiqueta').value = '';
+    document.getElementById('input-escanear-etiqueta').focus();
+}
+
+function cancelarPickingEtiqueta() {
+    var panelPicking = document.getElementById('panel-picking-etiqueta');
+    if (panelPicking) panelPicking.remove();
+    document.getElementById('panel-escanear-etiqueta').style.display = 'block';
+    document.getElementById('input-escanear-etiqueta').focus();
 }
 
 function irAIngreso(ubicacion) {

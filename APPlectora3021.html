@@ -356,7 +356,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <div id="panel-resumen-ingreso" class="panel" style="display:none;"><h3>📦 RESUMEN DE INGRESO</h3><div id="resumen-ingreso-lista" style="font-size:12px;color:#fff;margin:10px 0;"></div><button class="btn btn-ingreso" onclick="irASeleccionarCamara()" style="font-size:16px;padding:15px;">✅ CONTINUAR</button><button class="btn btn-volver" onclick="cancelarIngresoMasivo()">❌ CANCELAR</button></div>
 <div id="ing-masivo-camara-panel" class="panel" style="display:none;"><h3>📷 SELECCIONE CÁMARA</h3><button class="btn btn-ingreso" onclick="seleccionarCamaraIngreso('2')" style="font-size:20px;padding:20px;">📷 CÁMARA 2000</button><button class="btn btn-ingreso" onclick="seleccionarCamaraIngreso('1')" style="font-size:20px;padding:20px;">📷 CÁMARA 1000</button><button class="btn btn-volver" onclick="mostrarMenu()">⬅ CANCELAR</button></div>
 
-<div id="panel-ingresados" class="panel" style="display:none;"><h3>📋 PALLETS INGRESADOS</h3><div id="ingresados-lista" style="font-size:10px;color:#c0c0c0;max-height:400px;overflow:auto;"></div><button class="btn btn-ubicacion" onclick="volverAIngreso()">⬅ VOLVER A INGRESO</button><button class="btn btn-volver" onclick="mostrarMenu()">❌ SALIR</button></div>
+<div id="panel-ingresados" class="panel" style="display:none;"><h3>📋 PALLETS INGRESADOS</h3><div id="ingresados-lista" style="font-size:10px;color:#c0c0c0;max-height:400px;overflow:auto;"></div><button class="btn btn-ubicacion" onclick="volverAIngreso()">⬅ VOLVER A INGRESO</button></div>
 
 <!-- ===== PANEL DE INGRESADOS POR ETIQUETA ===== -->
 <div id="panel-ingresados-etiqueta" class="panel" style="display:none;">
@@ -2827,26 +2827,26 @@ function cargarListaIngreso(event) {
         var palletsYaIngresados = [];
         
         palletsDelExcel.forEach(function(p) {
-            if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
+            if (p.clave && catalogoClaves[p.clave]) {
                 // Ya está ingresado
                 p.yaIngresado = true;
-                p.fechaIngreso = catalogoClaves[p.codigoBarras].fechaIngreso || '';
+                p.fechaIngreso = catalogoClaves[p.clave].fechaIngreso || '';
                 // Recuperar datos del catálogo INCLUYENDO lote y fecha
-                p.codigo = catalogoClaves[p.codigoBarras].codigo || p.codigo;
-                p.producto = catalogoClaves[p.codigoBarras].producto || p.producto;
-                p.und = catalogoClaves[p.codigoBarras].und || p.und;
-                p.kg = catalogoClaves[p.codigoBarras].kg || p.kg;
-                p.lote = catalogoClaves[p.codigoBarras].lote || p.lote;
-                p.vence = catalogoClaves[p.codigoBarras].vence || p.vence;
-                p.ubicacionIngreso = catalogoClaves[p.codigoBarras].ubicacion || '';
+                p.codigo = catalogoClaves[p.clave].codigo || p.codigo;
+                p.producto = catalogoClaves[p.clave].producto || p.producto;
+                p.und = catalogoClaves[p.clave].und || p.und;
+                p.kg = catalogoClaves[p.clave].kg || p.kg;
+                p.lote = catalogoClaves[p.clave].lote || p.lote;
+                p.vence = catalogoClaves[p.clave].vence || p.vence;
+                p.ubicacionIngreso = catalogoClaves[p.clave].ubicacion || '';
                 palletsYaIngresados.push(p);
             } else {
                 // Es nuevo - pero buscar si tiene datos previos parciales en catalogoClaves
                 p.yaIngresado = false;
                 // Intentar recuperar lote/fecha si existen datos parciales
-                if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
-                    p.lote = catalogoClaves[p.codigoBarras].lote || p.lote;
-                    p.vence = catalogoClaves[p.codigoBarras].vence || p.vence;
+                if (p.clave && catalogoClaves[p.clave]) {
+                    p.lote = catalogoClaves[p.clave].lote || p.lote;
+                    p.vence = catalogoClaves[p.clave].vence || p.vence;
                 }
                 palletsNuevos.push(p);
             }
@@ -3802,6 +3802,41 @@ function cargarListaIngresoEtiqueta(event) {
             alert('⚠️ No se encontraron pallets en el archivo.');
             return;
         }
+        
+        // VERIFICAR CONTRA CATALOGOCLAVES (pallets ya ingresados previamente)
+        var palletsNuevos = [];
+        var palletsYaIngresados = [];
+        
+        listaEtiqueta.forEach(function(p) {
+            if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
+                // Ya está ingresado
+                p.procesado = true;
+                p.ubicacion = catalogoClaves[p.codigoBarras].ubicacion || '—';
+                p.bandejas = catalogoClaves[p.codigoBarras].bandejas || '0';
+                palletsYaIngresados.push(p);
+            } else {
+                // Es nuevo
+                p.procesado = false;
+                palletsNuevos.push(p);
+            }
+        });
+        
+        if (palletsNuevos.length === 0) {
+            alert('✅ Todos los ' + listaEtiqueta.length + ' pallets de este Excel ya fueron ingresados.\n\n' +
+                  '📍 Ubicación: ' + (palletsYaIngresados[0]?.ubicacion || '—'));
+            document.getElementById('input-lista-ingreso-etiqueta').value = '';
+            return;
+        }
+        
+        if (palletsYaIngresados.length > 0) {
+            var mensaje = '📌 ' + palletsYaIngresados.length + ' pallets ya están ingresados.\n';
+            mensaje += '📌 ' + palletsNuevos.length + ' pallets NUEVOS por ingresar.\n';
+            alert(mensaje);
+        }
+        
+        // Usar solo los pallets nuevos
+        listaEtiqueta = palletsNuevos;
+        
         var progresoKey = 'ingreso_etiqueta_progreso_' + huellaIngresoEtiqueta;
         var progresoGuardado = localStorage.getItem(progresoKey);
         palletsIngresadosEtiqueta = [];

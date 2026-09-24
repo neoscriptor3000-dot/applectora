@@ -3160,9 +3160,9 @@ if (esPasadizo(ub)) {
     if (!p) return;
     
  // Verificar si la clave ya existe en el catálogo
-if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
-    var entradaExistente = catalogoClaves[p.codigoBarras];
-    var mensaje = '⚠️ Este pallet (código: ' + p.codigoBarras + ') ya fue ingresado anteriormente.\n';
+if (p.clave && catalogoClaves[p.clave]) {
+    var entradaExistente = catalogoClaves[p.clave];
+    var mensaje = '⚠️ Este pallet (código: ' + p.clave + ') ya fue ingresado anteriormente.\n';
     mensaje += '📍 Ubicación anterior: ' + (entradaExistente.ubicacion || '—') + '\n';
     mensaje += '📅 Fecha: ' + (entradaExistente.fechaIngreso || '—') + '\n\n';
     mensaje += '¿Desea volver a ingresarlo en la ubicación ' + ub + '?\n';
@@ -3221,16 +3221,16 @@ if (esPasadizo(ub)) {
     guardarEnLocalStorage();
 
 // Actualizar la ubicación en el catálogo (reingreso)
-if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
-    catalogoClaves[p.codigoBarras].ubicacion = ub;
-    catalogoClaves[p.codigoBarras].fechaIngreso = new Date().toLocaleDateString('es-PE');
-    catalogoClaves[p.codigoBarras].horaIngreso = new Date().toLocaleTimeString('es-PE');
+if (p.clave && catalogoClaves[p.clave]) {
+    catalogoClaves[p.clave].ubicacion = ub;
+    catalogoClaves[p.clave].fechaIngreso = new Date().toLocaleDateString('es-PE');
+    catalogoClaves[p.clave].horaIngreso = new Date().toLocaleTimeString('es-PE');
     guardarCatalogoClaves();
 }
     
     // Guardar en el catálogo de claves (PERMANENTE)
-    if (p.codigoBarras) {
-        catalogoClaves[p.codigoBarras] = {
+    if (p.clave) {
+        catalogoClaves[p.clave] = {
             codigo: p.codigo,
             producto: p.producto,
             und: p.und,

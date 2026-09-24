@@ -351,7 +351,6 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <div class="info-line"><span class="info-label">KG FIN:</span><span class="info-value" id="pick-kg-fin" style="color:#69f0ae;">0</span></div>
 <div class="info-line"><span class="info-label">📦 BANDEJAS FIN:</span><span class="info-value" id="pick-band-fin" style="color:#69f0ae;">0</span></div>
 <input type="hidden" id="pick-ubicacion">
-<button class="btn" onclick="actualizarBandejas()" style="width:100%;margin:8px 0;padding:12px;background:#ff6f00;border:none;color:#fff;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">📦 ACTUALIZAR BANDEJAS</button>
 <div class="acciones"><button class="btn-verde" onclick="guardarPicking()">💾 GUARDAR</button><button class="btn-volver" onclick="mostrarPanel('panel-escanear')">⬅ CANCELAR</button></div><div id="resultado-picking" class="mensaje"></div><button class="btn-rojo" onclick="confirmarDeshacer()" style="margin-top:5px;width:100%;padding:12px;border:none;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">↩ DESHACER</button><button class="btn btn-ubicacion" onclick="mostrarPanel('panel-escanear');document.getElementById('input-escanear').focus();" style="margin-top:10px;">📍 ESCANEAR OTRA UBICACIÓN</button></div>
 
 <div id="panel-resumen-ingreso" class="panel" style="display:none;"><h3>📦 RESUMEN DE INGRESO</h3><div id="resumen-ingreso-lista" style="font-size:12px;color:#fff;margin:10px 0;"></div><button class="btn btn-ingreso" onclick="irASeleccionarCamara()" style="font-size:16px;padding:15px;">✅ CONTINUAR</button><button class="btn btn-volver" onclick="cancelarIngresoMasivo()">❌ CANCELAR</button></div>
@@ -635,6 +634,22 @@ function mostrarPanel(id) {
     if (id === 'panel-escanear') {
         document.getElementById('input-escanear').focus();
         document.getElementById('resultado-escanear').innerHTML = '';
+    }
+    if (id === 'panel-picking') {
+        // Insertar botón ACTUALIZAR BANDEJAS si no existe
+        var btnActualizar = document.getElementById('btn-actualizar-bandejas-ubicacion');
+        if (!btnActualizar) {
+            var divAcciones = document.querySelector('#panel-picking .acciones');
+            if (divAcciones) {
+                var btn = document.createElement('button');
+                btn.id = 'btn-actualizar-bandejas-ubicacion';
+                btn.className = 'btn';
+                btn.onclick = function() { actualizarBandejas(); };
+                btn.style.cssText = 'width:100%;margin:8px 0;padding:12px;background:#ff6f00;border:none;color:#fff;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;';
+                btn.textContent = '📦 ACTUALIZAR BANDEJAS';
+                divAcciones.parentNode.insertBefore(btn, divAcciones);
+            }
+        }
     }
     if (id === 'panel-ver-carril') {
         document.getElementById('ver-carril-input').value = '';
@@ -1463,7 +1478,7 @@ if (esPasadizo(ub)) {
         html += '<div class="info-line"><span class="info-label">🔢 Lote:</span><span class="info-value">' + encontrado.lote + '</span></div>';
         html += '<div class="info-line"><span class="info-label">📏 Unidades:</span><span class="info-value">' + encontrado.und + '</span></div>';
         html += '<div class="info-line"><span class="info-label">⚖️ Kilos:</span><span class="info-value">' + encontrado.kg + '</span></div>';
-        html += '<div class="info-line"><span class="info-label">📦 Bandejas:</span><span class="info-value">' + (encontrado.bandejas || '0') + '</span></div>';
+        html += '<div class="info-line"><span class="info-label">📦 Bandejas:</span><input type="number" id="resultado-bandejas" min="0" value="' + (encontrado.bandejas || '0') + '" style="width:80px;padding:4px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:4px;text-align:center;"></div>';
         var fechaVence = encontrado.vence;
         if (!isNaN(fechaVence) && fechaVence > 1000) {
             var excelEpoch = new Date(1899, 11, 30);
@@ -1493,6 +1508,7 @@ if (esPasadizo(ub)) {
         html += '<option value="CAMARA_2000">CAMARA 2000</option>';
         html += '</select>';
         html += '</div>';
+        html += '<button class="btn" onclick="actualizarBandejasDesdeEscaneo(\'' + ub + '\')" style="width:100%;margin:8px 0;padding:12px;background:#ff6f00;border:none;color:#fff;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">📦 ACTUALIZAR BANDEJAS</button>';
         html += '<div class="acciones">';
         html += '<button class="btn-rojo" onclick="accionRapidaConDestino(\'' + ub + '\',\'salida\')">📤 SALIDA</button>';
         html += '<button class="btn-naranja" onclick="accionRapidaConDestino(\'' + ub + '\',\'picking\')">📏 PICKING</button>';
@@ -1652,7 +1668,7 @@ function escanearEtiquetaPallet() {
     }
     html += '<div class="info-line"><span class="info-label">📅 Vence:</span><span class="info-value">' + (fechaVence || '—') + '</span></div>';
     html += '<div class="info-line"><span class="info-label">📍 Ubicación:</span><span class="info-value">' + (pallet.ubicacion || '—') + '</span></div>';
-    html += '<div class="info-line"><span class="info-label">📦 Bandejas:</span><span class="info-value">' + (pallet.bandejas || '0') + '</span></div>';
+    html += '<div class="info-line"><span class="info-label">📦 Bandejas:</span><input type="number" id="resultado-bandejas-etiqueta" min="0" value="' + (pallet.bandejas || '0') + '" style="width:80px;padding:4px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:4px;text-align:center;"></div>';
     
     // Destino
     html += '<div style="margin:10px 0;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;">';
@@ -1677,6 +1693,7 @@ function escanearEtiquetaPallet() {
     html += '<option value="CAMARA_2000">CAMARA 2000</option>';
     html += '</select>';
     html += '</div>';
+    html += '<button class="btn" onclick="actualizarBandejasDesdeEtiqueta(\'' + clave + '\')" style="width:100%;margin:8px 0;padding:12px;background:#ff6f00;border:none;color:#fff;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">📦 ACTUALIZAR BANDEJAS</button>';
     
     // Botones de acción
     html += '<div class="acciones">';
@@ -6698,6 +6715,103 @@ function calcularPicking() {
     document.getElementById('pick-und-fin').textContent  = Math.max(0, Math.round((undIni  - undDesp)  * 100) / 100);
     document.getElementById('pick-kg-fin').textContent   = Math.max(0, Math.round((kgIni   - kgDesp)   * 100) / 100).toFixed(2);
     document.getElementById('pick-band-fin').textContent = Math.max(0, Math.round((bandIni - bandDesp) * 100) / 100);
+}
+
+// Función para actualizar bandejas desde la pantalla de escaneo ubicación
+function actualizarBandejasDesdeEscaneo(ubicacion) {
+    var bandejasNuevas = parseFloat(document.getElementById('resultado-bandejas').value) || 0;
+    
+    if (!ubicacion) {
+        alert('⚠️ No hay ubicación registrada.');
+        return;
+    }
+    
+    // Buscar en tablaDatos
+    var encontrado = tablaDatos.find(function(u) { return u.ubicacion === ubicacion; });
+    if (!encontrado) {
+        alert('⚠️ Pallet no encontrado en la ubicación.');
+        return;
+    }
+    
+    var bandejasAnteriores = encontrado.bandejas || 0;
+    
+    // Actualizar bandejas
+    encontrado.bandejas = bandejasNuevas;
+    guardarEnLocalStorage();
+    
+    // Registrar en historial como AJUSTE DE BANDEJAS
+    var movimiento = {
+        tipo: 'AJUSTE DE BANDEJAS',
+        fecha: new Date().toLocaleString(),
+        ubicacion: ubicacion,
+        codigo: encontrado.codigo,
+        producto: encontrado.producto,
+        bandAnt: bandejasAnteriores,
+        bandDesp: 0,
+        bandFin: bandejasNuevas,
+        lote: encontrado.lote,
+        vence: encontrado.vence
+    };
+    historialMovimientos.push(movimiento);
+    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    
+    alert('✅ Bandejas actualizadas: ' + bandejasAnteriores + ' → ' + bandejasNuevas);
+    
+    // Volver a escanear
+    document.getElementById('input-escanear').value = '';
+    document.getElementById('resultado-escanear').innerHTML = '';
+    document.getElementById('input-escanear').focus();
+}
+
+// Función para actualizar bandejas desde la pantalla de escanear etiqueta
+function actualizarBandejasDesdeEtiqueta(clave) {
+    var bandejasNuevas = parseFloat(document.getElementById('resultado-bandejas-etiqueta').value) || 0;
+    
+    if (!clave) {
+        alert('⚠️ No hay clave de pallet registrada.');
+        return;
+    }
+    
+    var pallet = catalogoClaves[clave];
+    if (!pallet) {
+        alert('⚠️ Pallet no encontrado en catálogo.');
+        return;
+    }
+    
+    var bandejasAnteriores = pallet.bandejas || 0;
+    
+    // Actualizar bandejas en catalogoClaves
+    pallet.bandejas = bandejasNuevas;
+    guardarCatalogoClaves();
+    
+    // Buscar y actualizar también en tablaDatos si existe
+    var enTabla = tablaDatos.find(function(u) { return u.codigo === pallet.codigo && u.lote === pallet.lote; });
+    if (enTabla) {
+        enTabla.bandejas = bandejasNuevas;
+        guardarEnLocalStorage();
+    }
+    
+    // Registrar en historial como AJUSTE DE BANDEJAS
+    var movimiento = {
+        tipo: 'AJUSTE DE BANDEJAS (ETIQUETA)',
+        fecha: new Date().toLocaleString(),
+        codigo: pallet.codigo,
+        clave: clave,
+        producto: pallet.producto,
+        bandAnt: bandejasAnteriores,
+        bandDesp: 0,
+        bandFin: bandejasNuevas,
+        lote: pallet.lote,
+        vence: pallet.vence
+    };
+    historialMovimientos.push(movimiento);
+    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    
+    alert('✅ Bandejas actualizadas: ' + bandejasAnteriores + ' → ' + bandejasNuevas);
+    
+    // Limpiar y volver a escaneo
+    limpiarEscaneoEtiqueta();
+    document.getElementById('input-escanear-etiqueta').focus();
 }
 
 // Función para actualizar solo bandejas en ESCANEAR UBICACIÓN

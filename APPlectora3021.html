@@ -341,7 +341,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div id="hist-lista" style="font-size:10px;max-height:400px;overflow:auto;"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
 
-<div id="panel-picking" class="panel"><h3>📏 PICKING</h3><div class="mensaje" id="pick-ubica"></div><div id="pick-producto-info" style="font-size:12px;color:#fff;text-align:center;margin-bottom:8px;"></div><div class="info-line"><span class="info-label">UNID INIC:</span><span class="info-value" id="pick-und-ini">0</span></div><div class="info-line"><span class="info-label">KG INIC:</span><span class="info-value" id="pick-kg-ini">0</span></div><div class="info-line"><span class="info-label">📦 BANDEJAS INIC:</span><span class="info-value" id="pick-band-ini">0</span></div><hr style="border-color:rgba(255,255,255,0.1);margin:8px 0;"><label style="color:#ff9800;font-size:12px;">📤 UNID A RETIRAR</label><input type="number" id="pick-und-desp" placeholder="0" min="0" value="" oninput="calcularPicking()">
+<div id="panel-picking" class="panel"><h3>📏 PICKING</h3><div class="mensaje" id="pick-ubica"></div><div id="pick-producto-info" style="font-size:12px;color:#fff;text-align:center;margin-bottom:8px;"></div><div class="info-line"><span class="info-label">UNID INIC:</span><span class="info-value" id="pick-und-ini">0</span></div><div class="info-line"><span class="info-label">KG INIC:</span><span class="info-value" id="pick-kg-ini">0</span></div><div class="info-line"><span class="info-label">📦 BANDEJAS INIC:</span><input type="number" id="pick-band-ini" min="0" value="0" style="width:60px;padding:4px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:4px;text-align:center;"></div><hr style="border-color:rgba(255,255,255,0.1);margin:8px 0;"><label style="color:#ff9800;font-size:12px;">📤 UNID A RETIRAR</label><input type="number" id="pick-und-desp" placeholder="0" min="0" value="" oninput="calcularPicking()">
 <label style="color:#ff9800;font-size:12px;">📤 KG A RETIRAR</label>
 <input type="number" id="pick-kg-desp" placeholder="0" min="0" value="" step="0.01" oninput="calcularPicking()">
 <label style="color:#ff9800;font-size:12px;">📦 BANDEJAS A RETIRAR</label>
@@ -351,6 +351,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <div class="info-line"><span class="info-label">KG FIN:</span><span class="info-value" id="pick-kg-fin" style="color:#69f0ae;">0</span></div>
 <div class="info-line"><span class="info-label">📦 BANDEJAS FIN:</span><span class="info-value" id="pick-band-fin" style="color:#69f0ae;">0</span></div>
 <input type="hidden" id="pick-ubicacion">
+<button class="btn" onclick="actualizarBandejas()" style="width:100%;margin:8px 0;padding:12px;background:#ff6f00;border:none;color:#fff;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">📦 ACTUALIZAR BANDEJAS</button>
 <div class="acciones"><button class="btn-verde" onclick="guardarPicking()">💾 GUARDAR</button><button class="btn-volver" onclick="mostrarPanel('panel-escanear')">⬅ CANCELAR</button></div><div id="resultado-picking" class="mensaje"></div><button class="btn-rojo" onclick="confirmarDeshacer()" style="margin-top:5px;width:100%;padding:12px;border:none;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">↩ DESHACER</button><button class="btn btn-ubicacion" onclick="mostrarPanel('panel-escanear');document.getElementById('input-escanear').focus();" style="margin-top:10px;">📍 ESCANEAR OTRA UBICACIÓN</button></div>
 
 <div id="panel-resumen-ingreso" class="panel" style="display:none;"><h3>📦 RESUMEN DE INGRESO</h3><div id="resumen-ingreso-lista" style="font-size:12px;color:#fff;margin:10px 0;"></div><button class="btn btn-ingreso" onclick="irASeleccionarCamara()" style="font-size:16px;padding:15px;">✅ CONTINUAR</button><button class="btn btn-volver" onclick="cancelarIngresoMasivo()">❌ CANCELAR</button></div>
@@ -815,6 +816,17 @@ function mostrarHistorial(lista) {
     html += '<tr style="color:#607d8b;border-bottom:2px solid rgba(79,195,247,0.3);"><th>HORA</th><th>TIPO</th><th>UBICACIÓN</th><th>CÓDIGO</th><th>PROC/DEST</th><th>UND INIC</th><th>KG INIC</th><th>BAND INIC</th><th>UND DESP</th><th>KG DESP</th><th>BAND DESP</th><th>UND FIN</th><th>KG FIN</th><th>BAND FIN</th></tr>';
     var listaMostrar = lista.slice().reverse();
     listaMostrar.forEach(function(m) {
+        // Calcular valores faltantes
+        var undAnt = m.undAnt || 0;
+        var kgAnt = m.kgAnt || 0;
+        var bandAnt = m.bandAnt || 0;
+        var undDesp = m.undDesp || 0;
+        var kgDesp = m.kgDesp || 0;
+        var bandDesp = m.bandDesp || 0;
+        var undFin = m.undFin !== undefined ? m.undFin : Math.max(0, undAnt - undDesp);
+        var kgFin = m.kgFin !== undefined ? m.kgFin : Math.max(0, kgAnt - kgDesp);
+        var bandFin = m.bandFin !== undefined ? m.bandFin : Math.max(0, bandAnt - bandDesp);
+        
         var colorTipo = '#90caf9';
         if (m.tipo === 'INGRESO') colorTipo = '#69f0ae';
         else if (m.tipo === 'SALIDA (LOTE)' || m.tipo === 'SALIDA (SUELTO)' || m.tipo === 'SALIDA (MANUAL)' || m.tipo === 'SALIDA (NUEVO)') colorTipo = '#ef9a9a';
@@ -842,15 +854,15 @@ function mostrarHistorial(lista) {
         html += '<td style="padding:5px;font-size:10px;color:#4fc3f7;">' + (m.ubicacion || '—') + '</td>';
         html += '<td style="padding:5px;font-size:10px;color:#fff;font-weight:bold;">' + (m.codigo || '—') + '</td>';
         html += '<td style="padding:5px;font-size:9px;color:#ffcc80;">' + procDest + '</td>';
-        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (m.undAnt || 0) + '</td>';
-        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + ((m.kgAnt || 0).toFixed(2)) + '</td>';
-        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (m.bandAnt || 0) + '</td>';
-        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (m.undDesp || 0) + '</td>';
-        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + ((m.kgDesp || 0).toFixed(2)) + '</td>';
-        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (m.bandDesp || 0) + '</td>';
-        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (m.undFin || 0) + '</td>';
-        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + ((m.kgFin || 0).toFixed(2)) + '</td>';
-        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (m.bandFin || 0) + '</td>';
+        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (undAnt || 0) + '</td>';
+        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + ((kgAnt || 0).toFixed(2)) + '</td>';
+        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (bandAnt || 0) + '</td>';
+        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (undDesp || 0) + '</td>';
+        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + ((kgDesp || 0).toFixed(2)) + '</td>';
+        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (bandDesp || 0) + '</td>';
+        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (undFin || 0) + '</td>';
+        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + ((kgFin || 0).toFixed(2)) + '</td>';
+        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (bandFin || 0) + '</td>';
         html += '</tr>';
     });
     html += '<tr style="background:rgba(255,255,255,0.03);">';
@@ -1574,7 +1586,7 @@ if (encontrado && encontrado.codigo && catalogoClaves[encontrado.codigo]) {
         }
         document.getElementById('pick-und-ini').textContent = encontrado.und;
         document.getElementById('pick-kg-ini').textContent = encontrado.kg;
-        document.getElementById('pick-band-ini').textContent = encontrado.bandejas || 0;
+        document.getElementById('pick-band-ini').value = encontrado.bandejas || 0;
         document.getElementById('pick-band-desp').value = '';
         document.getElementById('pick-band-fin').textContent = encontrado.bandejas || 0;
         document.getElementById('pick-und-desp').value = '';
@@ -1684,7 +1696,16 @@ function limpiarEscaneoEtiqueta() {
 }
 
 function ingresarPalletNuevo(clave) {
-    // Mostrar pantalla de ingreso manual
+    // Eliminar cualquier panel previo de ingreso
+    var panelPrevio = document.getElementById('panel-ingreso-pallet-nuevo');
+    if (panelPrevio) {
+        panelPrevio.remove();
+    }
+    
+    // Ocultar el div de resultado (que contiene los botones INGRESAR AHORA y CANCELAR)
+    document.getElementById('resultado-escanear-etiqueta').style.display = 'none';
+    
+    // Crear pantalla de ingreso manual
     var panelIngreso = document.createElement('div');
     panelIngreso.id = 'panel-ingreso-pallet-nuevo';
     panelIngreso.className = 'panel';
@@ -1918,6 +1939,10 @@ function confirmarIngresoPalletNuevo(clave) {
 function cancelarIngresoPalletNuevo() {
     var panelIngreso = document.getElementById('panel-ingreso-pallet-nuevo');
     if (panelIngreso) panelIngreso.remove();
+    
+    // Mostrar nuevamente el div de resultado (botones INGRESAR AHORA y CANCELAR)
+    document.getElementById('resultado-escanear-etiqueta').style.display = 'block';
+    
     document.getElementById('input-escanear-etiqueta').focus();
 }
 
@@ -2027,7 +2052,7 @@ function irAPickingEtiqueta(clave, destino) {
     // Valores iniciales
     html += '<div class="info-line"><span class="info-label">UNID INIC:</span><span class="info-value" id="pick-und-ini-etiq">' + pallet.und + '</span></div>';
     html += '<div class="info-line"><span class="info-label">KG INIC:</span><span class="info-value" id="pick-kg-ini-etiq">' + pallet.kg + '</span></div>';
-    html += '<div class="info-line"><span class="info-label">📦 BANDEJAS INIC:</span><span class="info-value" id="pick-band-ini-etiq">' + (pallet.bandejas || '0') + '</span></div>';
+    html += '<div class="info-line"><span class="info-label">📦 BANDEJAS INIC:</span><input type="number" id="pick-band-ini-etiq" min="0" value="' + (pallet.bandejas || '0') + '" style="width:60px;padding:4px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:4px;text-align:center;"></div>';
     
     html += '<hr style="border-color:rgba(255,255,255,0.1);margin:8px 0;">';
     
@@ -2048,6 +2073,9 @@ function irAPickingEtiqueta(clave, destino) {
     html += '<div class="info-line"><span class="info-label">KG FIN:</span><span class="info-value" id="pick-kg-fin-etiq" style="color:#69f0ae;">' + pallet.kg + '</span></div>';
     html += '<div class="info-line"><span class="info-label">📦 BANDEJAS FIN:</span><span class="info-value" id="pick-band-fin-etiq" style="color:#69f0ae;">' + (pallet.bandejas || '0') + '</span></div>';
     
+    // Botón de actualizar bandejas
+    html += '<button class="btn" onclick="actualizarBandejasEtiqueta(\'' + clave + '\')" style="width:100%;margin:8px 0;padding:12px;background:#ff6f00;border:none;color:#fff;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">📦 ACTUALIZAR BANDEJAS</button>';
+    
     // Botones
     html += '<div class="acciones">';
     html += '<button class="btn-verde" onclick="confirmarPickingEtiqueta()" style="width:100%;background:#2e7d32;margin-top:6px;font-size:13px;padding:10px;">💾 GUARDAR</button>';
@@ -2065,7 +2093,7 @@ function irAPickingEtiqueta(clave, destino) {
 function calcularPickingEtiqueta() {
     var undIni  = parseFloat(document.getElementById('pick-und-ini-etiq').textContent) || 0;
     var kgIni   = parseFloat(document.getElementById('pick-kg-ini-etiq').textContent) || 0;
-    var bandIni = parseFloat(document.getElementById('pick-band-ini-etiq').textContent) || 0;
+    var bandIni = parseFloat(document.getElementById('pick-band-ini-etiq').value) || 0;
     var undDesp  = parseFloat(document.getElementById('pick-und-desp-etiq').value) || 0;
     var kgDesp   = parseFloat(document.getElementById('pick-kg-desp-etiq').value) || 0;
     var bandDesp = parseFloat(document.getElementById('pick-band-desp-etiq').value) || 0;
@@ -2169,12 +2197,16 @@ function confirmarPickingEtiqueta() {
         lote: pallet.lote || '',
         destino: destino,
         nombreDestino: nombreDestino,
+        procedencia: '',
         undAnt: undIni,
-        undDesp: undFin,
+        undDesp: undDesp,
+        undFin: undFin,
         kgAnt: kgIni,
-        kgDesp: kgFin,
+        kgDesp: kgDesp,
+        kgFin: kgFin,
         bandAnt: bandIni,
-        bandDesp: bandFin
+        bandDesp: bandDesp,
+        bandFin: bandFin
     });
     localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     
@@ -2354,7 +2386,7 @@ function accionPasadizoConDestino(ubPasadizo, idx, tipo) {
     if (tipo === 'picking') {
         document.getElementById('pick-und-ini').textContent = encontrado.und;
         document.getElementById('pick-kg-ini').textContent = encontrado.kg;
-        document.getElementById('pick-band-ini').textContent = encontrado.bandejas || 0;
+        document.getElementById('pick-band-ini').value = encontrado.bandejas || 0;
         document.getElementById('pick-band-desp').value = '';
         document.getElementById('pick-band-fin').textContent = encontrado.bandejas || 0;
         document.getElementById('pick-und-desp').value = '';
@@ -3837,8 +3869,6 @@ function mostrarTablaDetalladaEtiqueta() {
         html += '<div style="font-size:13px;font-weight:bold;color:#4fc3f7;word-break:break-word;">' + p.codigo + ' — ' + p.producto + '</div>';
         html += '<div style="font-size:11px;color:#c0c0c0;margin-top:2px;">🧺 1 pallet  📦 ' + p.und + ' und  ⚖️ ' + p.kg + ' kg</div>';
         html += '<div style="font-size:11px;color:#fff;margin-top:2px;">🔢 Lote: ' + loteDisplay + '</div>';
-        var fechaDisplay = p.vence || '<span style="color:#ff9800;">⚠️ Sin fecha</span>';
-        html += '<div style="font-size:11px;color:#fff;margin-top:2px;">📅 Vence: ' + fechaDisplay + '</div>';
         var fechaDisplay = p.vence || '<span style="color:#ff9800;">⚠️ Sin fecha</span>';
         html += '<div style="font-size:11px;color:#fff;margin-top:2px;">📅 Vence: ' + fechaDisplay + '</div>';
         html += '</div>';
@@ -6661,13 +6691,111 @@ function descargarBackupManual() {
 function calcularPicking() {
     var undIni  = parseFloat(document.getElementById('pick-und-ini').textContent) || 0;
     var kgIni   = parseFloat(document.getElementById('pick-kg-ini').textContent) || 0;
-    var bandIni = parseFloat(document.getElementById('pick-band-ini').textContent) || 0;
+    var bandIni = parseFloat(document.getElementById('pick-band-ini').value) || 0;
     var undDesp  = parseFloat(document.getElementById('pick-und-desp').value) || 0;
     var kgDesp   = parseFloat(document.getElementById('pick-kg-desp').value) || 0;
     var bandDesp = parseFloat(document.getElementById('pick-band-desp').value) || 0;
     document.getElementById('pick-und-fin').textContent  = Math.max(0, Math.round((undIni  - undDesp)  * 100) / 100);
     document.getElementById('pick-kg-fin').textContent   = Math.max(0, Math.round((kgIni   - kgDesp)   * 100) / 100).toFixed(2);
     document.getElementById('pick-band-fin').textContent = Math.max(0, Math.round((bandIni - bandDesp) * 100) / 100);
+}
+
+// Función para actualizar solo bandejas en ESCANEAR UBICACIÓN
+function actualizarBandejas() {
+    var ubicacion = document.getElementById('pick-ubicacion').value;
+    var bandejasNuevas = parseFloat(document.getElementById('pick-band-ini').value) || 0;
+    
+    if (!ubicacion) {
+        alert('⚠️ No hay ubicación registrada.');
+        return;
+    }
+    
+    // Buscar en tablaDatos
+    var encontrado = tablaDatos.find(function(u) { return u.ubicacion === ubicacion; });
+    if (!encontrado) {
+        alert('⚠️ Pallet no encontrado en la ubicación.');
+        return;
+    }
+    
+    var bandejasAnteriores = encontrado.bandejas || 0;
+    
+    // Actualizar bandejas
+    encontrado.bandejas = bandejasNuevas;
+    guardarEnLocalStorage();
+    
+    // Registrar en historial como AJUSTE DE BANDEJAS
+    var movimiento = {
+        tipo: 'AJUSTE DE BANDEJAS',
+        fecha: new Date().toLocaleString(),
+        ubicacion: ubicacion,
+        codigo: encontrado.codigo,
+        producto: encontrado.producto,
+        bandAnt: bandejasAnteriores,
+        bandDesp: 0,
+        bandFin: bandejasNuevas,
+        lote: encontrado.lote,
+        vence: encontrado.vence
+    };
+    historialMovimientos.push(movimiento);
+    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    
+    alert('✅ Bandejas actualizadas: ' + bandejasAnteriores + ' → ' + bandejasNuevas);
+    
+    // Volver a escaneo
+    mostrarPanel('panel-escanear');
+    document.getElementById('input-escanear').focus();
+}
+
+// Función para actualizar solo bandejas en ESCANEAR ETIQUETA
+function actualizarBandejasEtiqueta(clave) {
+    var bandejasNuevas = parseFloat(document.getElementById('pick-band-ini-etiq').value) || 0;
+    
+    if (!clave) {
+        alert('⚠️ No hay clave de pallet registrada.');
+        return;
+    }
+    
+    var pallet = catalogoClaves[clave];
+    if (!pallet) {
+        alert('⚠️ Pallet no encontrado en catálogo.');
+        return;
+    }
+    
+    var bandejasAnteriores = pallet.bandejas || 0;
+    
+    // Actualizar bandejas en catalogoClaves
+    pallet.bandejas = bandejasNuevas;
+    guardarCatalogoClaves();
+    
+    // Buscar y actualizar también en tablaDatos si existe
+    var enTabla = tablaDatos.find(function(u) { return u.codigo === pallet.codigo && u.lote === pallet.lote; });
+    if (enTabla) {
+        enTabla.bandejas = bandejasNuevas;
+        guardarEnLocalStorage();
+    }
+    
+    // Registrar en historial como AJUSTE DE BANDEJAS
+    var movimiento = {
+        tipo: 'AJUSTE DE BANDEJAS (ETIQUETA)',
+        fecha: new Date().toLocaleString(),
+        codigo: pallet.codigo,
+        clave: clave,
+        producto: pallet.producto,
+        bandAnt: bandejasAnteriores,
+        bandDesp: 0,
+        bandFin: bandejasNuevas,
+        lote: pallet.lote,
+        vence: pallet.vence
+    };
+    historialMovimientos.push(movimiento);
+    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    
+    alert('✅ Bandejas actualizadas: ' + bandejasAnteriores + ' → ' + bandejasNuevas);
+    
+    // Volver a escaneo de etiqueta
+    limpiarEscaneoEtiqueta();
+    mostrarPanel('panel-escanear-etiqueta');
+    document.getElementById('input-escanear-etiqueta').focus();
 }
 
 function guardarPicking() {
@@ -6773,7 +6901,7 @@ function guardarPicking() {
     if (nuevoEncontrado) {
         document.getElementById('pick-und-ini').textContent = nuevoEncontrado.und || 0;
         document.getElementById('pick-kg-ini').textContent = nuevoEncontrado.kg || 0;
-        document.getElementById('pick-band-ini').textContent = nuevoEncontrado.bandejas || 0;
+        document.getElementById('pick-band-ini').value = nuevoEncontrado.bandejas || 0;
         document.getElementById('pick-und-fin').textContent = nuevoEncontrado.und || 0;
         document.getElementById('pick-kg-fin').textContent = nuevoEncontrado.kg || 0;
         document.getElementById('pick-band-fin').textContent = nuevoEncontrado.bandejas || 0;
@@ -6804,7 +6932,7 @@ function confirmarDeshacer() {
     document.getElementById('resultado-picking').innerHTML = '';
     document.getElementById('pick-und-ini').textContent = u.und;
     document.getElementById('pick-kg-ini').textContent = u.kg;
-    document.getElementById('pick-band-ini').textContent = u.bandejas || 0;
+    document.getElementById('pick-band-ini').value = u.bandejas || 0;
     document.getElementById('pick-und-desp').value = '';
     document.getElementById('pick-kg-desp').value = '';
     document.getElementById('pick-band-desp').value = '';

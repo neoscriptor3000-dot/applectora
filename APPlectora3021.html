@@ -1923,6 +1923,7 @@ function confirmarIngresoPalletNuevo(clave) {
     encontrado.kg = kg;
     encontrado.vence = vence;
     encontrado.bandejas = bandejas;
+    encontrado.clave = clave;
     guardarEnLocalStorage();
     
     // Registrar en historial
@@ -2162,13 +2163,14 @@ function confirmarPickingEtiqueta() {
         producto: pallet.producto,
         lote: pallet.lote,
         vence: pallet.vence,
-        linea: pallet.linea || ''
+        linea: pallet.linea || '',
+        clave: clave
     };
     
     // Actualizar tablaDatos
     var encontrado = buscarEnTabla(pallet.ubicacion);
     if (!encontrado && pallet.ubicacion) {
-        encontrado = { ubicacion: pallet.ubicacion, codigo: '', producto: '', lote: '', und: 0, kg: 0, vence: '', linea: '', bandejas: 0 };
+        encontrado = { ubicacion: pallet.ubicacion, codigo: '', producto: '', lote: '', und: 0, kg: 0, vence: '', linea: '', bandejas: 0, clave: '' };
         tablaDatos.push(encontrado);
     }
     
@@ -2183,6 +2185,7 @@ function confirmarPickingEtiqueta() {
             encontrado.bandejas = 0;
             encontrado.vence = '';
             encontrado.linea = '';
+            encontrado.clave = '';
         } else {
             // Actualizar con valores finales
             encontrado.und = undFin;
@@ -2194,6 +2197,7 @@ function confirmarPickingEtiqueta() {
     
     // Actualizar catalogoClaves
     if (undFin <= 0 && kgFin <= 0 && bandFin <= 0) {
+        pallet.activo = false;
         delete catalogoClaves[clave];
     } else {
         pallet.und = undFin;
@@ -3218,6 +3222,7 @@ if (esPasadizo(ub)) {
     encontrado.bandejas = document.getElementById('ing-masivo-bandejas').value.trim();
     encontrado.procedencia = procedencia;
     encontrado.linea = '';
+    encontrado.clave = p.clave;
     guardarEnLocalStorage();
 
 // Actualizar la ubicación en el catálogo (reingreso)
@@ -4187,9 +4192,9 @@ if (esPasadizo(ubicacion)) {
     var p = palletEncontradoEtiqueta;
 
 // Verificar si la clave ya existe en el catálogo
-if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
-    var entradaExistente = catalogoClaves[p.codigoBarras];
-    var mensaje = '⚠️ Este pallet (código: ' + p.codigoBarras + ') ya fue ingresado anteriormente.\n';
+if (p.clave && catalogoClaves[p.clave]) {
+    var entradaExistente = catalogoClaves[p.clave];
+    var mensaje = '⚠️ Este pallet (código: ' + p.clave + ') ya fue ingresado anteriormente.\n';
     mensaje += '📍 Ubicación anterior: ' + (entradaExistente.ubicacion || '—') + '\n';
     mensaje += '📅 Fecha: ' + (entradaExistente.fechaIngreso || '—') + '\n\n';
     mensaje += '¿Desea volver a ingresarlo en la ubicación ' + ubicacion + '?\n';
@@ -4210,19 +4215,20 @@ if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
     encontrado.bandejas = document.getElementById('ing-etiqueta-bandejas').value.trim();
     encontrado.procedencia = procedencia;
     encontrado.linea = '';
+    encontrado.clave = p.clave;
     guardarEnLocalStorage();
 
     // Actualizar la ubicación en el catálogo (reingreso)
-if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
-    catalogoClaves[p.codigoBarras].ubicacion = ubicacion;
-    catalogoClaves[p.codigoBarras].fechaIngreso = new Date().toLocaleDateString('es-PE');
-    catalogoClaves[p.codigoBarras].horaIngreso = new Date().toLocaleTimeString('es-PE');
+if (p.clave && catalogoClaves[p.clave]) {
+    catalogoClaves[p.clave].ubicacion = ubicacion;
+    catalogoClaves[p.clave].fechaIngreso = new Date().toLocaleDateString('es-PE');
+    catalogoClaves[p.clave].horaIngreso = new Date().toLocaleTimeString('es-PE');
     guardarCatalogoClaves();
 }
 
     // Guardar en el catálogo de claves (PERMANENTE) - INGRESO NUEVO
-    if (p.codigoBarras) {
-        catalogoClaves[p.codigoBarras] = {
+    if (p.clave) {
+        catalogoClaves[p.clave] = {
             codigo: p.codigo,
             producto: p.producto,
             und: p.und,
@@ -4257,7 +4263,7 @@ if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
     p.procesado = true;
     p.ubicacion = ubicacion;
     palletsIngresadosEtiqueta.push({
-        codigoBarras: p.codigoBarras,
+        clave: p.clave,
         codigo: p.codigo,
         producto: p.producto,
         lote: p.lote,
@@ -4272,7 +4278,7 @@ if (p.codigoBarras && catalogoClaves[p.codigoBarras]) {
         for (var pi = 0; pi < listaEtiqueta.length; pi++) {
             if (listaEtiqueta[pi].procesado) {
                 procesadosGuardar.push({
-                    codigoBarras: listaEtiqueta[pi].codigoBarras,
+                    clave: listaEtiqueta[pi].clave,
                     codigo: listaEtiqueta[pi].codigo,
                     producto: listaEtiqueta[pi].producto,
                     lote: listaEtiqueta[pi].lote || '',
@@ -6320,12 +6326,17 @@ function ejecutarSalidaPistoleo() {
         var slot = buscarEnTabla(p.ubicacion);
         if (slot && slot.codigo) {
             var uAnt = slot.und, kAnt = slot.kg;
+            var claveRemover = slot.clave; // Guardar la clave antes de limpiar
             totalKg += kAnt;
-            slot.codigo=''; slot.producto=''; slot.lote=''; slot.und=0; slot.kg=0; slot.vence=''; slot.linea='';
+            slot.codigo=''; slot.producto=''; slot.lote=''; slot.und=0; slot.kg=0; slot.vence=''; slot.linea=''; slot.clave='';
             historialMovimientos.push({ fecha:fecha, hora:hora, tipo:'SALIDA', ubicacion:p.ubicacion, codigo:p.codigo, producto:p.producto, lote:p.lote, undAnt:uAnt, undDesp:0, kgAnt:kAnt, kgDesp:0 });
             historialSalidas.push({ fecha:fecha, hora:hora, tipo:'SALIDA', ubicacion:p.ubicacion, codigo:p.codigo, producto:p.producto, lote:p.lote, und:uAnt, kg:kAnt, destino:spDestino, nombreDestino:spDestinoNombre });
         }
-        if (p.codigoBarras) delete catalogoClaves[p.codigoBarras];
+        // Limpiar de catalogoClaves usando p.clave
+        if (p.clave && catalogoClaves[p.clave]) {
+            catalogoClaves[p.clave].activo = false;
+            delete catalogoClaves[p.clave];
+        }
     });
     guardarEnLocalStorage();
     guardarCatalogoClaves();
@@ -6769,10 +6780,17 @@ function actualizarBandejasDesdeEscaneo(ubicacion) {
     }
     
     var bandejasAnteriores = encontrado.bandejas || 0;
+    var clave = encontrado.clave;
     
-    // Actualizar bandejas
+    // Actualizar bandejas en tablaDatos
     encontrado.bandejas = bandejasNuevas;
     guardarEnLocalStorage();
+    
+    // Actualizar también en catalogoClaves si existe
+    if (clave && catalogoClaves[clave]) {
+        catalogoClaves[clave].bandejas = bandejasNuevas;
+        guardarCatalogoClaves();
+    }
     
     // Registrar en historial como AJUSTE DE BANDEJAS
     var movimiento = {
@@ -6820,7 +6838,11 @@ function actualizarBandejasDesdeEtiqueta(clave) {
     guardarCatalogoClaves();
     
     // Buscar y actualizar también en tablaDatos si existe
-    var enTabla = tablaDatos.find(function(u) { return u.codigo === pallet.codigo && u.lote === pallet.lote; });
+    // Primero por clave, si no encuentra entonces por código+lote
+    var enTabla = tablaDatos.find(function(u) { return u.clave === clave; });
+    if (!enTabla) {
+        enTabla = tablaDatos.find(function(u) { return u.codigo === pallet.codigo && u.lote === pallet.lote; });
+    }
     if (enTabla) {
         enTabla.bandejas = bandejasNuevas;
         guardarEnLocalStorage();
@@ -6986,18 +7008,32 @@ function guardarPicking() {
         producto: encontrado.producto,
         lote: encontrado.lote,
         vence: encontrado.vence,
-        linea: encontrado.linea
+        linea: encontrado.linea,
+        clave: encontrado.clave
     };
     if (undFin <= 0 && kgFin <= 0 && bandFin <= 0) {
+        var claveRemover = encontrado.clave; // Guardar clave antes de limpiar
         encontrado.codigo = ''; encontrado.producto = ''; encontrado.lote = '';
         encontrado.und = 0; encontrado.kg = 0; encontrado.bandejas = 0;
-        encontrado.vence = ''; encontrado.linea = '';
+        encontrado.vence = ''; encontrado.linea = ''; encontrado.clave = '';
+        // Eliminar también de catalogoClaves
+        if (claveRemover && catalogoClaves[claveRemover]) {
+            catalogoClaves[claveRemover].activo = false;
+            delete catalogoClaves[claveRemover];
+        }
     } else {
         encontrado.und = undFin;
         encontrado.kg = kgFin;
         encontrado.bandejas = bandFin;
+        // Actualizar en catalogoClaves si existe
+        if (encontrado.clave && catalogoClaves[encontrado.clave]) {
+            catalogoClaves[encontrado.clave].und = undFin;
+            catalogoClaves[encontrado.clave].kg = kgFin;
+            catalogoClaves[encontrado.clave].bandejas = bandFin;
+        }
     }
     guardarEnLocalStorage();
+    guardarCatalogoClaves();
     historialMovimientos.push({
         fecha: new Date().toLocaleDateString('es-PE'),
         hora: new Date().toLocaleTimeString('es-PE'),

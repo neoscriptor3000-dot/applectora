@@ -6187,7 +6187,13 @@ function pistoleoSalida() {
     var clave = document.getElementById('sp-input-clave').value.trim();
     if (!clave) return;
     document.getElementById('sp-input-clave').value = '';
-    var entry = catalogoClaves[clave];
+    
+    // Buscar PRIMERO en tablaDatos (que tiene ubicación), luego en catalogoClaves
+    var entry = tablaDatos.find(function(u) { return u.clave === clave; });
+    if (!entry) {
+        entry = catalogoClaves[clave];
+    }
+    
     if (!entry) {
         document.getElementById('sp-ultimo-pistoleo').innerHTML =
             '<div style="background:rgba(183,28,28,0.2);border:1px solid #b71c1c;border-radius:8px;padding:8px;color:#ef9a9a;font-size:12px;">❌ CLAVE <b>' + clave + '</b> no registrada.<br><span style="color:#ffb300;">Use el ingreso manual ↓</span></div>';
@@ -6312,6 +6318,14 @@ function quitarPalletPistoleo(idx) {
 
 function confirmarSalidaPistoleo() {
     if (spPalletsPistoleados.length === 0) return;
+    
+    // Validar que TODOS los pallets tienen ubicación
+    var sinUbicacion = spPalletsPistoleados.filter(function(p) { return !p.ubicacion || p.ubicacion === ''; });
+    if (sinUbicacion.length > 0) {
+        alert('⚠️ ' + sinUbicacion.length + ' pallet(s) NO tienen ubicación registrada.\n\nVerifica que todos los pallets están ingresados en el almacén antes de hacer salida.');
+        return;
+    }
+    
     document.getElementById('mcp-resumen').textContent = spPalletsPistoleados.length + ' pallet(s) a ' + spDestinoNombre;
     document.getElementById('modal-confirmacion-pistoleo').style.display = 'flex';
 }

@@ -107,6 +107,8 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 
 <button class="btn btn-excel" onclick="exportarCatalogo()" style="background:#00838f;">📋 EXPORTAR CATÁLOGO</button>
 
+<button class="btn btn-excel" onclick="sincronizarClaveEnTableDatos()" style="background:#7b1fa2;">🔗 SINCRONIZAR CLAVES</button>
+
 <button class="btn btn-excel" onclick="descargarExcel()">📤 Descargar Tabla Actualizada</button>
 </div>
 
@@ -1893,21 +1895,57 @@ function confirmarIngresoPalletNuevo(clave) {
         return;
     }
     
+    // Verificar si el pallet ya existe en catalogoClaves
+    var esReingreso = false;
+    if (clave && catalogoClaves[clave]) {
+        var entradaExistente = catalogoClaves[clave];
+        
+        // Si el pallet está ACTIVO (ya en cámara) → RECHAZAR
+        if (entradaExistente.activo === true) {
+            alert('❌ Este pallet ya está en el almacén.\n\n📍 Ubicación: ' + entradaExistente.ubicacion + '\n\nNo se puede ingresar dos veces.');
+            return;
+        }
+        
+        // Si el pallet está INACTIVO (salió) → PERMITIR RE-INGRESO
+        if (entradaExistente.activo === false) {
+            var mensaje = '✅ Re-ingreso detectado.\n\n';
+            mensaje += 'Este pallet fue retirado anteriormente.\n';
+            mensaje += '📅 Última ubicación: ' + (entradaExistente.ubicacion || '—') + '\n';
+            mensaje += '📅 Fecha salida: ' + (entradaExistente.fechaSalida || '—') + '\n\n';
+            mensaje += '¿Desea volver a ingresarlo en: ' + ubicacion + '?';
+            
+            if (!confirm(mensaje)) {
+                return; // El operario canceló
+            }
+            esReingreso = true;
+        }
+    }
+    
     // Guardar en catalogoClaves
-    catalogoClaves[clave] = {
-        codigo: codigo,
-        producto: producto,
-        und: und,
-        kg: kg,
-        lote: lote,
-        vence: vence,
-        linea: '',
-        ubicacion: ubicacion,
-        bandejas: bandejas,
-        fechaIngreso: new Date().toLocaleDateString('es-PE'),
-        horaIngreso: new Date().toLocaleTimeString('es-PE'),
-        activo: true
-    };
+    if (esReingreso) {
+        // RE-INGRESO: actualizar ubicación y estado
+        catalogoClaves[clave].ubicacion = ubicacion;
+        catalogoClaves[clave].activo = true;
+        catalogoClaves[clave].fechaReingreso = new Date().toLocaleDateString('es-PE');
+        catalogoClaves[clave].horaReingreso = new Date().toLocaleTimeString('es-PE');
+        catalogoClaves[clave].bandejas = bandejas;
+    } else {
+        // INGRESO NUEVO
+        catalogoClaves[clave] = {
+            codigo: codigo,
+            producto: producto,
+            und: und,
+            kg: kg,
+            lote: lote,
+            vence: vence,
+            linea: '',
+            ubicacion: ubicacion,
+            bandejas: bandejas,
+            fechaIngreso: new Date().toLocaleDateString('es-PE'),
+            horaIngreso: new Date().toLocaleTimeString('es-PE'),
+            activo: true
+        };
+    }
     guardarCatalogoClaves();
     
     // Guardar en tablaDatos
@@ -1930,7 +1968,7 @@ function confirmarIngresoPalletNuevo(clave) {
     historialMovimientos.push({
         fecha: new Date().toLocaleDateString('es-PE'),
         hora: new Date().toLocaleTimeString('es-PE'),
-        tipo: 'INGRESO',
+        tipo: esReingreso ? 'RE-INGRESO' : 'INGRESO',
         ubicacion: ubicacion,
         codigo: codigo,
         producto: producto,
@@ -2198,7 +2236,11 @@ function confirmarPickingEtiqueta() {
     // Actualizar catalogoClaves
     if (undFin <= 0 && kgFin <= 0 && bandFin <= 0) {
         pallet.activo = false;
-        delete catalogoClaves[clave];
+        pallet.fechaSalida = new Date().toLocaleDateString('es-PE');
+        pallet.horaSalida = new Date().toLocaleTimeString('es-PE');
+        pallet.destino = destino;
+        pallet.nombreDestino = nombreDestino;
+        // NO borrar: delete catalogoClaves[clave];
     } else {
         pallet.und = undFin;
         pallet.kg = kgFin;
@@ -3166,16 +3208,26 @@ if (esPasadizo(ub)) {
  // Verificar si la clave ya existe en el catálogo
 if (p.clave && catalogoClaves[p.clave]) {
     var entradaExistente = catalogoClaves[p.clave];
-    var mensaje = '⚠️ Este pallet (código: ' + p.clave + ') ya fue ingresado anteriormente.\n';
-    mensaje += '📍 Ubicación anterior: ' + (entradaExistente.ubicacion || '—') + '\n';
-    mensaje += '📅 Fecha: ' + (entradaExistente.fechaIngreso || '—') + '\n\n';
-    mensaje += '¿Desea volver a ingresarlo en la ubicación ' + ub + '?\n';
-    mensaje += '(El catálogo se actualizará con la nueva ubicación)';
     
-    if (!confirm(mensaje)) {
-        return; // El operario canceló
+    // Si el pallet está ACTIVO (ya en cámara) → RECHAZAR
+    if (entradaExistente.activo === true) {
+        alert('❌ Este pallet ya está en el almacén.\n\n📍 Ubicación: ' + entradaExistente.ubicacion + '\n\nNo se puede ingresar dos veces.');
+        return;
     }
-    // Si confirma, continúa con el ingreso
+    
+    // Si el pallet está INACTIVO (salió) → PERMITIR RE-INGRESO
+    if (entradaExistente.activo === false) {
+        var mensaje = '✅ Re-ingreso detectado.\n\n';
+        mensaje += 'Este pallet fue retirado anteriormente.\n';
+        mensaje += '📅 Última ubicación: ' + (entradaExistente.ubicacion || '—') + '\n';
+        mensaje += '📅 Fecha salida: ' + (entradaExistente.fechaSalida || '—') + '\n\n';
+        mensaje += '¿Desea volver a ingresarlo en: ' + ub + '?';
+        
+        if (!confirm(mensaje)) {
+            return; // El operario canceló
+        }
+        // Si confirma, continúa con el re-ingreso
+    }
 }
 
 var existente = buscarEnTabla(ub);
@@ -3234,21 +3286,33 @@ if (p.clave && catalogoClaves[p.clave]) {
 }
     
     // Guardar en el catálogo de claves (PERMANENTE)
+    var esReingreso = p.clave && catalogoClaves[p.clave] && catalogoClaves[p.clave].activo === false;
+    
     if (p.clave) {
-        catalogoClaves[p.clave] = {
-            codigo: p.codigo,
-            producto: p.producto,
-            und: p.und,
-            kg: p.kg,
-            lote: p.lote,
-            vence: p.vence,
-            linea: p.linea || '',
-            ubicacion: ub,
-            bandejas: encontrado.bandejas || '0',
-            fechaIngreso: new Date().toLocaleDateString('es-PE'),
-            horaIngreso: new Date().toLocaleTimeString('es-PE'),
-            activo: true
-        };
+        if (esReingreso) {
+            // RE-INGRESO: mantener datos históricos, solo actualizar ubicación y estado
+            catalogoClaves[p.clave].ubicacion = ub;
+            catalogoClaves[p.clave].activo = true;
+            catalogoClaves[p.clave].fechaReingreso = new Date().toLocaleDateString('es-PE');
+            catalogoClaves[p.clave].horaReingreso = new Date().toLocaleTimeString('es-PE');
+            catalogoClaves[p.clave].bandejas = encontrado.bandejas || '0';
+        } else {
+            // INGRESO NUEVO
+            catalogoClaves[p.clave] = {
+                codigo: p.codigo,
+                producto: p.producto,
+                und: p.und,
+                kg: p.kg,
+                lote: p.lote,
+                vence: p.vence,
+                linea: p.linea || '',
+                ubicacion: ub,
+                bandejas: encontrado.bandejas || '0',
+                fechaIngreso: new Date().toLocaleDateString('es-PE'),
+                horaIngreso: new Date().toLocaleTimeString('es-PE'),
+                activo: true
+            };
+        }
         guardarCatalogoClaves();
     }
     
@@ -3256,7 +3320,7 @@ if (p.clave && catalogoClaves[p.clave]) {
     historialMovimientos.push({
         fecha: new Date().toLocaleDateString('es-PE'),
         hora: new Date().toLocaleTimeString('es-PE'),
-        tipo: 'INGRESO',
+        tipo: esReingreso ? 'RE-INGRESO' : 'INGRESO',
         ubicacion: ub,
         codigo: p.codigo,
         producto: p.producto,
@@ -4194,16 +4258,26 @@ if (esPasadizo(ubicacion)) {
 // Verificar si la clave ya existe en el catálogo
 if (p.clave && catalogoClaves[p.clave]) {
     var entradaExistente = catalogoClaves[p.clave];
-    var mensaje = '⚠️ Este pallet (código: ' + p.clave + ') ya fue ingresado anteriormente.\n';
-    mensaje += '📍 Ubicación anterior: ' + (entradaExistente.ubicacion || '—') + '\n';
-    mensaje += '📅 Fecha: ' + (entradaExistente.fechaIngreso || '—') + '\n\n';
-    mensaje += '¿Desea volver a ingresarlo en la ubicación ' + ubicacion + '?\n';
-    mensaje += '(El catálogo se actualizará con la nueva ubicación)';
     
-    if (!confirm(mensaje)) {
-        return; // El operario canceló
+    // Si el pallet está ACTIVO (ya en cámara) → RECHAZAR
+    if (entradaExistente.activo === true) {
+        alert('❌ Este pallet ya está en el almacén.\n\n📍 Ubicación: ' + entradaExistente.ubicacion + '\n\nNo se puede ingresar dos veces.');
+        return;
     }
-    // Si confirma, continúa con el ingreso
+    
+    // Si el pallet está INACTIVO (salió) → PERMITIR RE-INGRESO
+    if (entradaExistente.activo === false) {
+        var mensaje = '✅ Re-ingreso detectado.\n\n';
+        mensaje += 'Este pallet fue retirado anteriormente.\n';
+        mensaje += '📅 Última ubicación: ' + (entradaExistente.ubicacion || '—') + '\n';
+        mensaje += '📅 Fecha salida: ' + (entradaExistente.fechaSalida || '—') + '\n\n';
+        mensaje += '¿Desea volver a ingresarlo en: ' + ubicacion + '?';
+        
+        if (!confirm(mensaje)) {
+            return; // El operario canceló
+        }
+        // Si confirma, continúa con el re-ingreso
+    }
 }
 
     encontrado.codigo = p.codigo;
@@ -4219,36 +4293,40 @@ if (p.clave && catalogoClaves[p.clave]) {
     guardarEnLocalStorage();
 
     // Actualizar la ubicación en el catálogo (reingreso)
-if (p.clave && catalogoClaves[p.clave]) {
-    catalogoClaves[p.clave].ubicacion = ubicacion;
-    catalogoClaves[p.clave].fechaIngreso = new Date().toLocaleDateString('es-PE');
-    catalogoClaves[p.clave].horaIngreso = new Date().toLocaleTimeString('es-PE');
-    guardarCatalogoClaves();
-}
-
-    // Guardar en el catálogo de claves (PERMANENTE) - INGRESO NUEVO
+    var esReingreso = p.clave && catalogoClaves[p.clave] && catalogoClaves[p.clave].activo === false;
+    
     if (p.clave) {
-        catalogoClaves[p.clave] = {
-            codigo: p.codigo,
-            producto: p.producto,
-            und: p.und,
-            kg: p.kg,
-            lote: p.lote,
-            vence: p.vence,
-            linea: p.linea || '',
-            ubicacion: ubicacion,
-            bandejas: encontrado.bandejas || '0',
-            fechaIngreso: new Date().toLocaleDateString('es-PE'),
-            horaIngreso: new Date().toLocaleTimeString('es-PE'),
-            activo: true
-        };
+        if (esReingreso) {
+            // RE-INGRESO: mantener datos históricos, solo actualizar ubicación y estado
+            catalogoClaves[p.clave].ubicacion = ubicacion;
+            catalogoClaves[p.clave].activo = true;
+            catalogoClaves[p.clave].fechaReingreso = new Date().toLocaleDateString('es-PE');
+            catalogoClaves[p.clave].horaReingreso = new Date().toLocaleTimeString('es-PE');
+            catalogoClaves[p.clave].bandejas = encontrado.bandejas || '0';
+        } else {
+            // INGRESO NUEVO
+            catalogoClaves[p.clave] = {
+                codigo: p.codigo,
+                producto: p.producto,
+                und: p.und,
+                kg: p.kg,
+                lote: p.lote,
+                vence: p.vence,
+                linea: p.linea || '',
+                ubicacion: ubicacion,
+                bandejas: encontrado.bandejas || '0',
+                fechaIngreso: new Date().toLocaleDateString('es-PE'),
+                horaIngreso: new Date().toLocaleTimeString('es-PE'),
+                activo: true
+            };
+        }
         guardarCatalogoClaves();
     }
 
     historialMovimientos.push({
         fecha: new Date().toLocaleDateString('es-PE'),
         hora: new Date().toLocaleTimeString('es-PE'),
-        tipo: 'INGRESO',
+        tipo: esReingreso ? 'RE-INGRESO' : 'INGRESO',
         ubicacion: ubicacion,
         codigo: p.codigo,
         producto: p.producto,
@@ -6376,10 +6454,14 @@ function ejecutarSalidaPistoleo() {
             historialMovimientos.push({ fecha:fecha, hora:hora, tipo:'SALIDA', ubicacion:p.ubicacion, codigo:p.codigo, producto:p.producto, lote:p.lote, undAnt:uAnt, undDesp:0, kgAnt:kAnt, kgDesp:0 });
             historialSalidas.push({ fecha:fecha, hora:hora, tipo:'SALIDA', ubicacion:p.ubicacion, codigo:p.codigo, producto:p.producto, lote:p.lote, und:uAnt, kg:kAnt, destino:spDestino, nombreDestino:spDestinoNombre });
         }
-        // Limpiar de catalogoClaves usando p.clave
+        // Marcar como INACTIVO en catalogoClaves (NO borrar, es historial permanente)
         if (p.clave && catalogoClaves[p.clave]) {
             catalogoClaves[p.clave].activo = false;
-            delete catalogoClaves[p.clave];
+            catalogoClaves[p.clave].fechaSalida = fecha;
+            catalogoClaves[p.clave].horaSalida = hora;
+            catalogoClaves[p.clave].destino = spDestino;
+            catalogoClaves[p.clave].nombreDestino = spDestinoNombre;
+            // NO borrar: delete catalogoClaves[p.clave];
         }
     });
     guardarEnLocalStorage();
@@ -6510,7 +6592,7 @@ function exportarHistorialSalidas() {
 function descargarExcel() {
     var data = [];
     for (var f = 0; f < 6; f++) data.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '']);
-    data.push(['CAMARA', 'RACK', 'CARRIL', 'NIVEL', 'POSICION', 'PRODUCTO_CODIGO', 'PRODUCTO_NOMBRE', 'LOTE', 'CANTIDAD_UNIDADES', 'PESO_KG', 'FECHA_VENCIMIENTO', 'NOMENCLATURA', 'LINEA_PROD', 'BANDEJAS']);
+    data.push(['CAMARA', 'RACK', 'CARRIL', 'NIVEL', 'POSICION', 'PRODUCTO_CODIGO', 'PRODUCTO_NOMBRE', 'LOTE', 'CANTIDAD_UNIDADES', 'PESO_KG', 'FECHA_VENCIMIENTO', 'NOMENCLATURA', 'LINEA_PROD', 'BANDEJAS', 'CLAVE']);
     var filasParaExportar = tablaDatos.filter(function(r) { return !esPasadizo(r.ubicacion); })
         .concat(tablaDatos.filter(function(r) { return esPasadizo(r.ubicacion); }));
     filasParaExportar.forEach(function(r) {
@@ -6526,7 +6608,7 @@ function descargarExcel() {
             var m = resto.match(/^(\d+)([A-D])(\d+)$/);
             if (m) { carril = m[1]; nivel = m[2]; pos = m[3]; }
         }
-        data.push([camara, rack, carril, nivel, pos, r.codigo, r.producto, r.lote, r.und, r.kg, r.vence, nom, r.linea, parseInt(r.bandejas) || 0]);
+        data.push([camara, rack, carril, nivel, pos, r.codigo, r.producto, r.lote, r.und, r.kg, r.vence, nom, r.linea, parseInt(r.bandejas) || 0, r.clave || '']);
     });
     var ws = XLSX.utils.aoa_to_sheet(data);
     var wb = XLSX.utils.book_new();
@@ -6551,7 +6633,7 @@ function cargarExcel(event) {
             if (rowStr.includes('NOMENCL')) { headerRow = h; break; }
         }
         var hdr = rows[headerRow];
-        var colMap = { ubicacion:11, codigo:5, producto:6, lote:7, und:8, kg:9, vence:10, linea:12, bandejas:13 };
+        var colMap = { ubicacion:11, codigo:5, producto:6, lote:7, und:8, kg:9, vence:10, linea:12, bandejas:13, clave:14 };
         hdr.forEach(function(h2, idx) {
             var hn = String(h2).toUpperCase().trim();
             if (hn.includes('NOMENCL')) colMap.ubicacion = idx;
@@ -6563,6 +6645,7 @@ function cargarExcel(event) {
             else if (hn.includes('VENCIM') || hn.includes('FECHA')) colMap.vence = idx;
             else if (hn.includes('LINEA') || hn.includes('LÍNEA')) colMap.linea = idx;
             else if (hn.includes('BANDEJA')) colMap.bandejas = idx;
+            else if (hn === 'CLAVE' || hn.includes('CLAVE')) colMap.clave = idx;
         });
 
 tablaDatos = [];
@@ -6592,7 +6675,8 @@ tablaDatos = [];
                 kg: parseFloat(r[colMap.kg]) || 0,
                 vence: vencStr,
                 linea: String(r[colMap.linea] || '').trim(),
-                bandejas: String(r[colMap.bandejas] || '').trim()
+                bandejas: String(r[colMap.bandejas] || '').trim(),
+                clave: String(r[colMap.clave] || '').trim()
             });
         }
         guardarEnLocalStorage();
@@ -6771,6 +6855,77 @@ function exportarCatalogo() {
     mostrarFeedback('📋 Catálogo exportado: ' + total + ' claves');
 }
 
+function sincronizarClaveEnTableDatos() {
+    var contador = 0;
+    var sincronizados = 0;
+    var noEncontrados = [];
+    
+    // Recorrer cada pallet en tablaDatos
+    tablaDatos.forEach(function(pallet) {
+        // Solo procesar pallets SIN clave
+        if (!pallet.clave || pallet.clave === '') {
+            contador++;
+            
+            // Normalizar und: si es 0 o está vacío, considerarlo como 0
+            var und = pallet.und || 0;
+            var kg = pallet.kg || 0;
+            var codigo = pallet.codigo || '';
+            var lote = pallet.lote || '';
+            
+            // Buscar EXACTA coincidencia en catalogoClaves: codigo + und + kg + lote
+            var claveEncontrada = null;
+            Object.keys(catalogoClaves).forEach(function(clave) {
+                var entrada = catalogoClaves[clave];
+                var undCatalogo = entrada.und || 0;
+                var kgCatalogo = entrada.kg || 0;
+                var codigoCatalogo = entrada.codigo || '';
+                var loteCatalogo = entrada.lote || '';
+                
+                // Comparación EXACTA de los 4 campos
+                if (codigoCatalogo === codigo &&
+                    undCatalogo === und &&
+                    kgCatalogo === kg &&
+                    loteCatalogo === lote) {
+                    claveEncontrada = clave;
+                }
+            });
+            
+            // Si encontró coincidencia exacta, asignar la clave
+            if (claveEncontrada) {
+                pallet.clave = claveEncontrada;
+                sincronizados++;
+            } else {
+                noEncontrados.push({
+                    codigo: codigo,
+                    producto: pallet.producto,
+                    und: und,
+                    kg: kg,
+                    lote: lote,
+                    ubicacion: pallet.ubicacion
+                });
+            }
+        }
+    });
+    
+    // Guardar cambios
+    guardarEnLocalStorage();
+    
+    // Mostrar resultado
+    var mensaje = '✅ SINCRONIZACIÓN COMPLETADA\n\n';
+    mensaje += '📊 Pallets sin clave encontrados: ' + contador + '\n';
+    mensaje += '✓ Claves asignadas: ' + sincronizados + '\n';
+    mensaje += '✗ Claves no encontradas: ' + (contador - sincronizados) + '\n';
+    
+    if (noEncontrados.length > 0) {
+        mensaje += '\n⚠️ Pallets sin coincidencia exacta:\n';
+        noEncontrados.forEach(function(p) {
+            mensaje += '- ' + p.codigo + ' | ' + p.und + ' und | ' + p.kg + ' kg | Lote: ' + p.lote + '\n';
+        });
+    }
+    
+    alert(mensaje);
+    mostrarFeedback('🔗 Sincronización lista');
+}
 
 function descargarBackupManual() {
     guardarEnLocalStorage();
@@ -7060,10 +7215,14 @@ function guardarPicking() {
         encontrado.codigo = ''; encontrado.producto = ''; encontrado.lote = '';
         encontrado.und = 0; encontrado.kg = 0; encontrado.bandejas = 0;
         encontrado.vence = ''; encontrado.linea = ''; encontrado.clave = '';
-        // Eliminar también de catalogoClaves
+        // Marcar como INACTIVO en catalogoClaves (NO borrar)
         if (claveRemover && catalogoClaves[claveRemover]) {
             catalogoClaves[claveRemover].activo = false;
-            delete catalogoClaves[claveRemover];
+            catalogoClaves[claveRemover].fechaSalida = new Date().toLocaleDateString('es-PE');
+            catalogoClaves[claveRemover].horaSalida = new Date().toLocaleTimeString('es-PE');
+            catalogoClaves[claveRemover].destino = destino;
+            catalogoClaves[claveRemover].nombreDestino = nombreDestino;
+            // NO borrar: delete catalogoClaves[claveRemover];
         }
     } else {
         encontrado.und = undFin;

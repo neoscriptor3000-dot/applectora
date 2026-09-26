@@ -6184,32 +6184,47 @@ function reiniciarPistoleo() {
 }
 
 function pistoleoSalida() {
-    var clave = document.getElementById('sp-input-clave').value.trim();
-    if (!clave) return;
+    var codigo = document.getElementById('sp-input-clave').value.trim();
+    if (!codigo) return;
     document.getElementById('sp-input-clave').value = '';
     
-    // Buscar PRIMERO en tablaDatos (que tiene ubicación), luego en catalogoClaves
-    var entry = tablaDatos.find(function(u) { return u.clave === clave; });
-    if (!entry) {
-        entry = catalogoClaves[clave];
-    }
+    // Buscar en tablaDatos por CÓDIGO (es lo que se escanea)
+    var entry = tablaDatos.find(function(u) { return u.codigo === codigo && u.codigo !== ''; });
     
     if (!entry) {
         document.getElementById('sp-ultimo-pistoleo').innerHTML =
-            '<div style="background:rgba(183,28,28,0.2);border:1px solid #b71c1c;border-radius:8px;padding:8px;color:#ef9a9a;font-size:12px;">❌ CLAVE <b>' + clave + '</b> no registrada.<br><span style="color:#ffb300;">Use el ingreso manual ↓</span></div>';
+            '<div style="background:rgba(183,28,28,0.2);border:1px solid #b71c1c;border-radius:8px;padding:8px;color:#ef9a9a;font-size:12px;">❌ CÓDIGO <b>' + codigo + '</b> no encontrado en almacén.<br><span style="color:#ffb300;">Verifica que el pallet está ingresado ↓</span></div>';
         document.getElementById('sp-seccion-manual').style.display = 'block';
         setTimeout(function() { document.getElementById('sp-manual-codigo').focus(); }, 200);
         return;
     }
-    var yaAgregado = spPalletsPistoleados.find(function(p) { return p.clave === clave; });
+    
+    // Verificar que tiene ubicación
+    if (!entry.ubicacion || entry.ubicacion === '') {
+        document.getElementById('sp-ultimo-pistoleo').innerHTML =
+            '<div style="background:rgba(255,152,0,0.2);border:1px solid #ff9800;border-radius:8px;padding:8px;color:#ffb300;font-size:12px;">⚠️ Pallet sin ubicación registrada.<br>Ingresa en UBICACIONES primero.</div>';
+        setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
+        return;
+    }
+    
+    var yaAgregado = spPalletsPistoleados.find(function(p) { return p.codigo === codigo && p.ubicacion === entry.ubicacion; });
     if (yaAgregado) {
         document.getElementById('sp-ultimo-pistoleo').innerHTML = '<div style="background:rgba(255,152,0,0.2);border:1px solid #ff9800;border-radius:8px;padding:8px;color:#ffb300;font-size:12px;">⚠️ Este pallet ya fue pistoleado.</div>';
         setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
         return;
     }
-    spPalletsPistoleados.push({ clave: clave, codigo: entry.codigo, producto: entry.producto, und: entry.und, kg: entry.kg, lote: entry.lote, vence: entry.vence, ubicacion: entry.ubicacion });
+    spPalletsPistoleados.push({ 
+        codigo: entry.codigo, 
+        producto: entry.producto, 
+        und: entry.und, 
+        kg: entry.kg, 
+        lote: entry.lote, 
+        vence: entry.vence, 
+        ubicacion: entry.ubicacion,
+        clave: entry.clave || ''
+    });
     document.getElementById('sp-ultimo-pistoleo').innerHTML =
-        '<div style="background:rgba(46,125,50,0.2);border:1px solid #2e7d32;border-radius:8px;padding:8px;font-size:12px;">✅ <b>' + entry.codigo + '</b> — ' + entry.producto + '<br>📍 ' + (entry.ubicacion||'Sin ub.') + ' | ⚖️ ' + entry.kg + ' kg | 🔢 ' + entry.lote + '</div>';
+        '<div style="background:rgba(46,125,50,0.2);border:1px solid #2e7d32;border-radius:8px;padding:8px;font-size:12px;">✅ <b>' + entry.codigo + '</b> — ' + entry.producto + '<br>📍 ' + entry.ubicacion + ' | ⚖️ ' + entry.kg + ' kg | 🔢 ' + entry.lote + '</div>';
     actualizarListaPistoleo();
     setTimeout(function() { document.getElementById('sp-input-clave').focus(); }, 200);
 }

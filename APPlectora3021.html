@@ -6184,16 +6184,31 @@ function reiniciarPistoleo() {
 }
 
 function pistoleoSalida() {
-    var codigo = document.getElementById('sp-input-clave').value.trim();
-    if (!codigo) return;
+    var codigoEscaneado = document.getElementById('sp-input-clave').value.trim();
+    if (!codigoEscaneado) return;
     document.getElementById('sp-input-clave').value = '';
     
-    // Buscar en tablaDatos por CÓDIGO (es lo que se escanea)
-    var entry = tablaDatos.find(function(u) { return u.codigo === codigo && u.codigo !== ''; });
+    // Convertir a número y luego a string para quitar ceros iniciales
+    // "05927" → 5927 → "5927" (igual a como está en tablaDatos)
+    var codigo = String(parseInt(codigoEscaneado));
+    
+    console.log('=== DEBUG PISTOLEO ===');
+    console.log('Código escaneado:', codigoEscaneado);
+    console.log('Código normalizado:', codigo);
+    console.log('tablaDatos completo:', tablaDatos);
+    
+    // Buscar en tablaDatos por CÓDIGO
+    var entry = tablaDatos.find(function(u) { 
+        var match = (u.codigo === codigo && u.codigo !== '');
+        console.log('Comparando:', u.codigo, '===', codigo, '?', match, '| ubicacion:', u.ubicacion);
+        return match;
+    });
+    
+    console.log('Resultado búsqueda:', entry);
     
     if (!entry) {
         document.getElementById('sp-ultimo-pistoleo').innerHTML =
-            '<div style="background:rgba(183,28,28,0.2);border:1px solid #b71c1c;border-radius:8px;padding:8px;color:#ef9a9a;font-size:12px;">❌ CÓDIGO <b>' + codigo + '</b> no encontrado en almacén.<br><span style="color:#ffb300;">Verifica que el pallet está ingresado ↓</span></div>';
+            '<div style="background:rgba(183,28,28,0.2);border:1px solid #b71c1c;border-radius:8px;padding:8px;color:#ef9a9a;font-size:12px;">❌ CÓDIGO <b>' + codigoEscaneado + '</b> no encontrado en almacén.<br><span style="color:#ffb300;">Verifica que el pallet está ingresado ↓</span></div>';
         document.getElementById('sp-seccion-manual').style.display = 'block';
         setTimeout(function() { document.getElementById('sp-manual-codigo').focus(); }, 200);
         return;

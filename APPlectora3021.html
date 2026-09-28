@@ -6859,9 +6859,10 @@ function sincronizarClaveEnTableDatos() {
     var contador = 0;
     var sincronizados = 0;
     var noEncontrados = [];
+    var debugInfo = [];
     
     // Recorrer cada pallet en tablaDatos
-    tablaDatos.forEach(function(pallet) {
+    tablaDatos.forEach(function(pallet, idx) {
         // Solo procesar pallets SIN clave
         if (!pallet.clave || pallet.clave === '') {
             contador++;
@@ -6872,14 +6873,26 @@ function sincronizarClaveEnTableDatos() {
             var codigo = pallet.codigo || '';
             var lote = pallet.lote || '';
             
+            // Guardar info para debug
+            if (idx < 3) {  // Solo primeros 3 para no saturar
+                debugInfo.push('BUSCANDO EN TABLA[' + idx + ']: codigo="' + codigo + '" | und=' + und + ' (' + typeof(und) + ') | kg=' + kg + ' (' + typeof(kg) + ') | lote="' + lote + '"');
+            }
+            
             // Buscar EXACTA coincidencia en catalogoClaves: codigo + und + kg + lote
             var claveEncontrada = null;
+            var catalogo_ejemplos = [];
+            
             Object.keys(catalogoClaves).forEach(function(clave) {
                 var entrada = catalogoClaves[clave];
                 var undCatalogo = entrada.und || 0;
                 var kgCatalogo = entrada.kg || 0;
                 var codigoCatalogo = entrada.codigo || '';
                 var loteCatalogo = entrada.lote || '';
+                
+                // Mostrar ejemplos del catálogo si es mismo código
+                if (codigoCatalogo === codigo && catalogo_ejemplos.length < 2) {
+                    catalogo_ejemplos.push('  CATÁLOGO: codigo="' + codigoCatalogo + '" | und=' + undCatalogo + ' (' + typeof(undCatalogo) + ') | kg=' + kgCatalogo + ' (' + typeof(kgCatalogo) + ') | lote="' + loteCatalogo + '"');
+                }
                 
                 // Comparación EXACTA de los 4 campos
                 if (codigoCatalogo === codigo &&
@@ -6889,6 +6902,10 @@ function sincronizarClaveEnTableDatos() {
                     claveEncontrada = clave;
                 }
             });
+            
+            if (idx < 3 && catalogo_ejemplos.length > 0) {
+                debugInfo = debugInfo.concat(catalogo_ejemplos);
+            }
             
             // Si encontró coincidencia exacta, asignar la clave
             if (claveEncontrada) {
@@ -6910,21 +6927,31 @@ function sincronizarClaveEnTableDatos() {
     // Guardar cambios
     guardarEnLocalStorage();
     
-    // Mostrar resultado
+    // Mostrar resultado con DEBUG INFO
     var mensaje = '✅ SINCRONIZACIÓN COMPLETADA\n\n';
     mensaje += '📊 Pallets sin clave encontrados: ' + contador + '\n';
     mensaje += '✓ Claves asignadas: ' + sincronizados + '\n';
     mensaje += '✗ Claves no encontradas: ' + (contador - sincronizados) + '\n';
     
-    if (noEncontrados.length > 0) {
-        mensaje += '\n⚠️ Pallets sin coincidencia exacta:\n';
+    if (debugInfo.length > 0) {
+        mensaje += '\n📋 INFORMACIÓN DE DEBUG (primeros 3):\n';
+        debugInfo.forEach(function(d) {
+            mensaje += d + '\n';
+        });
+        mensaje += '\n⚠️ Verifica los tipos de datos (number vs string)';
+    }
+    
+    if (noEncontrados.length > 0 && noEncontrados.length <= 5) {
+        mensaje += '\n\n⚠️ Pallets sin coincidencia:\n';
         noEncontrados.forEach(function(p) {
             mensaje += '- ' + p.codigo + ' | ' + p.und + ' und | ' + p.kg + ' kg | Lote: ' + p.lote + '\n';
         });
+    } else if (noEncontrados.length > 5) {
+        mensaje += '\n\n⚠️ ' + noEncontrados.length + ' pallets sin coincidencia (ver consola para detalles)';
     }
     
     alert(mensaje);
-    mostrarFeedback('🔗 Sincronización lista');
+    mostrarFeedback('🔗 Sincronización completada');
 }
 
 function descargarBackupManual() {

@@ -1641,12 +1641,14 @@ function escanearEtiquetaPallet() {
     if (!catalogoClaves[clave]) {
         // No está ingresado aún
         var html = '<div style="background:rgba(255,152,0,0.15);border:1px solid #ff9800;border-radius:8px;padding:15px;margin-bottom:15px;text-align:center;">';
-        html += '<div style="font-size:18px;color:#ff9800;margin-bottom:10px;">⚠️ PALLET NO INGRESADO</div>';
+        html += '<div style="font-size:18px;color:#ff9800;margin-bottom:10px;">⚠️ PALLET NO INGRESADO EN CATÁLOGO</div>';
         html += '<div style="font-size:14px;color:#fff;margin-bottom:15px;">El pallet <b>' + clave + '</b> aún no ha sido ingresado al almacén.</div>';
         html += '<div class="acciones">';
+        html += '<button class="btn-naranja" onclick="buscarPalletPorClaveEtiqueta(\'' + clave + '\')">🔍 BUSCAR EN ALMACÉN</button>';
         html += '<button class="btn-verde" onclick="ingresarPalletNuevo(\'' + clave + '\')">✅ INGRESAR AHORA</button>';
         html += '<button class="btn-rojo" onclick="limpiarEscaneoEtiqueta()">❌ CANCELAR</button>';
         html += '</div>';
+        html += '<div id="resultado-busqueda-etiqueta" style="margin-top:10px;"></div>';
         html += '</div>';
         document.getElementById('resultado-escanear-etiqueta').innerHTML = html;
         setTimeout(function() { document.getElementById('input-escanear-etiqueta').focus(); }, 500);
@@ -1654,7 +1656,19 @@ function escanearEtiquetaPallet() {
     }
     
     var pallet = catalogoClaves[clave];
+    
+    // Verificar si tiene ubicación y vencimiento
+    var tieneUbicacion = pallet.ubicacion && pallet.ubicacion !== '';
+    var tieneVencimiento = pallet.vence && pallet.vence !== '';
+    var estaPalletCompleto = tieneUbicacion && tieneVencimiento;
+    
     var html = '<div style="background:rgba(79,195,247,0.1);border:1px solid #4fc3f7;border-radius:8px;padding:15px;margin-bottom:15px;">';
+    
+    // Indicador de completitud
+    if (!estaPalletCompleto) {
+        html += '<div style="background:rgba(255,152,0,0.2);border:1px solid #ff9800;border-radius:6px;padding:8px;margin-bottom:10px;color:#ffb300;font-size:12px;text-align:center;font-weight:bold;">⚠️ INFORMACIÓN INCOMPLETA - Busca la ubicación</div>';
+    }
+    
     html += '<div style="font-size:16px;font-weight:bold;color:#4fc3f7;margin-bottom:10px;">📦 ' + pallet.codigo + '</div>';
     html += '<div class="info-line"><span class="info-label">📝 Producto:</span><span class="info-value">' + pallet.producto + '</span></div>';
     html += '<div class="info-line"><span class="info-label">📏 Unidades:</span><span class="info-value">' + pallet.und + '</span></div>';
@@ -1668,8 +1682,8 @@ function escanearEtiquetaPallet() {
         var jsDate = new Date(excelEpoch.getTime() + fechaVence * 24 * 60 * 60 * 1000);
         fechaVence = String(jsDate.getDate()).padStart(2,'0') + '/' + String(jsDate.getMonth()+1).padStart(2,'0') + '/' + jsDate.getFullYear();
     }
-    html += '<div class="info-line"><span class="info-label">📅 Vence:</span><span class="info-value">' + (fechaVence || '—') + '</span></div>';
-    html += '<div class="info-line"><span class="info-label">📍 Ubicación:</span><span class="info-value">' + (pallet.ubicacion || '—') + '</span></div>';
+    html += '<div class="info-line"><span class="info-label">📅 Vence:</span><span class="info-value" style="' + (!tieneVencimiento ? 'color:#ef9a9a;' : '') + '">' + (fechaVence || '❌ SIN FECHA') + '</span></div>';
+    html += '<div class="info-line"><span class="info-label">📍 Ubicación:</span><span class="info-value" style="' + (!tieneUbicacion ? 'color:#ef9a9a;' : '') + '">' + (pallet.ubicacion || '❌ SIN UBICACIÓN') + '</span></div>';
     html += '<div class="info-line"><span class="info-label">📦 Bandejas:</span><input type="number" id="resultado-bandejas-etiqueta" min="0" value="' + (pallet.bandejas || '0') + '" style="width:80px;padding:4px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:4px;text-align:center;"></div>';
     
     // Destino
@@ -1699,9 +1713,16 @@ function escanearEtiquetaPallet() {
     
     // Botones de acción
     html += '<div class="acciones">';
-    html += '<button class="btn-rojo" onclick="accionEtiquetaSalida(\'' + clave + '\',\'salida\')">📤 SALIDA TOTAL</button>';
-    html += '<button class="btn-naranja" onclick="accionEtiquetaSalida(\'' + clave + '\',\'picking\')">📏 PICKING</button>';
+    if (!estaPalletCompleto) {
+        html += '<button class="btn-naranja" onclick="buscarUbicacionDesdeEtiqueta(\'' + clave + '\')">🔍 BUSCAR UBICACIÓN</button>';
+        html += '<button class="btn-rojo" onclick="accionEtiquetaSalida(\'' + clave + '\',\'salida\')" disabled style="opacity:0.5;cursor:not-allowed;">📤 SALIDA TOTAL</button>';
+        html += '<button class="btn-naranja" onclick="accionEtiquetaSalida(\'' + clave + '\',\'picking\')" disabled style="opacity:0.5;cursor:not-allowed;">📏 PICKING</button>';
+    } else {
+        html += '<button class="btn-rojo" onclick="accionEtiquetaSalida(\'' + clave + '\',\'salida\')">📤 SALIDA TOTAL</button>';
+        html += '<button class="btn-naranja" onclick="accionEtiquetaSalida(\'' + clave + '\',\'picking\')">📏 PICKING</button>';
+    }
     html += '</div>';
+    html += '<div id="resultado-busqueda-ubicacion-etiqueta" style="margin-top:10px;"></div>';
     html += '</div>';
     
     document.getElementById('resultado-escanear-etiqueta').innerHTML = html;
@@ -1712,6 +1733,104 @@ function limpiarEscaneoEtiqueta() {
     document.getElementById('resultado-escanear-etiqueta').innerHTML = '';
     document.getElementById('input-escanear-etiqueta').value = '';
     document.getElementById('input-escanear-etiqueta').focus();
+}
+
+function buscarPalletPorClaveEtiqueta(clave) {
+    // Buscar en tablaDatos usando el código de la clave
+    var codigo = clave.toString().trim();
+    
+    var candidatos = tablaDatos.filter(function(s) {
+        if (!s.ubicacion || !s.codigo) return false;
+        return s.codigo === codigo;
+    });
+    
+    var resultDiv = document.getElementById('resultado-busqueda-etiqueta');
+    if (candidatos.length === 0) {
+        resultDiv.innerHTML = '<div style="color:#ef9a9a;font-size:12px;margin-top:8px;">❌ No se encontró ningún pallet con código <b>' + codigo + '</b> en almacén.</div>';
+        return;
+    }
+    
+    var html = '<div style="font-size:11px;color:#ffb300;margin:8px 0;">✅ Se encontraron ' + candidatos.length + ' pallet(s) con este código:</div>';
+    candidatos.forEach(function(s, i) {
+        html += '<button onclick="confirmarPalletBuscadoEtiqueta(' + i + ',\'' + clave + '\')" style="width:100%;text-align:left;background:rgba(46,125,50,0.2);border:1px solid #2e7d32;color:#fff;border-radius:6px;padding:8px;margin-bottom:4px;cursor:pointer;font-size:11px;">';
+        html += '📍 <b>' + s.ubicacion + '</b> | ⚖️ ' + s.kg + ' kg | 📦 ' + s.und + ' und | 🔢 ' + (s.lote||'—') + '</button>';
+    });
+    resultDiv.innerHTML = html;
+    window._etiquetaCandidatos = candidatos;
+}
+
+function confirmarPalletBuscadoEtiqueta(idx, clave) {
+    var s = window._etiquetaCandidatos[idx];
+    if (!s) return;
+    
+    // Actualizar catalogoClaves con la información encontrada
+    catalogoClaves[clave] = {
+        codigo: s.codigo,
+        producto: s.producto,
+        und: s.und,
+        kg: s.kg,
+        lote: s.lote || '',
+        vence: s.vence || '',
+        ubicacion: s.ubicacion || '',
+        bandejas: s.bandejas || '0',
+        clave: clave
+    };
+    
+    // Limpiar y volver a escanear
+    document.getElementById('resultado-escanear-etiqueta').innerHTML = '';
+    document.getElementById('input-escanear-etiqueta').value = '';
+    
+    // Mostrar nuevamente el pallet con información completa
+    escanearEtiquetaPallet();
+}
+
+function buscarUbicacionDesdeEtiqueta(clave) {
+    var pallet = catalogoClaves[clave];
+    if (!pallet) return;
+    
+    // Buscar en tablaDatos por código + unidades + kg (tolerancia)
+    var codigo = String(pallet.codigo);
+    var und = parseInt(pallet.und) || 0;
+    var kg = parseFloat(pallet.kg);
+    
+    var candidatos = tablaDatos.filter(function(s) {
+        if (s.codigo !== codigo || !s.ubicacion || !s.codigo) return false;
+        var okKg  = Math.abs(s.kg - kg) <= 2;
+        var okUnd = (!und) || (Math.abs(s.und - und) <= 1);
+        return okKg && okUnd;
+    });
+    
+    var resultDiv = document.getElementById('resultado-busqueda-ubicacion-etiqueta');
+    if (candidatos.length === 0) {
+        resultDiv.innerHTML = '<div style="color:#ef9a9a;font-size:12px;margin-top:8px;">❌ No se encontró ningún pallet coincidente en almacén.</div>';
+        return;
+    }
+    
+    var html = '<div style="font-size:11px;color:#ffb300;margin:8px 0;">✅ Ubic. encontrada(s) - Selecciona la correcta:</div>';
+    candidatos.forEach(function(s, i) {
+        html += '<button onclick="confirmarUbicacionEtiqueta(' + i + ',\'' + clave + '\')" style="width:100%;text-align:left;background:rgba(46,125,50,0.2);border:1px solid #2e7d32;color:#fff;border-radius:6px;padding:8px;margin-bottom:4px;cursor:pointer;font-size:11px;">';
+        html += '📍 <b>' + s.ubicacion + '</b> | ⚖️ ' + s.kg + ' kg | 📦 ' + s.und + ' und | 🔢 ' + (s.lote||'—') + '</button>';
+    });
+    resultDiv.innerHTML = html;
+    window._etiquetaCandidatos = candidatos;
+}
+
+function confirmarUbicacionEtiqueta(idx, clave) {
+    var s = window._etiquetaCandidatos[idx];
+    if (!s) return;
+    
+    // Actualizar catalogoClaves con ubicación y vencimiento
+    catalogoClaves[clave].ubicacion = s.ubicacion;
+    catalogoClaves[clave].vence = s.vence;
+    catalogoClaves[clave].lote = s.lote;
+    catalogoClaves[clave].bandejas = s.bandejas || '0';
+    
+    // Limpiar búsqueda
+    document.getElementById('resultado-busqueda-ubicacion-etiqueta').innerHTML = '';
+    
+    // Mostrar nuevamente el pallet con información ahora completa
+    document.getElementById('resultado-escanear-etiqueta').innerHTML = '';
+    escanearEtiquetaPallet();
 }
 
 function ingresarPalletNuevo(clave) {

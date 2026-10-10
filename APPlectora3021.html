@@ -117,7 +117,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ 2 </div>
+<div>Ing. PERCY S. TEJADA VALDEZ </div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -1950,7 +1950,6 @@ function confirmarPalletBuscadoEtiqueta(idx, clave) {
     
     // Botones navegación
     html += '<div style="display:flex;gap:8px;margin-top:10px;">';
-    html += '<button class="btn btn-volver" onclick="volverPantallaAnteriorEtiqueta()" style="flex:1;">← VOLVER</button>';
     html += '<button class="btn btn-rojo" onclick="cancelarOperacionEtiquetaCompleta()" style="flex:1;opacity:0.7;">❌ CANCELAR OPERACIÓN</button>';
     html += '</div>';
     html += '</div>';
@@ -1959,7 +1958,6 @@ function confirmarPalletBuscadoEtiqueta(idx, clave) {
 }
 
 function buscarUbicacionDesdeEtiqueta(clave) {
-    pantallaAnteriorEtiqueta = 'busqueda_ubicacion'; // Guardar contexto
     var pallet = catalogoClaves[clave];
     if (!pallet) return;
     
@@ -2068,7 +2066,6 @@ function mostrarPalletCompletoEtiqueta(clave) {
     
     // Botones navegación
     html += '<div style="display:flex;gap:8px;margin-top:10px;">';
-    html += '<button class="btn btn-volver" onclick="volverPantallaAnteriorEtiqueta()" style="flex:1;">← VOLVER</button>';
     html += '<button class="btn btn-rojo" onclick="cancelarOperacionEtiquetaCompleta()" style="flex:1;opacity:0.7;">❌ CANCELAR OPERACIÓN</button>';
     html += '</div>';
     html += '</div>';
@@ -2146,7 +2143,6 @@ function confirmarUbicacionEtiqueta(idx, clave) {
     
     // Botones navegación
     html += '<div style="display:flex;gap:8px;margin-top:10px;">';
-    html += '<button class="btn btn-volver" onclick="volverPantallaAnteriorEtiqueta()" style="flex:1;">← VOLVER</button>';
     html += '<button class="btn btn-rojo" onclick="cancelarOperacionEtiquetaCompleta()" style="flex:1;opacity:0.7;">❌ CANCELAR OPERACIÓN</button>';
     html += '</div>';
     html += '</div>';

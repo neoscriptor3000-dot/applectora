@@ -117,7 +117,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ 1 </div>
+<div>Ing. PERCY S. TEJADA VALDEZ </div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -1735,6 +1735,45 @@ function limpiarEscaneoEtiqueta() {
     document.getElementById('input-escanear-etiqueta').focus();
 }
 
+function volverBusquedaEtiqueta() {
+    // Volver a mostrar formulario de búsqueda sin perder datos
+    var resultDiv = document.getElementById('resultado-busqueda-etiqueta');
+    if (resultDiv && resultDiv.innerHTML !== '') {
+        // Si hay resultados previos, volver a mostrarlos
+        document.getElementById('resultado-escanear-etiqueta').innerHTML = 
+            '<div style="background:rgba(79,195,247,0.1);border:1px solid #4fc3f7;border-radius:8px;padding:15px;margin-bottom:15px;">' +
+            '<div style="font-size:12px;color:#ffb300;margin-bottom:8px;font-weight:bold;">← Has vuelto a la búsqueda</div>' +
+            resultDiv.innerHTML + '</div>';
+    } else {
+        // Mostrar formulario de búsqueda vacío
+        limpiarEscaneoEtiqueta();
+    }
+}
+
+function volverBusquedaUbicacionEtiqueta() {
+    // Volver a la búsqueda de ubicación sin perder datos del pallet
+    var resultDiv = document.getElementById('resultado-busqueda-ubicacion-etiqueta');
+    if (resultDiv) {
+        resultDiv.innerHTML = '';
+    }
+    // Mostrar nuevamente el pallet incompleto con opción de buscar ubicación
+    var clave = Object.keys(catalogoClaves)[Object.keys(catalogoClaves).length - 1];
+    if (clave) {
+        escanearEtiquetaPallet();
+    }
+}
+
+function cancelarOperacionEtiquetaCompleta() {
+    if (confirm('⚠️ ¿Estás seguro de que deseas CANCELAR esta operación?\\n\\nSe perderá toda la información ingresada hasta el momento.')) {
+        document.getElementById('resultado-escanear-etiqueta').innerHTML = '';
+        document.getElementById('resultado-busqueda-etiqueta').innerHTML = '';
+        document.getElementById('resultado-busqueda-ubicacion-etiqueta').innerHTML = '';
+        document.getElementById('input-escanear-etiqueta').value = '';
+        mostrarMenu();
+        mostrarFeedback('❌ Operación cancelada', 2000);
+    }
+}
+
 function buscarPalletPorClaveEtiqueta(clave) {
     // Mostrar formulario de búsqueda tipo pistoleo
     var resultDiv = document.getElementById('resultado-busqueda-etiqueta');
@@ -1905,6 +1944,12 @@ function confirmarPalletBuscadoEtiqueta(idx, clave) {
     html += '<button class="btn-rojo" onclick="accionEtiquetaSalida(\'' + clave + '\',\'salida\')">📤 SALIDA TOTAL</button>';
     html += '<button class="btn-naranja" onclick="accionEtiquetaSalida(\'' + clave + '\',\'picking\')">📏 PICKING</button>';
     html += '</div>';
+    
+    // Botones navegación
+    html += '<div style="display:flex;gap:8px;margin-top:10px;">';
+    html += '<button class="btn btn-volver" onclick="limpiarEscaneoEtiqueta()" style="flex:1;">← VOLVER</button>';
+    html += '<button class="btn btn-rojo" onclick="cancelarOperacionEtiquetaCompleta()" style="flex:1;opacity:0.7;">❌ CANCELAR OPERACIÓN</button>';
+    html += '</div>';
     html += '</div>';
     
     document.getElementById('resultado-escanear-etiqueta').innerHTML = html;
@@ -2016,6 +2061,12 @@ function mostrarPalletCompletoEtiqueta(clave) {
     html += '<button class="btn-rojo" onclick="accionEtiquetaSalida(\'' + clave + '\',\'salida\')">📤 SALIDA TOTAL</button>';
     html += '<button class="btn-naranja" onclick="accionEtiquetaSalida(\'' + clave + '\',\'picking\')">📏 PICKING</button>';
     html += '</div>';
+    
+    // Botones navegación
+    html += '<div style="display:flex;gap:8px;margin-top:10px;">';
+    html += '<button class="btn btn-volver" onclick="limpiarEscaneoEtiqueta()" style="flex:1;">← VOLVER</button>';
+    html += '<button class="btn btn-rojo" onclick="cancelarOperacionEtiquetaCompleta()" style="flex:1;opacity:0.7;">❌ CANCELAR OPERACIÓN</button>';
+    html += '</div>';
     html += '</div>';
     
     document.getElementById('resultado-escanear-etiqueta').innerHTML = html;
@@ -2086,6 +2137,12 @@ function confirmarUbicacionEtiqueta(idx, clave) {
     html += '<div class="acciones">';
     html += '<button class="btn-rojo" onclick="accionEtiquetaSalida(\'' + clave + '\',\'salida\')">📤 SALIDA TOTAL</button>';
     html += '<button class="btn-naranja" onclick="accionEtiquetaSalida(\'' + clave + '\',\'picking\')">📏 PICKING</button>';
+    html += '</div>';
+    
+    // Botones navegación
+    html += '<div style="display:flex;gap:8px;margin-top:10px;">';
+    html += '<button class="btn btn-volver" onclick="volverBusquedaUbicacionEtiqueta()" style="flex:1;">← VOLVER</button>';
+    html += '<button class="btn btn-rojo" onclick="cancelarOperacionEtiquetaCompleta()" style="flex:1;opacity:0.7;">❌ CANCELAR OPERACIÓN</button>';
     html += '</div>';
     html += '</div>';
     

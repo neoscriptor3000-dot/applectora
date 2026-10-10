@@ -1784,6 +1784,7 @@ var pantallaAnteriorEtiqueta = null;
 function buscarPalletPorClaveEtiqueta(clave) {
     // Mostrar formulario de búsqueda tipo pistoleo
     pantallaAnteriorEtiqueta = 'busqueda_no_encuentra'; // Guardar contexto
+    window._etiquetaClaveBusqueda = clave; // Guardar clave para acceder desde Enter
     var resultDiv = document.getElementById('resultado-busqueda-etiqueta');
     
     var html = '<div style="background:rgba(79,195,247,0.1);border:1px solid #4fc3f7;border-radius:8px;padding:10px;margin-top:10px;">';
@@ -1793,7 +1794,7 @@ function buscarPalletPorClaveEtiqueta(clave) {
     html += '<div style="margin:8px 0;">';
     html += '<label style="color:#4fc3f7;font-size:11px;font-weight:bold;">📦 Código *</label>';
     html += '<div style="display:flex;gap:6px;">';
-    html += '<input type="text" id="busq-et-codigo" placeholder="Ej: 5501" style="flex:1;font-size:13px;padding:8px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:4px;" onchange="autoCompletarProductoEtiqueta()">';
+    html += '<input type="text" id="busq-et-codigo" placeholder="Ej: 5501" style="flex:1;font-size:13px;padding:8px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:4px;" onkeydown="if(event.key===\'Enter\'){autoCompletarProductoEtiqueta();setTimeout(function(){document.getElementById(\'busq-et-und\').focus();},100);}">';
     html += '</div>';
     html += '<div id="busq-et-producto" style="font-size:11px;color:#888;margin-top:4px;"></div>';
     html += '</div>';
@@ -1801,13 +1802,13 @@ function buscarPalletPorClaveEtiqueta(clave) {
     // Campo unidades
     html += '<div style="margin:8px 0;">';
     html += '<label style="color:#4fc3f7;font-size:11px;font-weight:bold;">📏 Unidades (opcional)</label>';
-    html += '<input type="number" id="busq-et-und" placeholder="0" style="width:100%;font-size:13px;padding:8px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:4px;">';
+    html += '<input type="number" id="busq-et-und" placeholder="0" style="width:100%;font-size:13px;padding:8px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:4px;" onkeydown="if(event.key===\'Enter\'){document.getElementById(\'busq-et-kg\').focus();}">';
     html += '</div>';
     
     // Campo kg
     html += '<div style="margin:8px 0;">';
     html += '<label style="color:#4fc3f7;font-size:11px;font-weight:bold;">⚖️ Peso (kg) *</label>';
-    html += '<input type="number" id="busq-et-kg" placeholder="0.00" step="0.01" style="width:100%;font-size:13px;padding:8px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:4px;">';
+    html += '<input type="number" id="busq-et-kg" placeholder="0.00" step="0.01" style="width:100%;font-size:13px;padding:8px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:4px;" onkeydown="if(event.key===\'Enter\'){buscarPalletEnAlmacenEtiquetaDesdeForm();}">';
     html += '</div>';
     
     // Botones
@@ -1871,6 +1872,12 @@ function buscarPalletEnAlmacenEtiqueta(clave) {
     });
     resultDiv.innerHTML = html;
     window._etiquetaCandidatos = candidatos;
+}
+
+function buscarPalletEnAlmacenEtiquetaDesdeForm() {
+    if (window._etiquetaClaveBusqueda) {
+        buscarPalletEnAlmacenEtiqueta(window._etiquetaClaveBusqueda);
+    }
 }
 
 function cancelarBusquedaEtiqueta() {

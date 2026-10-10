@@ -117,7 +117,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ </div>
+<div>Ing. PERCY S. TEJADA VALDEZ 2 </div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -1735,31 +1735,35 @@ function limpiarEscaneoEtiqueta() {
     document.getElementById('input-escanear-etiqueta').focus();
 }
 
-function volverBusquedaEtiqueta() {
-    // Volver a mostrar formulario de búsqueda sin perder datos
-    var resultDiv = document.getElementById('resultado-busqueda-etiqueta');
-    if (resultDiv && resultDiv.innerHTML !== '') {
-        // Si hay resultados previos, volver a mostrarlos
-        document.getElementById('resultado-escanear-etiqueta').innerHTML = 
-            '<div style="background:rgba(79,195,247,0.1);border:1px solid #4fc3f7;border-radius:8px;padding:15px;margin-bottom:15px;">' +
-            '<div style="font-size:12px;color:#ffb300;margin-bottom:8px;font-weight:bold;">← Has vuelto a la búsqueda</div>' +
-            resultDiv.innerHTML + '</div>';
-    } else {
-        // Mostrar formulario de búsqueda vacío
-        limpiarEscaneoEtiqueta();
-    }
-}
-
-function volverBusquedaUbicacionEtiqueta() {
-    // Volver a la búsqueda de ubicación sin perder datos del pallet
-    var resultDiv = document.getElementById('resultado-busqueda-ubicacion-etiqueta');
-    if (resultDiv) {
-        resultDiv.innerHTML = '';
-    }
-    // Mostrar nuevamente el pallet incompleto con opción de buscar ubicación
-    var clave = Object.keys(catalogoClaves)[Object.keys(catalogoClaves).length - 1];
-    if (clave) {
-        escanearEtiquetaPallet();
+function volverPantallaAnteriorEtiqueta() {
+    // Volver inteligentemente según dónde vinimos
+    switch(pantallaAnteriorEtiqueta) {
+        case 'busqueda_no_encuentra':
+            // Volver a mostrar formulario de búsqueda tipo pistoleo
+            var clave = Object.keys(catalogoClaves)[Object.keys(catalogoClaves).length - 1];
+            if (clave) {
+                buscarPalletPorClaveEtiqueta(clave);
+            }
+            break;
+            
+        case 'busqueda_manual':
+            // Volver a mostrar formulario de búsqueda manual
+            document.getElementById('resultado-escanear-etiqueta').innerHTML = 
+                document.getElementById('resultado-busqueda-etiqueta').innerHTML;
+            break;
+            
+        case 'busqueda_ubicacion':
+        case 'pallet_incompleto':
+            // Volver a mostrar búsqueda de ubicación
+            var clave = Object.keys(catalogoClaves)[Object.keys(catalogoClaves).length - 1];
+            if (clave) {
+                buscarUbicacionDesdeEtiqueta(clave);
+            }
+            break;
+            
+        default:
+            // Por defecto, limpiar
+            limpiarEscaneoEtiqueta();
     }
 }
 
@@ -1774,8 +1778,12 @@ function cancelarOperacionEtiquetaCompleta() {
     }
 }
 
+// Variable global para rastrear pantalla anterior en ESCANEAR ETIQUETA
+var pantallaAnteriorEtiqueta = null;
+
 function buscarPalletPorClaveEtiqueta(clave) {
     // Mostrar formulario de búsqueda tipo pistoleo
+    pantallaAnteriorEtiqueta = 'busqueda_no_encuentra'; // Guardar contexto
     var resultDiv = document.getElementById('resultado-busqueda-etiqueta');
     
     var html = '<div style="background:rgba(79,195,247,0.1);border:1px solid #4fc3f7;border-radius:8px;padding:10px;margin-top:10px;">';
@@ -1831,6 +1839,7 @@ function autoCompletarProductoEtiqueta() {
 }
 
 function buscarPalletEnAlmacenEtiqueta(clave) {
+    pantallaAnteriorEtiqueta = 'busqueda_manual'; // Guardar contexto
     var cod = document.getElementById('busq-et-codigo').value.trim().toUpperCase();
     var und = parseInt(document.getElementById('busq-et-und').value) || 0;
     var kg = parseFloat(document.getElementById('busq-et-kg').value);
@@ -1853,15 +1862,9 @@ function buscarPalletEnAlmacenEtiqueta(clave) {
         return;
     }
     
-    // Si hay SOLO 1 candidato, confirmarlo automáticamente
-    if (candidatos.length === 1) {
-        window._etiquetaCandidatos = candidatos;
-        confirmarPalletBuscadoEtiqueta(0, clave);
-        return;
-    }
-    
-    // Si hay 2 o más, mostrar opciones
-    var html = '<div style="font-size:11px;color:#ffb300;margin:8px 0;font-weight:bold;">✅ Se encontraron ' + candidatos.length + ' pallet(s) idénticos - Selecciona:</div>';
+    // SIEMPRE mostrar opciones para que el usuario confirme, incluso si hay 1 sola
+    var msg = candidatos.length === 1 ? 'Se encontró 1 ubicación - Confirma:' : 'Se encontraron ' + candidatos.length + ' ubicaciones - Selecciona:';
+    var html = '<div style="font-size:11px;color:#ffb300;margin:8px 0;font-weight:bold;">✅ ' + msg + '</div>';
     candidatos.forEach(function(s, i) {
         html += '<button onclick="confirmarPalletBuscadoEtiqueta(' + i + ',\'' + clave + '\')" style="width:100%;text-align:left;background:rgba(46,125,50,0.2);border:1px solid #2e7d32;color:#fff;border-radius:6px;padding:8px;margin-bottom:4px;cursor:pointer;font-size:11px;">';
         html += '📍 <b>' + s.ubicacion + '</b> | ⚖️ ' + s.kg + ' kg | 📦 ' + s.und + ' und | 🔢 ' + (s.lote||'—') + '</button>';
@@ -1947,7 +1950,7 @@ function confirmarPalletBuscadoEtiqueta(idx, clave) {
     
     // Botones navegación
     html += '<div style="display:flex;gap:8px;margin-top:10px;">';
-    html += '<button class="btn btn-volver" onclick="limpiarEscaneoEtiqueta()" style="flex:1;">← VOLVER</button>';
+    html += '<button class="btn btn-volver" onclick="volverPantallaAnteriorEtiqueta()" style="flex:1;">← VOLVER</button>';
     html += '<button class="btn btn-rojo" onclick="cancelarOperacionEtiquetaCompleta()" style="flex:1;opacity:0.7;">❌ CANCELAR OPERACIÓN</button>';
     html += '</div>';
     html += '</div>';
@@ -1956,6 +1959,7 @@ function confirmarPalletBuscadoEtiqueta(idx, clave) {
 }
 
 function buscarUbicacionDesdeEtiqueta(clave) {
+    pantallaAnteriorEtiqueta = 'busqueda_ubicacion'; // Guardar contexto
     var pallet = catalogoClaves[clave];
     if (!pallet) return;
     
@@ -2064,7 +2068,7 @@ function mostrarPalletCompletoEtiqueta(clave) {
     
     // Botones navegación
     html += '<div style="display:flex;gap:8px;margin-top:10px;">';
-    html += '<button class="btn btn-volver" onclick="limpiarEscaneoEtiqueta()" style="flex:1;">← VOLVER</button>';
+    html += '<button class="btn btn-volver" onclick="volverPantallaAnteriorEtiqueta()" style="flex:1;">← VOLVER</button>';
     html += '<button class="btn btn-rojo" onclick="cancelarOperacionEtiquetaCompleta()" style="flex:1;opacity:0.7;">❌ CANCELAR OPERACIÓN</button>';
     html += '</div>';
     html += '</div>';
@@ -2073,6 +2077,7 @@ function mostrarPalletCompletoEtiqueta(clave) {
 }
 
 function confirmarUbicacionEtiqueta(idx, clave) {
+    pantallaAnteriorEtiqueta = 'pallet_incompleto'; // Guardar que volvemos a pallet incompleto
     var s = window._etiquetaCandidatos[idx];
     if (!s) return;
     
@@ -2141,7 +2146,7 @@ function confirmarUbicacionEtiqueta(idx, clave) {
     
     // Botones navegación
     html += '<div style="display:flex;gap:8px;margin-top:10px;">';
-    html += '<button class="btn btn-volver" onclick="volverBusquedaUbicacionEtiqueta()" style="flex:1;">← VOLVER</button>';
+    html += '<button class="btn btn-volver" onclick="volverPantallaAnteriorEtiqueta()" style="flex:1;">← VOLVER</button>';
     html += '<button class="btn btn-rojo" onclick="cancelarOperacionEtiquetaCompleta()" style="flex:1;opacity:0.7;">❌ CANCELAR OPERACIÓN</button>';
     html += '</div>';
     html += '</div>';

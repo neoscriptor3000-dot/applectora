@@ -117,7 +117,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ </div>
+<div>Ing. PERCY S. TEJADA VALDEZ 1 </div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -1799,20 +1799,30 @@ function buscarPalletEnAlmacenEtiqueta(clave) {
     if (!cod) { mostrarFeedback('⚠️ Ingrese el código.'); return; }
     if (!kg) { mostrarFeedback('⚠️ Ingrese el peso.'); return; }
     
+    // BÚSQUEDA EXACTA: código=código, und=und, kg=kg (exacto)
     var candidatos = tablaDatos.filter(function(s) {
-        if (s.codigo !== cod || !s.ubicacion || !s.codigo) return false;
-        var okKg  = Math.abs(s.kg - kg) <= 2;
-        var okUnd = (!und) || (Math.abs(s.und - und) <= 1);
-        return okKg && okUnd;
+        if (!s.ubicacion || !s.codigo) return false;
+        var codigoExacto = s.codigo === cod;
+        var kgExacto = Math.abs(s.kg - kg) < 0.01; // Casi exacto (permitir errores de redondeo)
+        var undExacto = (und === 0) || (s.und === und); // Si no ingresó und, no filtra
+        return codigoExacto && kgExacto && undExacto;
     });
     
     var resultDiv = document.getElementById('busq-et-resultado');
     if (candidatos.length === 0) {
-        resultDiv.innerHTML = '<div style="color:#ef9a9a;font-size:12px;">❌ No se encontró ningún pallet con esos datos.</div>';
+        resultDiv.innerHTML = '<div style="color:#ef9a9a;font-size:12px;">❌ No se encontró pallet con código <b>' + cod + '</b>, ' + (und > 0 ? und + ' und' : 'cualquier und') + ', ' + kg + ' kg.</div>';
         return;
     }
     
-    var html = '<div style="font-size:11px;color:#ffb300;margin:8px 0;">✅ Se encontraron ' + candidatos.length + ' pallet(s) - Selecciona:</div>';
+    // Si hay SOLO 1 candidato, confirmarlo automáticamente
+    if (candidatos.length === 1) {
+        window._etiquetaCandidatos = candidatos;
+        confirmarPalletBuscadoEtiqueta(0, clave);
+        return;
+    }
+    
+    // Si hay 2 o más, mostrar opciones
+    var html = '<div style="font-size:11px;color:#ffb300;margin:8px 0;font-weight:bold;">✅ Se encontraron ' + candidatos.length + ' pallet(s) idénticos - Selecciona:</div>';
     candidatos.forEach(function(s, i) {
         html += '<button onclick="confirmarPalletBuscadoEtiqueta(' + i + ',\'' + clave + '\')" style="width:100%;text-align:left;background:rgba(46,125,50,0.2);border:1px solid #2e7d32;color:#fff;border-radius:6px;padding:8px;margin-bottom:4px;cursor:pointer;font-size:11px;">';
         html += '📍 <b>' + s.ubicacion + '</b> | ⚖️ ' + s.kg + ' kg | 📦 ' + s.und + ' und | 🔢 ' + (s.lote||'—') + '</button>';

@@ -8241,7 +8241,7 @@ function mostrarTablaMovProdApp(datos, codigo) {
         saldoUnd += undIng - undSal;
         saldoKg += kgIng - kgSal;
         
-        var destProc = mov.nombreDestino || mov.ubicacion || '—';
+        var destProc = mov.nombreDestino || mov.procedencia || mov.ubicacion || '—';
         
         html += '<tr style="background:' + (idx % 2 === 0 ? '#1a1a1a' : '#2a2a2a') + ';">';
         html += '<td style="padding:4px;border:1px solid #666;">' + (mov.fecha || '—') + '</td>';
@@ -8284,7 +8284,7 @@ function exportarMovProdApp() {
         saldoUnd += undIng - undSal;
         saldoKg += kgIng - kgSal;
         
-        var destProc = mov.nombreDestino || mov.ubicacion || '';
+        var destProc = mov.nombreDestino || mov.procedencia || mov.ubicacion || '';
         
         datos.push([
             mov.fecha || '',

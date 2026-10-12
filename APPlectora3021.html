@@ -6926,7 +6926,7 @@ function ejecutarSalidaPistoleo() {
             var claveRemover = slot.clave; // Guardar la clave antes de limpiar
             totalKg += kAnt;
             slot.codigo=''; slot.producto=''; slot.lote=''; slot.und=0; slot.kg=0; slot.vence=''; slot.linea=''; slot.clave='';
-            historialMovimientos.push({ fecha:fecha, hora:hora, tipo:'SALIDA', ubicacion:p.ubicacion, codigo:p.codigo, producto:p.producto, lote:p.lote, undAnt:uAnt, undDesp:0, kgAnt:kAnt, kgDesp:0 });
+            historialMovimientos.push({ fecha:fecha, hora:hora, tipo:'SALIDA', ubicacion:p.ubicacion, codigo:p.codigo, producto:p.producto, lote:p.lote, undAnt:uAnt, undDesp:uAnt, kgAnt:kAnt, kgDesp:kAnt, destino:spDestino, nombreDestino:spDestinoNombre });
             historialSalidas.push({ fecha:fecha, hora:hora, tipo:'SALIDA', ubicacion:p.ubicacion, codigo:p.codigo, producto:p.producto, lote:p.lote, und:uAnt, kg:kAnt, destino:spDestino, nombreDestino:spDestinoNombre });
         }
         // Marcar como INACTIVO en catalogoClaves (NO borrar, es historial permanente)
@@ -7119,17 +7119,37 @@ function descargarExcel() {
     }
     
     // ==================== GENERAR EXCEL CON 2 HOJAS ====================
+    console.log('descargarExcel() iniciada. XLSX disponible:', typeof XLSX !== 'undefined');
+    console.log('Datos TABLA_3D filas:', data.length);
+    console.log('Datos MOV_PRODUCTO filas:', dataMov.length);
+    
     try {
+        if (typeof XLSX === 'undefined') {
+            throw new Error('XLSX library no está cargada. Recarga la página.');
+        }
+        
         var ws1 = XLSX.utils.aoa_to_sheet(data);
+        console.log('Hoja 1 (TABLA_3D) creada');
+        
         var ws2 = XLSX.utils.aoa_to_sheet(dataMov);
+        console.log('Hoja 2 (MOV_PRODUCTO) creada');
+        
         var wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws1, 'TABLA_3D');
         XLSX.utils.book_append_sheet(wb, ws2, 'MOV_PRODUCTO');
-        XLSX.writeFile(wb, 'Inventario_Movimientos_' + new Date().toISOString().slice(0,10) + '.xlsx');
+        console.log('Workbook creado con 2 hojas');
+        
+        var fileName = 'Inventario_Movimientos_' + new Date().toISOString().slice(0,10) + '.xlsx';
+        XLSX.writeFile(wb, fileName);
+        console.log('Archivo descargado:', fileName);
+        
         mostrarFeedback('✅ Excel descargado: TABLA_3D + MOV_PRODUCTO', 2500);
     } catch (err) {
-        mostrarFeedback('❌ Error al descargar: ' + (err.message || 'Desconocido'), 3000);
-        console.error('descargarExcel error:', err);
+        var errMsg = err.message || 'Error desconocido';
+        console.error('❌ descargarExcel error:', err);
+        console.error('Stack:', err.stack);
+        mostrarFeedback('❌ Error: ' + errMsg, 4000);
+        alert('❌ Error al descargar Excel:\n\n' + errMsg + '\n\nRevisa la consola (F12) para más detalles.');
     }
 }
 

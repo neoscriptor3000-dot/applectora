@@ -110,6 +110,8 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 
 <button class="btn btn-excel" onclick="sincronizarClaveEnTableDatos()" style="background:#7b1fa2;">🔗 SINCRONIZAR CLAVES</button>
 
+<button class="btn btn-excel" onclick="console.log('TEST ONCLICK'); alert('Test: onclick funciona');" style="background:#ff9800;">🧪 TEST onclick</button>
+
 <button class="btn btn-excel" onclick="descargarExcel()">📤 Descargar Tabla Actualizada</button>
 </div>
 
@@ -7065,6 +7067,11 @@ function exportarHistorialSalidas() {
 // FUNCIONES DE EXCEL Y DATOS
 // ============================================================
 function descargarExcel() {
+    console.log('=== INICIANDO descargarExcel ===');
+    console.log('XLSX:', typeof XLSX);
+    console.log('tablaDatos:', typeof tablaDatos, tablaDatos ? tablaDatos.length : 'undefined');
+    console.log('historialMovimientos:', typeof historialMovimientos, historialMovimientos ? historialMovimientos.length : 'undefined');
+    
     // ==================== HOJA 1: TABLA_3D ====================
     var data = [];
     for (var f = 0; f < 6; f++) data.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '']);
@@ -7142,8 +7149,10 @@ function descargarExcel() {
         var fileName = 'Inventario_Movimientos_' + new Date().toISOString().slice(0,10) + '.xlsx';
         XLSX.writeFile(wb, fileName);
         console.log('Archivo descargado:', fileName);
+        console.log('✅✅✅ DESCARGA COMPLETADA ✅✅✅');
         
         mostrarFeedback('✅ Excel descargado: TABLA_3D + MOV_PRODUCTO', 2500);
+        alert('✅ Descarga completada:\n\n' + fileName + '\n\n- Hoja 1: TABLA_3D (inventario actual)\n- Hoja 2: MOV_PRODUCTO (historial movimientos)');
     } catch (err) {
         var errMsg = err.message || 'Error desconocido';
         console.error('❌ descargarExcel error:', err);

@@ -7099,7 +7099,7 @@ function descargarExcel() {
             var kgIng = (mov.tipo.includes('INGRESO') ? mov.kgDesp : 0) || 0;
             var undSal = (mov.tipo.includes('SALIDA') ? mov.undDesp : 0) || 0;
             var kgSal = (mov.tipo.includes('SALIDA') ? mov.kgDesp : 0) || 0;
-            var destProc = mov.nombreDestino || mov.ubicacion || '';
+            var destProc = mov.nombreDestino || mov.procedencia || '';
             
             dataMov.push([
                 mov.fecha || '',
@@ -7119,12 +7119,18 @@ function descargarExcel() {
     }
     
     // ==================== GENERAR EXCEL CON 2 HOJAS ====================
-    var ws1 = XLSX.utils.aoa_to_sheet(data);
-    var ws2 = XLSX.utils.aoa_to_sheet(dataMov);
-    var wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws1, 'TABLA_3D');
-    XLSX.utils.book_append_sheet(wb, ws2, 'MOV_PRODUCTO');
-    XLSX.writeFile(wb, 'Inventario_Movimientos_' + new Date().toISOString().slice(0,10) + '.xlsx');
+    try {
+        var ws1 = XLSX.utils.aoa_to_sheet(data);
+        var ws2 = XLSX.utils.aoa_to_sheet(dataMov);
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws1, 'TABLA_3D');
+        XLSX.utils.book_append_sheet(wb, ws2, 'MOV_PRODUCTO');
+        XLSX.writeFile(wb, 'Inventario_Movimientos_' + new Date().toISOString().slice(0,10) + '.xlsx');
+        mostrarFeedback('✅ Excel descargado: TABLA_3D + MOV_PRODUCTO', 2500);
+    } catch (err) {
+        mostrarFeedback('❌ Error al descargar: ' + (err.message || 'Desconocido'), 3000);
+        console.error('descargarExcel error:', err);
+    }
 }
 
 function cargarExcel(event) {
@@ -8221,6 +8227,7 @@ function mostrarTablaMovProdApp(datos, codigo) {
     html += '<tr><th style="padding:4px;border:1px solid #666;text-align:left;">Fecha</th>';
     html += '<th style="padding:4px;border:1px solid #666;">Tipo</th>';
     html += '<th style="padding:4px;border:1px solid #666;text-align:left;">Dest./Proc.</th>';
+    html += '<th style="padding:4px;border:1px solid #666;text-align:left;">Ubicación</th>';
     html += '<th style="padding:4px;border:1px solid #666;text-align:right;">Und. Ing</th>';
     html += '<th style="padding:4px;border:1px solid #666;text-align:right;">Kg Ing</th>';
     html += '<th style="padding:4px;border:1px solid #666;text-align:right;">Und. Sal</th>';
@@ -8241,12 +8248,14 @@ function mostrarTablaMovProdApp(datos, codigo) {
         saldoUnd += undIng - undSal;
         saldoKg += kgIng - kgSal;
         
-        var destProc = mov.nombreDestino || mov.procedencia || mov.ubicacion || '—';
+        var destProc = mov.nombreDestino || mov.procedencia || '—';
+        var ubicacion = mov.ubicacion || '—';
         
         html += '<tr style="background:' + (idx % 2 === 0 ? '#1a1a1a' : '#2a2a2a') + ';">';
         html += '<td style="padding:4px;border:1px solid #666;">' + (mov.fecha || '—') + '</td>';
         html += '<td style="padding:4px;border:1px solid #666;color:' + tipoColor + ';font-weight:bold;">' + mov.tipo.substring(0, 8) + '</td>';
         html += '<td style="padding:4px;border:1px solid #666;font-size:9px;">' + destProc + '</td>';
+        html += '<td style="padding:4px;border:1px solid #666;font-size:9px;color:#90caf9;font-weight:bold;">' + ubicacion + '</td>';
         html += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + (undIng > 0 ? undIng : '—') + '</td>';
         html += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + (kgIng > 0 ? kgIng.toFixed(1) : '—') + '</td>';
         html += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + (undSal > 0 ? undSal : '—') + '</td>';
@@ -8272,7 +8281,7 @@ function exportarMovProdApp() {
     var datos = [];
     datos.push(['MOVIMIENTOS POR PRODUCTO - ' + codigo]);
     datos.push([]);
-    datos.push(['Fecha', 'Hora', 'Tipo', 'Destino/Procedencia', 'Und. Ingreso', 'Kg Ingreso', 'Und. Salida', 'Kg Salida', 'Und. Saldo', 'Kg Saldo']);
+    datos.push(['Fecha', 'Hora', 'Tipo', 'Destino/Procedencia', 'Ubicación', 'Und. Ingreso', 'Kg Ingreso', 'Und. Salida', 'Kg Salida', 'Und. Saldo', 'Kg Saldo']);
     
     var saldoUnd = 0, saldoKg = 0;
     window._movProductoFiltradoApp.forEach(function(mov) {
@@ -8284,13 +8293,15 @@ function exportarMovProdApp() {
         saldoUnd += undIng - undSal;
         saldoKg += kgIng - kgSal;
         
-        var destProc = mov.nombreDestino || mov.procedencia || mov.ubicacion || '';
+        var destProc = mov.nombreDestino || mov.procedencia || '';
+        var ubicacion = mov.ubicacion || '';
         
         datos.push([
             mov.fecha || '',
             mov.hora || '',
             mov.tipo || '',
             destProc,
+            ubicacion,
             undIng > 0 ? undIng : '',
             kgIng > 0 ? kgIng.toFixed(2) : '',
             undSal > 0 ? undSal : '',

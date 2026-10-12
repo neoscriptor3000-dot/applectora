@@ -113,6 +113,25 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <button class="btn btn-excel" onclick="console.log('TEST ONCLICK'); alert('Test: onclick funciona');" style="background:#ff9800;">🧪 TEST onclick</button>
 
 <button class="btn btn-excel" onclick="descargarExcel()">📤 Descargar Tabla Actualizada</button>
+
+<button class="btn btn-excel" onclick="abrirPanelDebug()" style="background:#9c27b0;">🐛 DEBUGGING</button>
+
+<!-- PANEL DE DEBUG -->
+<div id="panel-debug" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);z-index:99999;padding:20px;overflow-y:auto;">
+    <button onclick="cerrarPanelDebug()" style="position:absolute;top:10px;right:10px;background:#c62828;color:#fff;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;font-weight:bold;">✕ CERRAR</button>
+    <div style="color:#fff;font-family:monospace;font-size:12px;line-height:1.6;">
+        <h3 style="color:#4fc3f7;margin-top:30px;">📊 DEBUG LOG</h3>
+        <div id="debug-log" style="background:#1a1a1a;padding:15px;border-radius:5px;border:1px solid #444;max-height:70vh;overflow-y:auto;white-space:pre-wrap;word-break:break-all;"></div>
+        
+        <h3 style="color:#4fc3f7;margin-top:20px;">📈 ESTADÍSTICAS</h3>
+        <div id="debug-stats" style="background:#1a1a1a;padding:15px;border-radius:5px;border:1px solid #444;">
+            <div style="color:#90caf9;">tablaDatos: <span id="stat-tabla">0</span> filas</div>
+            <div style="color:#90caf9;">historialMovimientos: <span id="stat-historial">0</span> registros</div>
+            <div style="color:#90caf9;">INGRESOS: <span id="stat-ingresos">0</span></div>
+            <div style="color:#90caf9;">SALIDAS: <span id="stat-salidas">0</span></div>
+        </div>
+    </div>
+</div>
 </div>
 
 <div style="text-align:center;margin:10px 0;">
@@ -120,7 +139,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ CR6</div>
+<div>Ing. PERCY S. TEJADA VALDEZ CR5</div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -7066,6 +7085,48 @@ function exportarHistorialSalidas() {
 // ============================================================
 // FUNCIONES DE EXCEL Y DATOS
 // ============================================================
+// ============================================================
+// PANEL DE DEBUG - VISIBLE EN PANTALLA
+// ============================================================
+var debugLogs = [];
+
+function abrirPanelDebug() {
+    document.getElementById('panel-debug').style.display = 'block';
+    actualizarDebugLog();
+}
+
+function cerrarPanelDebug() {
+    document.getElementById('panel-debug').style.display = 'none';
+}
+
+function agregarDebugLog(msg) {
+    var timestamp = new Date().toLocaleTimeString('es-PE');
+    var linea = '[' + timestamp + '] ' + msg;
+    debugLogs.push(linea);
+    if (debugLogs.length > 100) debugLogs.shift();
+    console.log(linea);
+}
+
+function actualizarDebugLog() {
+    document.getElementById('debug-log').innerText = debugLogs.join('\n');
+    document.getElementById('stat-tabla').innerText = tablaDatos ? tablaDatos.length : 0;
+    document.getElementById('stat-historial').innerText = historialMovimientos ? historialMovimientos.length : 0;
+    
+    var ingresos = 0, salidas = 0;
+    if (historialMovimientos) {
+        historialMovimientos.forEach(function(m) {
+            if (m.tipo.includes('INGRESO')) ingresos++;
+            if (m.tipo.includes('SALIDA')) salidas++;
+        });
+    }
+    document.getElementById('stat-ingresos').innerText = ingresos;
+    document.getElementById('stat-salidas').innerText = salidas;
+    
+    var log = document.getElementById('debug-log');
+    log.scrollTop = log.scrollHeight;
+}
+
+// ============================================================
 function descargarExcel() {
     console.log('=== INICIANDO descargarExcel ===');
     console.log('XLSX:', typeof XLSX);
@@ -7125,78 +7186,59 @@ function descargarExcel() {
         });
     }
     
-    // ==================== GENERAR EXCEL CON 2 HOJAS ====================
-    console.log('descargarExcel() iniciada. XLSX disponible:', typeof XLSX !== 'undefined');
-    console.log('Datos TABLA_3D filas:', data.length);
-    console.log('Datos MOV_PRODUCTO filas:', dataMov.length);
+    // ==================== DESCARGAR COMO 2 CSV (Compatible móviles) ====================
+    agregarDebugLog('📥 INICIANDO DESCARGA CSV');
+    agregarDebugLog('Datos TABLA_3D: ' + data.length + ' filas');
+    agregarDebugLog('Datos MOV_PRODUCTO: ' + dataMov.length + ' filas');
     
-    try {
-        if (typeof XLSX === 'undefined') {
-            throw new Error('XLSX library no está cargada. Recarga la página.');
-        }
-        
-        var ws1 = XLSX.utils.aoa_to_sheet(data);
-        console.log('Hoja 1 (TABLA_3D) creada');
-        
-        var ws2 = XLSX.utils.aoa_to_sheet(dataMov);
-        console.log('Hoja 2 (MOV_PRODUCTO) creada');
-        
-        var wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws1, 'TABLA_3D');
-        XLSX.utils.book_append_sheet(wb, ws2, 'MOV_PRODUCTO');
-        console.log('Workbook creado con 2 hojas');
-        
-        var fileName = 'Inventario_Movimientos_' + new Date().toISOString().slice(0,10) + '.xlsx';
-        
-        // ============ MÉTODO 1: XLSX.writeFile (PC) ============
-        if (typeof XLSX.writeFile === 'function') {
-            try {
-                XLSX.writeFile(wb, fileName);
-                console.log('Descarga MÉTODO 1 (writeFile) completada:', fileName);
-            } catch (e) {
-                // Fallback a Método 2
-                console.log('writeFile falló, intentando Método 2...');
-                descargarExcelMovil(wb, fileName);
-            }
-        } else {
-            // Fallback a Método 2 para móviles
-            descargarExcelMovil(wb, fileName);
-        }
-        
-        mostrarFeedback('✅ Descargando: ' + fileName, 2500);
-        alert('✅ Descarga iniciada:\n\n' + fileName + '\n\n- Hoja 1: TABLA_3D\n- Hoja 2: MOV_PRODUCTO\n\nRevisa Descargas');
-    } catch (err) {
-        var errMsg = err.message || 'Error desconocido';
-        console.error('❌ descargarExcel error:', err);
-        console.error('Stack:', err.stack);
-        mostrarFeedback('❌ Error: ' + errMsg, 4000);
-        alert('❌ Error:\n\n' + errMsg);
-    }
+    var csv1 = generarCSV(data, 'TABLA_3D');
+    var csv2 = generarCSV(dataMov, 'MOV_PRODUCTO');
+    
+    agregarDebugLog('✅ CSV 1 generado: ' + csv1.length + ' caracteres');
+    agregarDebugLog('✅ CSV 2 generado: ' + csv2.length + ' caracteres');
+    
+    var fecha = new Date().toISOString().slice(0,10);
+    descargarCSV(csv1, 'Inventario_TABLA_3D_' + fecha + '.csv');
+    mostrarFeedback('✅ CSV 1 descargado', 1500);
+    agregarDebugLog('Descargando: Inventario_TABLA_3D_' + fecha + '.csv');
+    
+    setTimeout(function() {
+        descargarCSV(csv2, 'Inventario_MOV_PRODUCTO_' + fecha + '.csv');
+        mostrarFeedback('✅ CSV 2 descargado', 1500);
+        agregarDebugLog('Descargando: Inventario_MOV_PRODUCTO_' + fecha + '.csv');
+        agregarDebugLog('✅✅✅ AMBOS ARCHIVOS DESCARGADOS ✅✅✅');
+        actualizarDebugLog();
+        alert('✅ Descargas completadas:\n\n1. Inventario_TABLA_3D_' + fecha + '.csv\n2. Inventario_MOV_PRODUCTO_' + fecha + '.csv\n\nRevisa tu carpeta Descargas');
+    }, 500);
 }
 
-// ============ MÉTODO ALTERNATIVO PARA MÓVILES ============
-function descargarExcelMovil(workbook, fileName) {
-    console.log('Usando descarga para móviles (Método 2)...');
-    try {
-        var wbout = XLSX.write(workbook, {bookType:'xlsx', type:'array'});
-        var blob = new Blob([wbout], {type:'application/octet-stream'});
-        var url = URL.createObjectURL(blob);
-        
-        var link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        link.style.display = 'none';
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        URL.revokeObjectURL(url);
-        console.log('✅ Descarga móvil completada:', fileName);
-    } catch (err) {
-        console.error('❌ Error en descarga móvil:', err);
-        throw err;
-    }
+function generarCSV(data, nombre) {
+    var csv = '';
+    data.forEach(function(row, idx) {
+        var linea = row.map(function(cell) {
+            var val = (cell || '').toString().trim();
+            if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+                return '"' + val.replace(/"/g, '""') + '"';
+            }
+            return val;
+        }).join(',');
+        csv += linea + '\n';
+    });
+    return csv;
+}
+
+function descargarCSV(csv, nombreArchivo) {
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var link = document.createElement('a');
+    var url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', nombreArchivo);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 function cargarExcel(event) {
@@ -8255,25 +8297,45 @@ function aplicarFiltroMovProdApp() {
     var camara = camaraEl ? camaraEl.value : 'all';
     var fechaDesde = desdeEl ? desdeEl.value : '';
     
+    agregarDebugLog('🔍 FILTRO MOV. POR PRODUCTO');
+    agregarDebugLog('Código buscado: ' + codigo);
+    agregarDebugLog('Historial total: ' + (historialMovimientos ? historialMovimientos.length : 0));
+    
     var filtrados = [];
+    var ingresos = 0, salidas = 0;
     
     if (typeof historialMovimientos !== 'undefined' && historialMovimientos) {
         historialMovimientos.forEach(function(mov) {
             if (mov.codigo && String(mov.codigo).toUpperCase() === codigo) {
+                agregarDebugLog('  ✓ Movimiento encontrado: ' + mov.tipo + ' | und=' + (mov.undDesp || 0) + ' | kg=' + (mov.kgDesp || 0));
+                
                 if (camara !== 'all') {
-                    if (!mov.ubicacion || mov.ubicacion[0] !== camara) return;
+                    if (!mov.ubicacion || mov.ubicacion[0] !== camara) {
+                        agregarDebugLog('    ✗ Filtrado por cámara');
+                        return;
+                    }
                 }
                 
                 if (fechaDesde) {
                     var fechaMov = mov.fecha ? new Date(mov.fecha) : null;
                     var fechaDesdeCons = new Date(fechaDesde);
-                    if (fechaMov && fechaMov < fechaDesdeCons) return;
+                    if (fechaMov && fechaMov < fechaDesdeCons) {
+                        agregarDebugLog('    ✗ Filtrado por fecha');
+                        return;
+                    }
                 }
                 
                 filtrados.push(mov);
+                if (mov.tipo.includes('INGRESO')) ingresos++;
+                if (mov.tipo.includes('SALIDA')) salidas++;
             }
         });
     }
+    
+    agregarDebugLog('✅ RESULTADO: ' + filtrados.length + ' movimientos');
+    agregarDebugLog('   INGRESOS: ' + ingresos);
+    agregarDebugLog('   SALIDAS: ' + salidas);
+    actualizarDebugLog();
     
     window._movProductoFiltradoApp = filtrados;
     mostrarTablaMovProdApp(filtrados, codigo);

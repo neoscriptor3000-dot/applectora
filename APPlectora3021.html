@@ -95,6 +95,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <button class="btn btn-ubicacion" onclick="mostrarResumenBandejasApp()">📊 Resumen Bandejas</button>
 <button class="btn btn-ubicacion" onclick="mostrarStockConsolidado()">📦 Stock Consolidado</button>
 <button class="btn btn-ubicacion" onclick="mostrarPanel('panel-historial')">📋 Ver Movimientos</button>
+<button class="btn btn-ubicacion" onclick="abrirMovPorProductoApp()" style="background:#00897b;">📦 MOV. POR PRODUCTO</button>
 </div>
 
 <div class="menu-grupo" onclick="toggleMenuApp('menu-datos')">📂 DATOS ▾</div>
@@ -342,6 +343,37 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
     </select>
 </div>
 <div id="hist-lista" style="font-size:10px;max-height:400px;overflow:auto;"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
+
+<!-- PANEL MOV. POR PRODUCTO -->
+<div id="panel-mov-producto" class="panel">
+    <h3>📦 MOVIMIENTOS POR PRODUCTO</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <div>
+            <label style="color:#4db8a8;font-size:10px;display:block;margin-bottom:2px;">🏭 Cámara:</label>
+            <select id="mov-prod-camara-app" style="background:rgba(3,12,32,0.9);border:1px solid rgba(77,184,168,0.3);color:#fff;padding:6px;border-radius:4px;font-size:11px;">
+                <option value="all">TODAS</option>
+                <option value="1">CÁMARA 1000</option>
+                <option value="2">CÁMARA 2000</option>
+            </select>
+        </div>
+        <div>
+            <label style="color:#4db8a8;font-size:10px;display:block;margin-bottom:2px;">🔢 Código:</label>
+            <input type="text" id="mov-prod-codigo-app" placeholder="Ej: 00221" onkeyup="autocompletarNombreProdApp()" style="background:rgba(3,12,32,0.9);border:1px solid rgba(77,184,168,0.3);color:#fff;padding:6px;border-radius:4px;font-size:11px;width:80px;">
+        </div>
+        <div>
+            <label style="color:#4db8a8;font-size:10px;display:block;margin-bottom:2px;">📝 Nombre:</label>
+            <div id="mov-prod-nombre-app" style="background:rgba(3,12,32,0.9);border:1px solid rgba(77,184,168,0.3);color:#90caf9;padding:6px;border-radius:4px;font-size:10px;min-width:150px;">—</div>
+        </div>
+        <div>
+            <label style="color:#4db8a8;font-size:10px;display:block;margin-bottom:2px;">📅 Desde:</label>
+            <input type="date" id="mov-prod-desde-app" style="background:rgba(3,12,32,0.9);border:1px solid rgba(77,184,168,0.3);color:#fff;padding:6px;border-radius:4px;font-size:11px;">
+        </div>
+        <button onclick="aplicarFiltroMovProdApp()" style="background:#00897b;border:none;color:#fff;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;align-self:flex-end;">🔍 Filtrar</button>
+        <button onclick="exportarMovProdApp()" style="background:#1565c0;border:none;color:#fff;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;align-self:flex-end;">💾 Exportar</button>
+    </div>
+    <div id="mov-prod-tabla-app" style="font-size:10px;max-height:400px;overflow:auto;"></div>
+    <button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button>
+</div>
 
 <div id="panel-picking" class="panel"><h3>📏 PICKING</h3><div class="mensaje" id="pick-ubica"></div><div id="pick-producto-info" style="font-size:12px;color:#fff;text-align:center;margin-bottom:8px;"></div><div class="info-line"><span class="info-label">UNID INIC:</span><span class="info-value" id="pick-und-ini">0</span></div><div class="info-line"><span class="info-label">KG INIC:</span><span class="info-value" id="pick-kg-ini">0</span></div><div class="info-line"><span class="info-label">📦 BANDEJAS INIC:</span><input type="number" id="pick-band-ini" min="0" value="0" style="width:60px;padding:4px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:4px;text-align:center;"></div><hr style="border-color:rgba(255,255,255,0.1);margin:8px 0;"><label style="color:#ff9800;font-size:12px;">📤 UNID A RETIRAR</label><input type="number" id="pick-und-desp" placeholder="0" min="0" value="" oninput="calcularPicking()">
 <label style="color:#ff9800;font-size:12px;">📤 KG A RETIRAR</label>
@@ -8057,6 +8089,181 @@ function recordatorioMasTarde() {
 function iniciarRecordatorioBackup() {
     if (timerBackup) clearInterval(timerBackup);
     timerBackup = setInterval(mostrarRecordatorioBackup, intervaloBackup);
+}
+
+// ==========================================
+// FUNCIONALIDAD: MOV. POR PRODUCTO (APPlectora)
+// ==========================================
+
+window._movProductoFiltradoApp = [];
+
+function abrirMovPorProductoApp() {
+    mostrarPanel('panel-mov-producto');
+    var hoy = new Date();
+    var fechaHoy = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0') + '-' + String(hoy.getDate()).padStart(2, '0');
+    var elDesde = document.getElementById('mov-prod-desde-app');
+    if (elDesde && !elDesde.value) elDesde.value = '2020-01-01';
+}
+
+function autocompletarNombreProdApp() {
+    var codigoEl = document.getElementById('mov-prod-codigo-app');
+    var nombreEl = document.getElementById('mov-prod-nombre-app');
+    if (!codigoEl || !nombreEl) return;
+    
+    var cod = codigoEl.value.trim().toUpperCase();
+    if (!cod) {
+        nombreEl.textContent = '—';
+        return;
+    }
+    
+    // Buscar en catalogoClaves
+    var encontrado = false;
+    if (typeof catalogoClaves !== 'undefined' && catalogoClaves) {
+        for (var clave in catalogoClaves) {
+            if (String(catalogoClaves[clave].codigo).toUpperCase() === cod) {
+                nombreEl.textContent = catalogoClaves[clave].producto || '—';
+                encontrado = true;
+                break;
+            }
+        }
+    }
+    
+    if (!encontrado) {
+        nombreEl.textContent = '(no encontrado)';
+    }
+}
+
+function aplicarFiltroMovProdApp() {
+    var codigoEl = document.getElementById('mov-prod-codigo-app');
+    var camaraEl = document.getElementById('mov-prod-camara-app');
+    var desdeEl = document.getElementById('mov-prod-desde-app');
+    
+    if (!codigoEl || !codigoEl.value.trim()) {
+        mostrarFeedback('⚠️ Ingresa un código de producto', 2000);
+        return;
+    }
+    
+    var codigo = codigoEl.value.trim().toUpperCase();
+    var camara = camaraEl ? camaraEl.value : 'all';
+    var fechaDesde = desdeEl ? desdeEl.value : '';
+    
+    var filtrados = [];
+    
+    if (typeof historialMovimientos !== 'undefined' && historialMovimientos) {
+        historialMovimientos.forEach(function(mov) {
+            if (mov.codigo && String(mov.codigo).toUpperCase() === codigo) {
+                if (camara !== 'all') {
+                    if (!mov.ubicacion || mov.ubicacion[0] !== camara) return;
+                }
+                
+                if (fechaDesde) {
+                    var fechaMov = mov.fecha ? new Date(mov.fecha) : null;
+                    var fechaDesdeCons = new Date(fechaDesde);
+                    if (fechaMov && fechaMov < fechaDesdeCons) return;
+                }
+                
+                filtrados.push(mov);
+            }
+        });
+    }
+    
+    window._movProductoFiltradoApp = filtrados;
+    mostrarTablaMovProdApp(filtrados, codigo);
+}
+
+function mostrarTablaMovProdApp(datos, codigo) {
+    var tablaEl = document.getElementById('mov-prod-tabla-app');
+    if (!tablaEl) return;
+    
+    if (datos.length === 0) {
+        tablaEl.innerHTML = '<div style="padding:10px;text-align:center;color:#888;">❌ No hay movimientos</div>';
+        return;
+    }
+    
+    var html = '<table style="width:100%;border-collapse:collapse;font-size:10px;">';
+    html += '<thead style="background:#444;color:#fff;position:sticky;top:0;">';
+    html += '<tr><th style="padding:4px;border:1px solid #666;text-align:left;">Fecha</th>';
+    html += '<th style="padding:4px;border:1px solid #666;">Tipo</th>';
+    html += '<th style="padding:4px;border:1px solid #666;text-align:right;">Und. Ing</th>';
+    html += '<th style="padding:4px;border:1px solid #666;text-align:right;">Kg Ing</th>';
+    html += '<th style="padding:4px;border:1px solid #666;text-align:right;">Und. Sal</th>';
+    html += '<th style="padding:4px;border:1px solid #666;text-align:right;">Kg Sal</th>';
+    html += '<th style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.2);">Und. Saldo</th>';
+    html += '<th style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.2);">Kg Saldo</th></tr>';
+    html += '</thead><tbody>';
+    
+    var saldoUnd = 0, saldoKg = 0;
+    
+    datos.forEach(function(mov, idx) {
+        var tipoColor = mov.tipo.includes('INGRESO') ? '#2e7d32' : '#c62828';
+        var undIng = (mov.tipo.includes('INGRESO') ? mov.undDesp : 0) || 0;
+        var kgIng = (mov.tipo.includes('INGRESO') ? mov.kgDesp : 0) || 0;
+        var undSal = (mov.tipo.includes('SALIDA') ? mov.undDesp : 0) || 0;
+        var kgSal = (mov.tipo.includes('SALIDA') ? mov.kgDesp : 0) || 0;
+        
+        saldoUnd += undIng - undSal;
+        saldoKg += kgIng - kgSal;
+        
+        html += '<tr style="background:' + (idx % 2 === 0 ? '#1a1a1a' : '#2a2a2a') + ';">';
+        html += '<td style="padding:4px;border:1px solid #666;">' + (mov.fecha || '—') + '</td>';
+        html += '<td style="padding:4px;border:1px solid #666;color:' + tipoColor + ';font-weight:bold;">' + mov.tipo.substring(0, 8) + '</td>';
+        html += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + (undIng > 0 ? undIng : '—') + '</td>';
+        html += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + (kgIng > 0 ? kgIng.toFixed(1) : '—') + '</td>';
+        html += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + (undSal > 0 ? undSal : '—') + '</td>';
+        html += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + (kgSal > 0 ? kgSal.toFixed(1) : '—') + '</td>';
+        html += '<td style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.1);">' + saldoUnd + '</td>';
+        html += '<td style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.1);">' + saldoKg.toFixed(1) + '</td>';
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table>';
+    tablaEl.innerHTML = html;
+}
+
+function exportarMovProdApp() {
+    if (!window._movProductoFiltradoApp || window._movProductoFiltradoApp.length === 0) {
+        mostrarFeedback('⚠️ Filtra movimientos primero', 2000);
+        return;
+    }
+    
+    var codigoEl = document.getElementById('mov-prod-codigo-app');
+    var codigo = codigoEl ? codigoEl.value.trim() : 'PRODUCTO';
+    
+    var datos = [];
+    datos.push(['MOVIMIENTOS POR PRODUCTO - ' + codigo]);
+    datos.push([]);
+    datos.push(['Fecha', 'Hora', 'Tipo', 'Und. Ingreso', 'Kg Ingreso', 'Und. Salida', 'Kg Salida', 'Und. Saldo', 'Kg Saldo']);
+    
+    var saldoUnd = 0, saldoKg = 0;
+    window._movProductoFiltradoApp.forEach(function(mov) {
+        var undIng = (mov.tipo.includes('INGRESO') ? mov.undDesp : 0) || 0;
+        var kgIng = (mov.tipo.includes('INGRESO') ? mov.kgDesp : 0) || 0;
+        var undSal = (mov.tipo.includes('SALIDA') ? mov.undDesp : 0) || 0;
+        var kgSal = (mov.tipo.includes('SALIDA') ? mov.kgDesp : 0) || 0;
+        
+        saldoUnd += undIng - undSal;
+        saldoKg += kgIng - kgSal;
+        
+        datos.push([
+            mov.fecha || '',
+            mov.hora || '',
+            mov.tipo || '',
+            undIng > 0 ? undIng : '',
+            kgIng > 0 ? kgIng.toFixed(2) : '',
+            undSal > 0 ? undSal : '',
+            kgSal > 0 ? kgSal.toFixed(2) : '',
+            saldoUnd,
+            saldoKg.toFixed(2)
+        ]);
+    });
+    
+    var ws = XLSX.utils.aoa_to_sheet(datos);
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'MOV_PRODUCTO');
+    
+    var fileName = 'Movimientos_' + codigo + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
+    XLSX.writeFile(wb, fileName);
+    mostrarFeedback('📤 Exportado: ' + fileName, 2000);
 }
 
 window.addEventListener('load', function() {

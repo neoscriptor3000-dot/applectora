@@ -120,7 +120,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ CR7</div>
+<div>Ing. PERCY S. TEJADA VALDEZ CR6</div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -7147,18 +7147,55 @@ function descargarExcel() {
         console.log('Workbook creado con 2 hojas');
         
         var fileName = 'Inventario_Movimientos_' + new Date().toISOString().slice(0,10) + '.xlsx';
-        XLSX.writeFile(wb, fileName);
-        console.log('Archivo descargado:', fileName);
-        console.log('✅✅✅ DESCARGA COMPLETADA ✅✅✅');
         
-        mostrarFeedback('✅ Excel descargado: TABLA_3D + MOV_PRODUCTO', 2500);
-        alert('✅ Descarga completada:\n\n' + fileName + '\n\n- Hoja 1: TABLA_3D (inventario actual)\n- Hoja 2: MOV_PRODUCTO (historial movimientos)');
+        // ============ MÉTODO 1: XLSX.writeFile (PC) ============
+        if (typeof XLSX.writeFile === 'function') {
+            try {
+                XLSX.writeFile(wb, fileName);
+                console.log('Descarga MÉTODO 1 (writeFile) completada:', fileName);
+            } catch (e) {
+                // Fallback a Método 2
+                console.log('writeFile falló, intentando Método 2...');
+                descargarExcelMovil(wb, fileName);
+            }
+        } else {
+            // Fallback a Método 2 para móviles
+            descargarExcelMovil(wb, fileName);
+        }
+        
+        mostrarFeedback('✅ Descargando: ' + fileName, 2500);
+        alert('✅ Descarga iniciada:\n\n' + fileName + '\n\n- Hoja 1: TABLA_3D\n- Hoja 2: MOV_PRODUCTO\n\nRevisa Descargas');
     } catch (err) {
         var errMsg = err.message || 'Error desconocido';
         console.error('❌ descargarExcel error:', err);
         console.error('Stack:', err.stack);
         mostrarFeedback('❌ Error: ' + errMsg, 4000);
-        alert('❌ Error al descargar Excel:\n\n' + errMsg + '\n\nRevisa la consola (F12) para más detalles.');
+        alert('❌ Error:\n\n' + errMsg);
+    }
+}
+
+// ============ MÉTODO ALTERNATIVO PARA MÓVILES ============
+function descargarExcelMovil(workbook, fileName) {
+    console.log('Usando descarga para móviles (Método 2)...');
+    try {
+        var wbout = XLSX.write(workbook, {bookType:'xlsx', type:'array'});
+        var blob = new Blob([wbout], {type:'application/octet-stream'});
+        var url = URL.createObjectURL(blob);
+        
+        var link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        URL.revokeObjectURL(url);
+        console.log('✅ Descarga móvil completada:', fileName);
+    } catch (err) {
+        console.error('❌ Error en descarga móvil:', err);
+        throw err;
     }
 }
 

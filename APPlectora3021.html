@@ -112,7 +112,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 
 <button class="btn btn-excel" onclick="console.log('TEST ONCLICK'); alert('Test: onclick funciona');" style="background:#ff9800;">🧪 TEST onclick</button>
 
-<button class="btn btn-excel" onclick="descargarExcel()">📤 Descargar Tabla Actualizada</button>
+<button class="btn btn-excel" onclick="agregarDebugLog('🔴 BOTÓN DESCARGAR PRESIONADO'); descargarExcel();">📤 Descargar Tabla Actualizada</button>
 
 <button class="btn btn-excel" onclick="abrirPanelDebug()" style="background:#9c27b0;">🐛 DEBUGGING</button>
 
@@ -7186,30 +7186,50 @@ function descargarExcel() {
         });
     }
     
-    // ==================== DESCARGAR COMO 2 CSV (Compatible móviles) ====================
-    agregarDebugLog('📥 INICIANDO DESCARGA CSV');
-    agregarDebugLog('Datos TABLA_3D: ' + data.length + ' filas');
-    agregarDebugLog('Datos MOV_PRODUCTO: ' + dataMov.length + ' filas');
+    // ==================== GENERAR EXCEL CON 2 HOJAS ====================
+    agregarDebugLog('📥 GENERANDO EXCEL CON 2 HOJAS');
+    agregarDebugLog('Hoja 1 TABLA_3D: ' + data.length + ' filas');
+    agregarDebugLog('Hoja 2 MOV_PRODUCTO: ' + dataMov.length + ' filas');
     
-    var csv1 = generarCSV(data, 'TABLA_3D');
-    var csv2 = generarCSV(dataMov, 'MOV_PRODUCTO');
-    
-    agregarDebugLog('✅ CSV 1 generado: ' + csv1.length + ' caracteres');
-    agregarDebugLog('✅ CSV 2 generado: ' + csv2.length + ' caracteres');
-    
-    var fecha = new Date().toISOString().slice(0,10);
-    descargarCSV(csv1, 'Inventario_TABLA_3D_' + fecha + '.csv');
-    mostrarFeedback('✅ CSV 1 descargado', 1500);
-    agregarDebugLog('Descargando: Inventario_TABLA_3D_' + fecha + '.csv');
-    
-    setTimeout(function() {
-        descargarCSV(csv2, 'Inventario_MOV_PRODUCTO_' + fecha + '.csv');
-        mostrarFeedback('✅ CSV 2 descargado', 1500);
-        agregarDebugLog('Descargando: Inventario_MOV_PRODUCTO_' + fecha + '.csv');
-        agregarDebugLog('✅✅✅ AMBOS ARCHIVOS DESCARGADOS ✅✅✅');
+    try {
+        if (typeof XLSX === 'undefined') {
+            throw new Error('XLSX no está disponible. Recarga la página.');
+        }
+        
+        agregarDebugLog('✅ XLSX disponible, creando hojas...');
+        
+        var ws1 = XLSX.utils.aoa_to_sheet(data);
+        agregarDebugLog('✅ Hoja 1 (TABLA_3D) creada');
+        
+        var ws2 = XLSX.utils.aoa_to_sheet(dataMov);
+        agregarDebugLog('✅ Hoja 2 (MOV_PRODUCTO) creada');
+        
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws1, 'TABLA_3D');
+        XLSX.utils.book_append_sheet(wb, ws2, 'MOV_PRODUCTO');
+        agregarDebugLog('✅ Workbook con 2 hojas creado');
+        
+        var nombreArchivo = 'Inventario_Movimientos_' + new Date().toISOString().slice(0,10) + '.xlsx';
+        
+        agregarDebugLog('⏳ Intentando descargar: ' + nombreArchivo);
+        XLSX.writeFile(wb, nombreArchivo);
+        
+        agregarDebugLog('✅✅✅ EXCEL DESCARGADO EXITOSAMENTE ✅✅✅');
         actualizarDebugLog();
-        alert('✅ Descargas completadas:\n\n1. Inventario_TABLA_3D_' + fecha + '.csv\n2. Inventario_MOV_PRODUCTO_' + fecha + '.csv\n\nRevisa tu carpeta Descargas');
-    }, 500);
+        
+        mostrarFeedback('✅ Excel descargado: ' + nombreArchivo, 2500);
+        alert('✅ Descarga completada:\n\n' + nombreArchivo + '\n\n- Hoja 1: TABLA_3D\n- Hoja 2: MOV_PRODUCTO');
+        
+    } catch (err) {
+        var errMsg = err.message || 'Error desconocido';
+        agregarDebugLog('❌ ERROR EN DESCARGA: ' + errMsg);
+        agregarDebugLog('Stack: ' + (err.stack || 'N/A'));
+        actualizarDebugLog();
+        
+        console.error('❌ Error en descargarExcel:', err);
+        mostrarFeedback('❌ Error: ' + errMsg, 3000);
+        alert('❌ Error al descargar:\n\n' + errMsg + '\n\nAbre 🐛 DEBUG para ver detalles');
+    }
 }
 
 function generarCSV(data, nombre) {
@@ -8421,6 +8441,52 @@ function mostrarTablaMovProdApp(datos, codigo) {
     html += '<th style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.2);">Und. Saldo</th>';
     html += '<th style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.2);">Kg Saldo</th></tr>';
     html += '</thead><tbody>';
+    
+    // Calcular Saldo Inicial (lo que había ANTES de la fecha "Desde")
+    var desdeEl = document.getElementById('mov-prod-desde-app');
+    var fechaDesde = desdeEl ? desdeEl.value : '';
+    var saldoInicialUnd = 0, saldoInicialKg = 0;
+    
+    if (typeof tablaDatos !== 'undefined' && tablaDatos) {
+        tablaDatos.forEach(function(slot) {
+            if (slot.codigo && String(slot.codigo).toUpperCase() === String(codigo).toUpperCase()) {
+                saldoInicialUnd += slot.und || 0;
+                saldoInicialKg += slot.kg || 0;
+            }
+        });
+    }
+    
+    // Restar los movimientos POSTERIORES a la fecha para obtener saldo inicial
+    if (typeof historialMovimientos !== 'undefined' && historialMovimientos && fechaDesde) {
+        historialMovimientos.forEach(function(m) {
+            if (m.codigo && String(m.codigo).toUpperCase() === String(codigo).toUpperCase()) {
+                var fechaMov = m.fecha ? new Date(m.fecha) : null;
+                var fechaDesdeCons = new Date(fechaDesde);
+                if (fechaMov && fechaMov >= fechaDesdeCons) {
+                    var undIng = (m.tipo.includes('INGRESO') ? (m.undDesp || 0) : 0);
+                    var kgIng = (m.tipo.includes('INGRESO') ? (m.kgDesp || 0) : 0);
+                    var undSal = (m.tipo.includes('SALIDA') ? (m.undDesp || 0) : 0);
+                    var kgSal = (m.tipo.includes('SALIDA') ? (m.kgDesp || 0) : 0);
+                    saldoInicialUnd -= undIng - undSal;
+                    saldoInicialKg -= kgIng - kgSal;
+                }
+            }
+        });
+    }
+    
+    // Mostrar fila de SALDO INICIAL
+    html += '<tr style="background:#0d47a1;font-weight:bold;color:#64b5f6;">';
+    html += '<td style="padding:4px;border:1px solid #666;">SALDO INICIAL</td>';
+    html += '<td style="padding:4px;border:1px solid #666;text-align:center;">—</td>';
+    html += '<td style="padding:4px;border:1px solid #666;">—</td>';
+    html += '<td style="padding:4px;border:1px solid #666;">—</td>';
+    html += '<td style="padding:4px;border:1px solid #666;text-align:right;">—</td>';
+    html += '<td style="padding:4px;border:1px solid #666;text-align:right;">—</td>';
+    html += '<td style="padding:4px;border:1px solid #666;text-align:right;">—</td>';
+    html += '<td style="padding:4px;border:1px solid #666;text-align:right;">—</td>';
+    html += '<td style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.3);">' + saldoInicialUnd + '</td>';
+    html += '<td style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.3);">' + saldoInicialKg.toFixed(1) + '</td>';
+    html += '</tr>';
     
     // Calcular SALDO ACTUAL: sumar lo que hay en tablaDatos de este código
     var saldoActualUnd = 0, saldoActualKg = 0;

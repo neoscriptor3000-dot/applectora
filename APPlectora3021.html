@@ -139,7 +139,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ CR5</div>
+<div>Ing. PERCY S. TEJADA VALDEZ CR4</div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -1636,11 +1636,11 @@ if (encontrado && encontrado.codigo && catalogoClaves[encontrado.codigo]) {
             destino: destino,
             nombreDestino: nombreDestino,
             undAnt: undAntes || 0,
-            undDesp: 0,
+            undDesp: undAntes || 0,
             kgAnt: kgAntes || 0,
-            kgDesp: 0,
+            kgDesp: kgAntes || 0,
             bandAnt: bandAntes || 0,
-            bandDesp: 0,
+            bandDesp: bandAntes || 0,
             bandFin: 0
         });
         localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
@@ -2545,11 +2545,11 @@ function accionEtiquetaSalida(clave, tipo) {
             lote: pallet.lote || '',
             destino: destino,
             undAnt: pallet.und,
-            undDesp: 0,
+            undDesp: pallet.und,
             kgAnt: pallet.kg,
-            kgDesp: 0,
+            kgDesp: pallet.kg,
             bandAnt: pallet.bandejas || 0,
-            bandDesp: 0
+            bandDesp: pallet.bandejas || 0
         });
         localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
         
@@ -2929,11 +2929,11 @@ function accionPasadizoConDestino(ubPasadizo, idx, tipo) {
             destino: destino,
             nombreDestino: nombreDestino,
             undAnt: undAntes || 0,
-            undDesp: 0,
+            undDesp: undAntes || 0,
             kgAnt: kgAntes || 0,
-            kgDesp: 0,
+            kgDesp: kgAntes || 0,
             bandAnt: bandAntes || 0,
-            bandDesp: 0,
+            bandDesp: bandAntes || 0,
             bandFin: 0
         });
         localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
@@ -5773,9 +5773,9 @@ function confirmarSalidaManual(ubicacion) {
         destino: destino,
         nombreDestino: nombreDestino,
         undAnt: p.und,
-        undDesp: 0,
+        undDesp: p.und,
         kgAnt: p.kg,
-        kgDesp: 0
+        kgDesp: p.kg
     });
     localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     
@@ -5918,9 +5918,9 @@ function registrarNuevoCompleto() {
         lote: p.lote || '',
         destino: destino,
         undAnt: p.und,
-        undDesp: 0,
+        undDesp: p.und,
         kgAnt: p.kg,
-        kgDesp: 0
+        kgDesp: p.kg
     });
     localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     guardarEnLocalStorage();
@@ -6008,9 +6008,9 @@ function confirmarPickingSuelto() {
         destino: destino,
         nombreDestino: nombreDestino,
         undAnt: und,
-        undDesp: 0,
+        undDesp: und,
         kgAnt: kg,
-        kgDesp: 0
+        kgDesp: kg
     });
     localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     guardarEnLocalStorage();
@@ -6048,9 +6048,9 @@ function confirmarPickingSuelto() {
             destino: destino,
             nombreDestino: nombreDestino,
             undAnt: p.und,
-            undDesp: 0,
+            undDesp: p.und,
             kgAnt: p.kg,
-            kgDesp: 0
+            kgDesp: p.kg
         });
         localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
         palletsSalidos.push({
@@ -6196,9 +6196,9 @@ if (p.codigo && catalogoClaves[p.codigo]) {
             destino: destino,
             nombreDestino: nombreDestino,
             undAnt: p.und,
-            undDesp: 0,
+            undDesp: p.und,
             kgAnt: p.kg,
-            kgDesp: 0
+            kgDesp: p.kg
         });
         localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
         mostrarFeedback('✅ Pallet registrado como NUEVO');
@@ -6259,9 +6259,9 @@ if (p.codigo && catalogoClaves[p.codigo]) {
         destino: destino,
         nombreDestino: nombreDestino,
         undAnt: p.und,
-        undDesp: 0,
+        undDesp: p.und,
         kgAnt: p.kg,
-        kgDesp: 0
+        kgDesp: p.kg
     });
     localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     mostrarFeedback('✅ Salida registrada en ' + p.ubicacion);
@@ -6637,9 +6637,9 @@ function confirmarManual() {
         destino: destino,
         nombreDestino: nombreDestino,
         undAnt: und,
-        undDesp: 0,
+        undDesp: und,
         kgAnt: kg,
-        kgDesp: 0
+        kgDesp: kg
     });
     localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     palletsSalidos.push({

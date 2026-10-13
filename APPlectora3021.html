@@ -139,7 +139,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ CR4</div>
+<div>Ing. PERCY S. TEJADA VALDEZ </div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -7228,17 +7228,75 @@ function generarCSV(data, nombre) {
 }
 
 function descargarCSV(csv, nombreArchivo) {
-    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    var link = document.createElement('a');
-    var url = URL.createObjectURL(blob);
+    console.log('descargarCSV llamada para:', nombreArchivo);
     
-    link.setAttribute('href', url);
-    link.setAttribute('download', nombreArchivo);
-    link.style.visibility = 'hidden';
+    // MÉTODO 1: Intentar descargar por click (PC)
+    try {
+        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        var link = document.createElement('a');
+        var url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', nombreArchivo);
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        
+        // Usar setTimeout para asegurar que el elemento está en el DOM
+        setTimeout(function() {
+            link.click();
+            agregarDebugLog('✅ Descarga iniciada: ' + nombreArchivo);
+        }, 100);
+        
+        setTimeout(function() {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }, 200);
+        
+    } catch (err) {
+        console.error('Error en método 1:', err);
+        agregarDebugLog('⚠️ Método 1 falló, intentando Método 2');
+        
+        // MÉTODO 2: Mostrar en panel para copiar (móviles)
+        mostrarPanelCSV(csv, nombreArchivo);
+    }
+}
+
+function mostrarPanelCSV(csv, nombreArchivo) {
+    console.log('Mostrando panel CSV para:', nombreArchivo);
+    var panelHTML = '<div id="panel-csv-descarga" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);z-index:99999;padding:20px;overflow-y:auto;display:flex;flex-direction:column;">';
+    panelHTML += '<button onclick="cerrarPanelCSV()" style="position:absolute;top:10px;right:10px;background:#c62828;color:#fff;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;font-weight:bold;font-size:16px;">✕ CERRAR</button>';
+    panelHTML += '<h3 style="color:#4fc3f7;margin-top:40px;">📥 ' + nombreArchivo + '</h3>';
+    panelHTML += '<p style="color:#90caf9;font-size:12px;margin:10px 0;">Contenido del archivo CSV (selecciona todo y copia):</p>';
+    panelHTML += '<textarea id="csv-content-' + nombreArchivo + '" style="flex:1;background:#1a1a1a;color:#90caf9;border:1px solid #444;border-radius:5px;padding:10px;font-family:monospace;font-size:11px;resize:none;" readonly>' + csv + '</textarea>';
+    panelHTML += '<button onclick="copiarCSV(\'' + nombreArchivo + '\')" style="background:#00897b;color:#fff;border:none;padding:12px 20px;border-radius:5px;cursor:pointer;font-weight:bold;margin-top:10px;font-size:14px;">📋 COPIAR TODO</button>';
+    panelHTML += '</div>';
     
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    var existente = document.getElementById('panel-csv-descarga');
+    if (existente) existente.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', panelHTML);
+    document.getElementById('csv-content-' + nombreArchivo).focus();
+}
+
+function copiarCSV(nombreArchivo) {
+    var elemento = document.getElementById('csv-content-' + nombreArchivo);
+    if (elemento) {
+        elemento.select();
+        try {
+            document.execCommand('copy');
+            mostrarFeedback('✅ Contenido copiado al portapapeles', 2000);
+            agregarDebugLog('✅ CSV copiado: ' + nombreArchivo);
+        } catch (err) {
+            mostrarFeedback('❌ No se pudo copiar', 2000);
+            console.error('Error al copiar:', err);
+        }
+    }
+}
+
+function cerrarPanelCSV() {
+    var panel = document.getElementById('panel-csv-descarga');
+    if (panel) panel.remove();
 }
 
 function cargarExcel(event) {
@@ -8364,17 +8422,24 @@ function mostrarTablaMovProdApp(datos, codigo) {
     html += '<th style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.2);">Kg Saldo</th></tr>';
     html += '</thead><tbody>';
     
-    var saldoUnd = 0, saldoKg = 0;
+    // Calcular SALDO ACTUAL: sumar lo que hay en tablaDatos de este código
+    var saldoActualUnd = 0, saldoActualKg = 0;
+    if (typeof tablaDatos !== 'undefined' && tablaDatos) {
+        tablaDatos.forEach(function(slot) {
+            if (slot.codigo && String(slot.codigo).toUpperCase() === String(codigo).toUpperCase()) {
+                saldoActualUnd += slot.und || 0;
+                saldoActualKg += slot.kg || 0;
+            }
+        });
+    }
     
+    // Mostrar los movimientos filtrados con el saldo actual del 3D
     datos.forEach(function(mov, idx) {
         var tipoColor = mov.tipo.includes('INGRESO') ? '#2e7d32' : '#c62828';
         var undIng = (mov.tipo.includes('INGRESO') ? mov.undDesp : 0) || 0;
         var kgIng = (mov.tipo.includes('INGRESO') ? mov.kgDesp : 0) || 0;
         var undSal = (mov.tipo.includes('SALIDA') ? mov.undDesp : 0) || 0;
         var kgSal = (mov.tipo.includes('SALIDA') ? mov.kgDesp : 0) || 0;
-        
-        saldoUnd += undIng - undSal;
-        saldoKg += kgIng - kgSal;
         
         var destProc = mov.nombreDestino || mov.procedencia || '—';
         var ubicacion = mov.ubicacion || '—';
@@ -8388,8 +8453,8 @@ function mostrarTablaMovProdApp(datos, codigo) {
         html += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + (kgIng > 0 ? kgIng.toFixed(1) : '—') + '</td>';
         html += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + (undSal > 0 ? undSal : '—') + '</td>';
         html += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + (kgSal > 0 ? kgSal.toFixed(1) : '—') + '</td>';
-        html += '<td style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.1);">' + saldoUnd + '</td>';
-        html += '<td style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.1);">' + saldoKg.toFixed(1) + '</td>';
+        html += '<td style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.1);">' + saldoActualUnd + '</td>';
+        html += '<td style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.1);">' + saldoActualKg.toFixed(1) + '</td>';
         html += '</tr>';
     });
     

@@ -95,7 +95,6 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <button class="btn btn-ubicacion" onclick="mostrarResumenBandejasApp()">📊 Resumen Bandejas</button>
 <button class="btn btn-ubicacion" onclick="mostrarStockConsolidado()">📦 Stock Consolidado</button>
 <button class="btn btn-ubicacion" onclick="mostrarPanel('panel-historial')">📋 Ver Movimientos</button>
-<button class="btn btn-ubicacion" onclick="abrirMovPorProductoApp()" style="background:#00897b;">📦 MOV. POR PRODUCTO</button>
 </div>
 
 <div class="menu-grupo" onclick="toggleMenuApp('menu-datos')">📂 DATOS ▾</div>
@@ -110,28 +109,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 
 <button class="btn btn-excel" onclick="sincronizarClaveEnTableDatos()" style="background:#7b1fa2;">🔗 SINCRONIZAR CLAVES</button>
 
-<button class="btn btn-excel" onclick="console.log('TEST ONCLICK'); alert('Test: onclick funciona');" style="background:#ff9800;">🧪 TEST onclick</button>
-
-<button class="btn btn-excel" onclick="console.log('DESCARGAR PRESIONADO'); alert('Iniciando descarga...'); try { descargarExcel(); } catch(e) { alert('ERROR: ' + e.message); console.error(e); }">📤 Descargar Tabla Actualizada</button>
-
-<button class="btn btn-excel" onclick="abrirPanelDebug()" style="background:#9c27b0;">🐛 DEBUGGING</button>
-
-<!-- PANEL DE DEBUG -->
-<div id="panel-debug" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);z-index:99999;padding:20px;overflow-y:auto;">
-    <button onclick="cerrarPanelDebug()" style="position:absolute;top:10px;right:10px;background:#c62828;color:#fff;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;font-weight:bold;">✕ CERRAR</button>
-    <div style="color:#fff;font-family:monospace;font-size:12px;line-height:1.6;">
-        <h3 style="color:#4fc3f7;margin-top:30px;">📊 DEBUG LOG</h3>
-        <div id="debug-log" style="background:#1a1a1a;padding:15px;border-radius:5px;border:1px solid #444;max-height:70vh;overflow-y:auto;white-space:pre-wrap;word-break:break-all;"></div>
-        
-        <h3 style="color:#4fc3f7;margin-top:20px;">📈 ESTADÍSTICAS</h3>
-        <div id="debug-stats" style="background:#1a1a1a;padding:15px;border-radius:5px;border:1px solid #444;">
-            <div style="color:#90caf9;">tablaDatos: <span id="stat-tabla">0</span> filas</div>
-            <div style="color:#90caf9;">historialMovimientos: <span id="stat-historial">0</span> registros</div>
-            <div style="color:#90caf9;">INGRESOS: <span id="stat-ingresos">0</span></div>
-            <div style="color:#90caf9;">SALIDAS: <span id="stat-salidas">0</span></div>
-        </div>
-    </div>
-</div>
+<button class="btn btn-excel" onclick="descargarExcel()">📤 Descargar Tabla Actualizada</button>
 </div>
 
 <div style="text-align:center;margin:10px 0;">
@@ -364,37 +342,6 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
     </select>
 </div>
 <div id="hist-lista" style="font-size:10px;max-height:400px;overflow:auto;"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
-
-<!-- PANEL MOV. POR PRODUCTO -->
-<div id="panel-mov-producto" class="panel">
-    <h3>📦 MOVIMIENTOS POR PRODUCTO</h3>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-        <div>
-            <label style="color:#4db8a8;font-size:10px;display:block;margin-bottom:2px;">🏭 Cámara:</label>
-            <select id="mov-prod-camara-app" style="background:rgba(3,12,32,0.9);border:1px solid rgba(77,184,168,0.3);color:#fff;padding:6px;border-radius:4px;font-size:11px;">
-                <option value="all">TODAS</option>
-                <option value="1">CÁMARA 1000</option>
-                <option value="2">CÁMARA 2000</option>
-            </select>
-        </div>
-        <div>
-            <label style="color:#4db8a8;font-size:10px;display:block;margin-bottom:2px;">🔢 Código:</label>
-            <input type="text" id="mov-prod-codigo-app" placeholder="Ej: 00221" onkeyup="autocompletarNombreProdApp()" style="background:rgba(3,12,32,0.9);border:1px solid rgba(77,184,168,0.3);color:#fff;padding:6px;border-radius:4px;font-size:11px;width:80px;">
-        </div>
-        <div>
-            <label style="color:#4db8a8;font-size:10px;display:block;margin-bottom:2px;">📝 Nombre:</label>
-            <div id="mov-prod-nombre-app" style="background:rgba(3,12,32,0.9);border:1px solid rgba(77,184,168,0.3);color:#90caf9;padding:6px;border-radius:4px;font-size:10px;min-width:150px;">—</div>
-        </div>
-        <div>
-            <label style="color:#4db8a8;font-size:10px;display:block;margin-bottom:2px;">📅 Desde:</label>
-            <input type="date" id="mov-prod-desde-app" style="background:rgba(3,12,32,0.9);border:1px solid rgba(77,184,168,0.3);color:#fff;padding:6px;border-radius:4px;font-size:11px;">
-        </div>
-        <button onclick="aplicarFiltroMovProdApp()" style="background:#00897b;border:none;color:#fff;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;align-self:flex-end;">🔍 Filtrar</button>
-        <button onclick="exportarMovProdApp()" style="background:#1565c0;border:none;color:#fff;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;align-self:flex-end;">💾 Exportar</button>
-    </div>
-    <div id="mov-prod-tabla-app" style="font-size:10px;max-height:400px;overflow:auto;"></div>
-    <button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button>
-</div>
 
 <div id="panel-picking" class="panel"><h3>📏 PICKING</h3><div class="mensaje" id="pick-ubica"></div><div id="pick-producto-info" style="font-size:12px;color:#fff;text-align:center;margin-bottom:8px;"></div><div class="info-line"><span class="info-label">UNID INIC:</span><span class="info-value" id="pick-und-ini">0</span></div><div class="info-line"><span class="info-label">KG INIC:</span><span class="info-value" id="pick-kg-ini">0</span></div><div class="info-line"><span class="info-label">📦 BANDEJAS INIC:</span><input type="number" id="pick-band-ini" min="0" value="0" style="width:60px;padding:4px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:4px;text-align:center;"></div><hr style="border-color:rgba(255,255,255,0.1);margin:8px 0;"><label style="color:#ff9800;font-size:12px;">📤 UNID A RETIRAR</label><input type="number" id="pick-und-desp" placeholder="0" min="0" value="" oninput="calcularPicking()">
 <label style="color:#ff9800;font-size:12px;">📤 KG A RETIRAR</label>
@@ -1636,11 +1583,11 @@ if (encontrado && encontrado.codigo && catalogoClaves[encontrado.codigo]) {
             destino: destino,
             nombreDestino: nombreDestino,
             undAnt: undAntes || 0,
-            undDesp: undAntes || 0,
+            undDesp: 0,
             kgAnt: kgAntes || 0,
-            kgDesp: kgAntes || 0,
+            kgDesp: 0,
             bandAnt: bandAntes || 0,
-            bandDesp: bandAntes || 0,
+            bandDesp: 0,
             bandFin: 0
         });
         localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
@@ -2545,11 +2492,11 @@ function accionEtiquetaSalida(clave, tipo) {
             lote: pallet.lote || '',
             destino: destino,
             undAnt: pallet.und,
-            undDesp: pallet.und,
+            undDesp: 0,
             kgAnt: pallet.kg,
-            kgDesp: pallet.kg,
+            kgDesp: 0,
             bandAnt: pallet.bandejas || 0,
-            bandDesp: pallet.bandejas || 0
+            bandDesp: 0
         });
         localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
         
@@ -2929,11 +2876,11 @@ function accionPasadizoConDestino(ubPasadizo, idx, tipo) {
             destino: destino,
             nombreDestino: nombreDestino,
             undAnt: undAntes || 0,
-            undDesp: undAntes || 0,
+            undDesp: 0,
             kgAnt: kgAntes || 0,
-            kgDesp: kgAntes || 0,
+            kgDesp: 0,
             bandAnt: bandAntes || 0,
-            bandDesp: bandAntes || 0,
+            bandDesp: 0,
             bandFin: 0
         });
         localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
@@ -5773,9 +5720,9 @@ function confirmarSalidaManual(ubicacion) {
         destino: destino,
         nombreDestino: nombreDestino,
         undAnt: p.und,
-        undDesp: p.und,
+        undDesp: 0,
         kgAnt: p.kg,
-        kgDesp: p.kg
+        kgDesp: 0
     });
     localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     
@@ -5918,9 +5865,9 @@ function registrarNuevoCompleto() {
         lote: p.lote || '',
         destino: destino,
         undAnt: p.und,
-        undDesp: p.und,
+        undDesp: 0,
         kgAnt: p.kg,
-        kgDesp: p.kg
+        kgDesp: 0
     });
     localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     guardarEnLocalStorage();
@@ -6008,9 +5955,9 @@ function confirmarPickingSuelto() {
         destino: destino,
         nombreDestino: nombreDestino,
         undAnt: und,
-        undDesp: und,
+        undDesp: 0,
         kgAnt: kg,
-        kgDesp: kg
+        kgDesp: 0
     });
     localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     guardarEnLocalStorage();
@@ -6048,9 +5995,9 @@ function confirmarPickingSuelto() {
             destino: destino,
             nombreDestino: nombreDestino,
             undAnt: p.und,
-            undDesp: p.und,
+            undDesp: 0,
             kgAnt: p.kg,
-            kgDesp: p.kg
+            kgDesp: 0
         });
         localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
         palletsSalidos.push({
@@ -6196,9 +6143,9 @@ if (p.codigo && catalogoClaves[p.codigo]) {
             destino: destino,
             nombreDestino: nombreDestino,
             undAnt: p.und,
-            undDesp: p.und,
+            undDesp: 0,
             kgAnt: p.kg,
-            kgDesp: p.kg
+            kgDesp: 0
         });
         localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
         mostrarFeedback('✅ Pallet registrado como NUEVO');
@@ -6259,9 +6206,9 @@ if (p.codigo && catalogoClaves[p.codigo]) {
         destino: destino,
         nombreDestino: nombreDestino,
         undAnt: p.und,
-        undDesp: p.und,
+        undDesp: 0,
         kgAnt: p.kg,
-        kgDesp: p.kg
+        kgDesp: 0
     });
     localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     mostrarFeedback('✅ Salida registrada en ' + p.ubicacion);
@@ -6637,9 +6584,9 @@ function confirmarManual() {
         destino: destino,
         nombreDestino: nombreDestino,
         undAnt: und,
-        undDesp: und,
+        undDesp: 0,
         kgAnt: kg,
-        kgDesp: kg
+        kgDesp: 0
     });
     localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     palletsSalidos.push({
@@ -6947,7 +6894,7 @@ function ejecutarSalidaPistoleo() {
             var claveRemover = slot.clave; // Guardar la clave antes de limpiar
             totalKg += kAnt;
             slot.codigo=''; slot.producto=''; slot.lote=''; slot.und=0; slot.kg=0; slot.vence=''; slot.linea=''; slot.clave='';
-            historialMovimientos.push({ fecha:fecha, hora:hora, tipo:'SALIDA', ubicacion:p.ubicacion, codigo:p.codigo, producto:p.producto, lote:p.lote, undAnt:uAnt, undDesp:uAnt, kgAnt:kAnt, kgDesp:kAnt, destino:spDestino, nombreDestino:spDestinoNombre });
+            historialMovimientos.push({ fecha:fecha, hora:hora, tipo:'SALIDA', ubicacion:p.ubicacion, codigo:p.codigo, producto:p.producto, lote:p.lote, undAnt:uAnt, undDesp:0, kgAnt:kAnt, kgDesp:0 });
             historialSalidas.push({ fecha:fecha, hora:hora, tipo:'SALIDA', ubicacion:p.ubicacion, codigo:p.codigo, producto:p.producto, lote:p.lote, und:uAnt, kg:kAnt, destino:spDestino, nombreDestino:spDestinoNombre });
         }
         // Marcar como INACTIVO en catalogoClaves (NO borrar, es historial permanente)
@@ -7085,55 +7032,7 @@ function exportarHistorialSalidas() {
 // ============================================================
 // FUNCIONES DE EXCEL Y DATOS
 // ============================================================
-// ============================================================
-// PANEL DE DEBUG - VISIBLE EN PANTALLA
-// ============================================================
-var debugLogs = [];
-
-function abrirPanelDebug() {
-    document.getElementById('panel-debug').style.display = 'block';
-    actualizarDebugLog();
-}
-
-function cerrarPanelDebug() {
-    document.getElementById('panel-debug').style.display = 'none';
-}
-
-function agregarDebugLog(msg) {
-    var timestamp = new Date().toLocaleTimeString('es-PE');
-    var linea = '[' + timestamp + '] ' + msg;
-    debugLogs.push(linea);
-    if (debugLogs.length > 100) debugLogs.shift();
-    console.log(linea);
-}
-
-function actualizarDebugLog() {
-    document.getElementById('debug-log').innerText = debugLogs.join('\n');
-    document.getElementById('stat-tabla').innerText = tablaDatos ? tablaDatos.length : 0;
-    document.getElementById('stat-historial').innerText = historialMovimientos ? historialMovimientos.length : 0;
-    
-    var ingresos = 0, salidas = 0;
-    if (historialMovimientos) {
-        historialMovimientos.forEach(function(m) {
-            if (m.tipo.includes('INGRESO')) ingresos++;
-            if (m.tipo.includes('SALIDA')) salidas++;
-        });
-    }
-    document.getElementById('stat-ingresos').innerText = ingresos;
-    document.getElementById('stat-salidas').innerText = salidas;
-    
-    var log = document.getElementById('debug-log');
-    log.scrollTop = log.scrollHeight;
-}
-
-// ============================================================
 function descargarExcel() {
-    console.log('=== INICIANDO descargarExcel ===');
-    console.log('XLSX:', typeof XLSX);
-    console.log('tablaDatos:', typeof tablaDatos, tablaDatos ? tablaDatos.length : 'undefined');
-    console.log('historialMovimientos:', typeof historialMovimientos, historialMovimientos ? historialMovimientos.length : 'undefined');
-    
-    // ==================== HOJA 1: TABLA_3D ====================
     var data = [];
     for (var f = 0; f < 6; f++) data.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '']);
     data.push(['CAMARA', 'RACK', 'CARRIL', 'NIVEL', 'POSICION', 'PRODUCTO_CODIGO', 'PRODUCTO_NOMBRE', 'LOTE', 'CANTIDAD_UNIDADES', 'PESO_KG', 'FECHA_VENCIMIENTO', 'NOMENCLATURA', 'LINEA_PROD', 'BANDEJAS', 'CLAVE']);
@@ -7154,186 +7053,10 @@ function descargarExcel() {
         }
         data.push([camara, rack, carril, nivel, pos, r.codigo, r.producto, r.lote, r.und, r.kg, r.vence, nom, r.linea, parseInt(r.bandejas) || 0, r.clave || '']);
     });
-    
-    // ==================== HOJA 2: MOV_PRODUCTO ====================
-    var dataMov = [];
-    dataMov.push(['HISTORIAL DE MOVIMIENTOS']);
-    dataMov.push([]);
-    dataMov.push(['Fecha', 'Hora', 'Tipo', 'Destino/Procedencia', 'Código', 'Producto', 'Und. Ingreso', 'Kg Ingreso', 'Und. Salida', 'Kg Salida', 'Lote', 'Ubicación']);
-    
-    if (typeof historialMovimientos !== 'undefined' && historialMovimientos) {
-        historialMovimientos.forEach(function(mov) {
-            var undIng = (mov.tipo.includes('INGRESO') ? mov.undDesp : 0) || 0;
-            var kgIng = (mov.tipo.includes('INGRESO') ? mov.kgDesp : 0) || 0;
-            var undSal = (mov.tipo.includes('SALIDA') ? mov.undDesp : 0) || 0;
-            var kgSal = (mov.tipo.includes('SALIDA') ? mov.kgDesp : 0) || 0;
-            var destProc = mov.nombreDestino || mov.procedencia || '';
-            
-            dataMov.push([
-                mov.fecha || '',
-                mov.hora || '',
-                mov.tipo || '',
-                destProc,
-                mov.codigo || '',
-                mov.producto || '',
-                undIng > 0 ? undIng : '',
-                kgIng > 0 ? kgIng.toFixed(2) : '',
-                undSal > 0 ? undSal : '',
-                kgSal > 0 ? kgSal.toFixed(2) : '',
-                mov.lote || '',
-                mov.ubicacion || ''
-            ]);
-        });
-    }
-    
-    // ==================== GENERAR EXCEL CON 2 HOJAS ====================
-    agregarDebugLog('📥 GENERANDO EXCEL CON 2 HOJAS');
-    agregarDebugLog('Hoja 1 TABLA_3D: ' + data.length + ' filas');
-    agregarDebugLog('Hoja 2 MOV_PRODUCTO: ' + dataMov.length + ' filas');
-    
-    try {
-        if (typeof XLSX === 'undefined') {
-            throw new Error('XLSX no está disponible. Recarga la página.');
-        }
-        
-        agregarDebugLog('✅ XLSX disponible, creando hojas...');
-        
-        var ws1 = XLSX.utils.aoa_to_sheet(data);
-        agregarDebugLog('✅ Hoja 1 (TABLA_3D) creada');
-        
-        var ws2 = XLSX.utils.aoa_to_sheet(dataMov);
-        agregarDebugLog('✅ Hoja 2 (MOV_PRODUCTO) creada');
-        
-        var wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws1, 'TABLA_3D');
-        XLSX.utils.book_append_sheet(wb, ws2, 'MOV_PRODUCTO');
-        agregarDebugLog('✅ Workbook con 2 hojas creado');
-        
-        var nombreArchivo = 'Inventario_Movimientos_' + new Date().toISOString().slice(0,10) + '.xlsx';
-        
-        agregarDebugLog('⏳ Intentando descargar: ' + nombreArchivo);
-        
-        // Método 1: writeFile (PC)
-        try {
-            XLSX.writeFile(wb, nombreArchivo);
-            agregarDebugLog('✅✅✅ EXCEL DESCARGADO VÍA writeFile ✅✅✅');
-        } catch (errWrite) {
-            // Método 2: Blob (Móvil)
-            agregarDebugLog('⚠️ writeFile falló, intentando Blob...');
-            var wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-            var blob = new Blob([wbout], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-            var url = URL.createObjectURL(blob);
-            var link = document.createElement('a');
-            link.href = url;
-            link.download = nombreArchivo;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            agregarDebugLog('✅✅✅ EXCEL DESCARGADO VÍA BLOB ✅✅✅');
-        }
-        actualizarDebugLog();
-        
-        mostrarFeedback('✅ Excel descargado: ' + nombreArchivo, 2500);
-        alert('✅ Descarga completada:\n\n' + nombreArchivo + '\n\n- Hoja 1: TABLA_3D\n- Hoja 2: MOV_PRODUCTO');
-        
-    } catch (err) {
-        var errMsg = err.message || 'Error desconocido';
-        agregarDebugLog('❌ ERROR EN DESCARGA: ' + errMsg);
-        agregarDebugLog('Stack: ' + (err.stack || 'N/A'));
-        actualizarDebugLog();
-        
-        console.error('❌ Error en descargarExcel:', err);
-        mostrarFeedback('❌ Error: ' + errMsg, 3000);
-        alert('❌ Error al descargar:\n\n' + errMsg + '\n\nAbre 🐛 DEBUG para ver detalles');
-    }
-}
-
-function generarCSV(data, nombre) {
-    var csv = '';
-    data.forEach(function(row, idx) {
-        var linea = row.map(function(cell) {
-            var val = (cell || '').toString().trim();
-            if (val.includes(',') || val.includes('"') || val.includes('\n')) {
-                return '"' + val.replace(/"/g, '""') + '"';
-            }
-            return val;
-        }).join(',');
-        csv += linea + '\n';
-    });
-    return csv;
-}
-
-function descargarCSV(csv, nombreArchivo) {
-    console.log('descargarCSV llamada para:', nombreArchivo);
-    
-    // MÉTODO 1: Intentar descargar por click (PC)
-    try {
-        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        var link = document.createElement('a');
-        var url = URL.createObjectURL(blob);
-        
-        link.setAttribute('href', url);
-        link.setAttribute('download', nombreArchivo);
-        link.style.display = 'none';
-        
-        document.body.appendChild(link);
-        
-        // Usar setTimeout para asegurar que el elemento está en el DOM
-        setTimeout(function() {
-            link.click();
-            agregarDebugLog('✅ Descarga iniciada: ' + nombreArchivo);
-        }, 100);
-        
-        setTimeout(function() {
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }, 200);
-        
-    } catch (err) {
-        console.error('Error en método 1:', err);
-        agregarDebugLog('⚠️ Método 1 falló, intentando Método 2');
-        
-        // MÉTODO 2: Mostrar en panel para copiar (móviles)
-        mostrarPanelCSV(csv, nombreArchivo);
-    }
-}
-
-function mostrarPanelCSV(csv, nombreArchivo) {
-    console.log('Mostrando panel CSV para:', nombreArchivo);
-    var panelHTML = '<div id="panel-csv-descarga" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);z-index:99999;padding:20px;overflow-y:auto;display:flex;flex-direction:column;">';
-    panelHTML += '<button onclick="cerrarPanelCSV()" style="position:absolute;top:10px;right:10px;background:#c62828;color:#fff;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;font-weight:bold;font-size:16px;">✕ CERRAR</button>';
-    panelHTML += '<h3 style="color:#4fc3f7;margin-top:40px;">📥 ' + nombreArchivo + '</h3>';
-    panelHTML += '<p style="color:#90caf9;font-size:12px;margin:10px 0;">Contenido del archivo CSV (selecciona todo y copia):</p>';
-    panelHTML += '<textarea id="csv-content-' + nombreArchivo + '" style="flex:1;background:#1a1a1a;color:#90caf9;border:1px solid #444;border-radius:5px;padding:10px;font-family:monospace;font-size:11px;resize:none;" readonly>' + csv + '</textarea>';
-    panelHTML += '<button onclick="copiarCSV(\'' + nombreArchivo + '\')" style="background:#00897b;color:#fff;border:none;padding:12px 20px;border-radius:5px;cursor:pointer;font-weight:bold;margin-top:10px;font-size:14px;">📋 COPIAR TODO</button>';
-    panelHTML += '</div>';
-    
-    var existente = document.getElementById('panel-csv-descarga');
-    if (existente) existente.remove();
-    
-    document.body.insertAdjacentHTML('beforeend', panelHTML);
-    document.getElementById('csv-content-' + nombreArchivo).focus();
-}
-
-function copiarCSV(nombreArchivo) {
-    var elemento = document.getElementById('csv-content-' + nombreArchivo);
-    if (elemento) {
-        elemento.select();
-        try {
-            document.execCommand('copy');
-            mostrarFeedback('✅ Contenido copiado al portapapeles', 2000);
-            agregarDebugLog('✅ CSV copiado: ' + nombreArchivo);
-        } catch (err) {
-            mostrarFeedback('❌ No se pudo copiar', 2000);
-            console.error('Error al copiar:', err);
-        }
-    }
-}
-
-function cerrarPanelCSV() {
-    var panel = document.getElementById('panel-csv-descarga');
-    if (panel) panel.remove();
+    var ws = XLSX.utils.aoa_to_sheet(data);
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'TABLA_3D');
+    XLSX.writeFile(wb, 'TABLA_3D_Actualizada.xlsx');
 }
 
 function cargarExcel(event) {
@@ -8334,266 +8057,6 @@ function recordatorioMasTarde() {
 function iniciarRecordatorioBackup() {
     if (timerBackup) clearInterval(timerBackup);
     timerBackup = setInterval(mostrarRecordatorioBackup, intervaloBackup);
-}
-
-// ==========================================
-// FUNCIONALIDAD: MOV. POR PRODUCTO (APPlectora)
-// ==========================================
-
-window._movProductoFiltradoApp = [];
-
-function abrirMovPorProductoApp() {
-    mostrarPanel('panel-mov-producto');
-    var hoy = new Date();
-    var fechaHoy = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0') + '-' + String(hoy.getDate()).padStart(2, '0');
-    var elDesde = document.getElementById('mov-prod-desde-app');
-    if (elDesde && !elDesde.value) elDesde.value = '2020-01-01';
-}
-
-function autocompletarNombreProdApp() {
-    var codigoEl = document.getElementById('mov-prod-codigo-app');
-    var nombreEl = document.getElementById('mov-prod-nombre-app');
-    if (!codigoEl || !nombreEl) return;
-    
-    var cod = codigoEl.value.trim().toUpperCase();
-    if (!cod) {
-        nombreEl.textContent = '—';
-        return;
-    }
-    
-    // Buscar en catalogoClaves
-    var encontrado = false;
-    if (typeof catalogoClaves !== 'undefined' && catalogoClaves) {
-        for (var clave in catalogoClaves) {
-            if (String(catalogoClaves[clave].codigo).toUpperCase() === cod) {
-                nombreEl.textContent = catalogoClaves[clave].producto || '—';
-                encontrado = true;
-                break;
-            }
-        }
-    }
-    
-    if (!encontrado) {
-        nombreEl.textContent = '(no encontrado)';
-    }
-}
-
-function aplicarFiltroMovProdApp() {
-    var codigoEl = document.getElementById('mov-prod-codigo-app');
-    var camaraEl = document.getElementById('mov-prod-camara-app');
-    var desdeEl = document.getElementById('mov-prod-desde-app');
-    
-    if (!codigoEl || !codigoEl.value.trim()) {
-        mostrarFeedback('⚠️ Ingresa un código de producto', 2000);
-        return;
-    }
-    
-    var codigo = codigoEl.value.trim().toUpperCase();
-    var camara = camaraEl ? camaraEl.value : 'all';
-    var fechaDesde = desdeEl ? desdeEl.value : '';
-    
-    agregarDebugLog('🔍 FILTRO MOV. POR PRODUCTO');
-    agregarDebugLog('Código buscado: ' + codigo);
-    agregarDebugLog('Historial total: ' + (historialMovimientos ? historialMovimientos.length : 0));
-    
-    var filtrados = [];
-    var ingresos = 0, salidas = 0;
-    
-    if (typeof historialMovimientos !== 'undefined' && historialMovimientos) {
-        historialMovimientos.forEach(function(mov) {
-            if (mov.codigo && String(mov.codigo).toUpperCase() === codigo) {
-                agregarDebugLog('  ✓ Movimiento encontrado: ' + mov.tipo + ' | und=' + (mov.undDesp || 0) + ' | kg=' + (mov.kgDesp || 0));
-                
-                if (camara !== 'all') {
-                    if (!mov.ubicacion || mov.ubicacion[0] !== camara) {
-                        agregarDebugLog('    ✗ Filtrado por cámara');
-                        return;
-                    }
-                }
-                
-                if (fechaDesde) {
-                    var fechaMov = mov.fecha ? new Date(mov.fecha) : null;
-                    var fechaDesdeCons = new Date(fechaDesde);
-                    if (fechaMov && fechaMov < fechaDesdeCons) {
-                        agregarDebugLog('    ✗ Filtrado por fecha');
-                        return;
-                    }
-                }
-                
-                filtrados.push(mov);
-                if (mov.tipo.includes('INGRESO')) ingresos++;
-                if (mov.tipo.includes('SALIDA')) salidas++;
-            }
-        });
-    }
-    
-    agregarDebugLog('✅ RESULTADO: ' + filtrados.length + ' movimientos');
-    agregarDebugLog('   INGRESOS: ' + ingresos);
-    agregarDebugLog('   SALIDAS: ' + salidas);
-    actualizarDebugLog();
-    
-    window._movProductoFiltradoApp = filtrados;
-    mostrarTablaMovProdApp(filtrados, codigo);
-}
-
-function mostrarTablaMovProdApp(datos, codigo) {
-    var tablaEl = document.getElementById('mov-prod-tabla-app');
-    if (!tablaEl) return;
-    
-    if (datos.length === 0) {
-        tablaEl.innerHTML = '<div style="padding:10px;text-align:center;color:#888;">❌ No hay movimientos</div>';
-        return;
-    }
-    
-    var html = '<table style="width:100%;border-collapse:collapse;font-size:10px;">';
-    html += '<thead style="background:#444;color:#fff;position:sticky;top:0;">';
-    html += '<tr><th style="padding:4px;border:1px solid #666;text-align:left;">Fecha</th>';
-    html += '<th style="padding:4px;border:1px solid #666;">Tipo</th>';
-    html += '<th style="padding:4px;border:1px solid #666;text-align:left;">Dest./Proc.</th>';
-    html += '<th style="padding:4px;border:1px solid #666;text-align:left;">Ubicación</th>';
-    html += '<th style="padding:4px;border:1px solid #666;text-align:right;">Und. Ing</th>';
-    html += '<th style="padding:4px;border:1px solid #666;text-align:right;">Kg Ing</th>';
-    html += '<th style="padding:4px;border:1px solid #666;text-align:right;">Und. Sal</th>';
-    html += '<th style="padding:4px;border:1px solid #666;text-align:right;">Kg Sal</th>';
-    html += '<th style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.2);">Und. Saldo</th>';
-    html += '<th style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.2);">Kg Saldo</th></tr>';
-    html += '</thead><tbody>';
-    
-    // Calcular Saldo Inicial (lo que había ANTES de la fecha "Desde")
-    var desdeEl = document.getElementById('mov-prod-desde-app');
-    var fechaDesde = desdeEl ? desdeEl.value : '';
-    var saldoInicialUnd = 0, saldoInicialKg = 0;
-    
-    if (typeof tablaDatos !== 'undefined' && tablaDatos) {
-        tablaDatos.forEach(function(slot) {
-            if (slot.codigo && String(slot.codigo).toUpperCase() === String(codigo).toUpperCase()) {
-                saldoInicialUnd += slot.und || 0;
-                saldoInicialKg += slot.kg || 0;
-            }
-        });
-    }
-    
-    // Restar los movimientos POSTERIORES a la fecha para obtener saldo inicial
-    if (typeof historialMovimientos !== 'undefined' && historialMovimientos && fechaDesde) {
-        historialMovimientos.forEach(function(m) {
-            if (m.codigo && String(m.codigo).toUpperCase() === String(codigo).toUpperCase()) {
-                var fechaMov = m.fecha ? new Date(m.fecha) : null;
-                var fechaDesdeCons = new Date(fechaDesde);
-                if (fechaMov && fechaMov >= fechaDesdeCons) {
-                    var undIng = (m.tipo.includes('INGRESO') ? (m.undDesp || 0) : 0);
-                    var kgIng = (m.tipo.includes('INGRESO') ? (m.kgDesp || 0) : 0);
-                    var undSal = (m.tipo.includes('SALIDA') ? (m.undDesp || 0) : 0);
-                    var kgSal = (m.tipo.includes('SALIDA') ? (m.kgDesp || 0) : 0);
-                    saldoInicialUnd -= undIng - undSal;
-                    saldoInicialKg -= kgIng - kgSal;
-                }
-            }
-        });
-    }
-    
-    // Mostrar fila de SALDO INICIAL
-    html += '<tr style="background:#0d47a1;font-weight:bold;color:#64b5f6;">';
-    html += '<td style="padding:4px;border:1px solid #666;">SALDO INICIAL</td>';
-    html += '<td style="padding:4px;border:1px solid #666;text-align:center;">—</td>';
-    html += '<td style="padding:4px;border:1px solid #666;">—</td>';
-    html += '<td style="padding:4px;border:1px solid #666;">—</td>';
-    html += '<td style="padding:4px;border:1px solid #666;text-align:right;">—</td>';
-    html += '<td style="padding:4px;border:1px solid #666;text-align:right;">—</td>';
-    html += '<td style="padding:4px;border:1px solid #666;text-align:right;">—</td>';
-    html += '<td style="padding:4px;border:1px solid #666;text-align:right;">—</td>';
-    html += '<td style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.3);">' + saldoInicialUnd + '</td>';
-    html += '<td style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.3);">' + saldoInicialKg.toFixed(1) + '</td>';
-    html += '</tr>';
-    
-    // Calcular SALDO ACTUAL: sumar lo que hay en tablaDatos de este código
-    var saldoActualUnd = 0, saldoActualKg = 0;
-    if (typeof tablaDatos !== 'undefined' && tablaDatos) {
-        tablaDatos.forEach(function(slot) {
-            if (slot.codigo && String(slot.codigo).toUpperCase() === String(codigo).toUpperCase()) {
-                saldoActualUnd += slot.und || 0;
-                saldoActualKg += slot.kg || 0;
-            }
-        });
-    }
-    
-    // Mostrar los movimientos (SIN SALDO INICIAL POR AHORA, SOLO FUNCIÓN BÁSICA)
-    datos.forEach(function(mov, idx) {
-        var tipoColor = mov.tipo.includes('INGRESO') ? '#2e7d32' : '#c62828';
-        var undIng = mov.tipo.includes('INGRESO') ? (mov.undDesp || 0) : 0;
-        var kgIng = mov.tipo.includes('INGRESO') ? (mov.kgDesp || 0) : 0;
-        var undSal = mov.tipo.includes('SALIDA') ? (mov.undDesp || 0) : 0;
-        var kgSal = mov.tipo.includes('SALIDA') ? (mov.kgDesp || 0) : 0;
-        
-        var destProc = mov.nombreDestino || mov.procedencia || '—';
-        var ubicacion = mov.ubicacion || '—';
-        
-        html += '<tr style="background:' + (idx % 2 === 0 ? '#1a1a1a' : '#2a2a2a') + ';">';
-        html += '<td style="padding:4px;border:1px solid #666;">' + (mov.fecha || '—') + '</td>';
-        html += '<td style="padding:4px;border:1px solid #666;color:' + tipoColor + ';font-weight:bold;">' + mov.tipo.substring(0, 8) + '</td>';
-        html += '<td style="padding:4px;border:1px solid #666;font-size:9px;">' + destProc + '</td>';
-        html += '<td style="padding:4px;border:1px solid #666;font-size:9px;color:#90caf9;font-weight:bold;">' + ubicacion + '</td>';
-        html += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + (undIng > 0 ? undIng : '—') + '</td>';
-        html += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + (kgIng > 0 ? kgIng.toFixed(1) : '—') + '</td>';
-        html += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + (undSal > 0 ? undSal : '—') + '</td>';
-        html += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + (kgSal > 0 ? kgSal.toFixed(1) : '—') + '</td>';
-        html += '<td style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.1);">' + saldoActualUnd + '</td>';
-        html += '<td style="padding:4px;border:1px solid #666;text-align:right;background:rgba(0,137,123,0.1);">' + saldoActualKg.toFixed(1) + '</td>';
-        html += '</tr>';
-    });
-    
-    html += '</tbody></table>';
-    tablaEl.innerHTML = html;
-}
-
-function exportarMovProdApp() {
-    if (!window._movProductoFiltradoApp || window._movProductoFiltradoApp.length === 0) {
-        mostrarFeedback('⚠️ Filtra movimientos primero', 2000);
-        return;
-    }
-    
-    var codigoEl = document.getElementById('mov-prod-codigo-app');
-    var codigo = codigoEl ? codigoEl.value.trim() : 'PRODUCTO';
-    
-    var datos = [];
-    datos.push(['MOVIMIENTOS POR PRODUCTO - ' + codigo]);
-    datos.push([]);
-    datos.push(['Fecha', 'Hora', 'Tipo', 'Destino/Procedencia', 'Ubicación', 'Und. Ingreso', 'Kg Ingreso', 'Und. Salida', 'Kg Salida', 'Und. Saldo', 'Kg Saldo']);
-    
-    var saldoUnd = 0, saldoKg = 0;
-    window._movProductoFiltradoApp.forEach(function(mov) {
-        var undIng = (mov.tipo.includes('INGRESO') ? mov.undDesp : 0) || 0;
-        var kgIng = (mov.tipo.includes('INGRESO') ? mov.kgDesp : 0) || 0;
-        var undSal = (mov.tipo.includes('SALIDA') ? mov.undDesp : 0) || 0;
-        var kgSal = (mov.tipo.includes('SALIDA') ? mov.kgDesp : 0) || 0;
-        
-        saldoUnd += undIng - undSal;
-        saldoKg += kgIng - kgSal;
-        
-        var destProc = mov.nombreDestino || mov.procedencia || '';
-        var ubicacion = mov.ubicacion || '';
-        
-        datos.push([
-            mov.fecha || '',
-            mov.hora || '',
-            mov.tipo || '',
-            destProc,
-            ubicacion,
-            undIng > 0 ? undIng : '',
-            kgIng > 0 ? kgIng.toFixed(2) : '',
-            undSal > 0 ? undSal : '',
-            kgSal > 0 ? kgSal.toFixed(2) : '',
-            saldoUnd,
-            saldoKg.toFixed(2)
-        ]);
-    });
-    
-    var ws = XLSX.utils.aoa_to_sheet(datos);
-    var wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'MOV_PRODUCTO');
-    
-    var fileName = 'Movimientos_' + codigo + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
-    XLSX.writeFile(wb, fileName);
-    mostrarFeedback('📤 Exportado: ' + fileName, 2000);
 }
 
 window.addEventListener('load', function() {

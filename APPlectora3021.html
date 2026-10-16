@@ -118,7 +118,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ </div>
+<div>Ing. PERCY S. TEJADA VALDEZ goat</div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -321,7 +321,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <button class="btn btn-excel" onclick="exportarMovProducto()">📥 EXPORTAR</button>
 <div id="mp-body" style="font-size:10px;color:#c0c0c0;max-height:400px;overflow:auto;margin-top:8px;"></div>
 <button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
-<div id="panel-historial" class="panel"><h3>📋 MOVIMIENTOS DEL DÍA</h3><input type="date" id="hist-fecha" onchange="filtrarHistorial()" style="margin-bottom:8px;"><button class="btn btn-excel" onclick="exportarHistorial()" style="margin-bottom:8px;">📥 EXPORTAR MOVIMIENTOS</button>
+<div id="panel-historial" class="panel"><h3>📋 MOVIMIENTOS</h3><div style="font-size:11px;color:#c0c0c0;">Desde (hasta hoy)</div><input type="date" id="hist-fecha" onchange="filtrarHistorial()" style="margin-bottom:8px;"><button class="btn btn-excel" onclick="exportarHistorial()" style="margin-bottom:8px;">📥 EXPORTAR MOVIMIENTOS</button>
 <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:center;">
     <input type="text" id="hist-filtro-codigo" placeholder="Filtrar por código..." oninput="filtrarHistorial()" style="padding:6px;font-size:10px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:4px;width:120px;flex:1;min-width:100px;">
     <select id="hist-filtro-tipo" onchange="filtrarHistorial()" style="padding:6px;font-size:10px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:4px;flex:1;min-width:80px;">
@@ -899,6 +899,19 @@ function mostrarHistorial(lista) {
     document.getElementById('hist-lista').innerHTML = html;
 }
 
+// Filtra movimientos desde la fecha indicada (yyyy-mm-dd) hasta hoy
+function histDesdeFiltro(lista, fechaInput) {
+    if (!fechaInput) return lista;
+    var p = fechaInput.split('-');
+    var d1 = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+    return lista.filter(function(m) {
+        var pp = String(m.fecha || '').split('/');
+        if (pp.length !== 3) return false;
+        var f = new Date(parseInt(pp[2], 10), parseInt(pp[1], 10) - 1, parseInt(pp[0], 10));
+        return f >= d1;
+    });
+}
+
 function filtrarHistorial() {
     var fecha = document.getElementById('hist-fecha').value;
     var codigo = (document.getElementById('hist-filtro-codigo').value || '').trim();
@@ -906,11 +919,7 @@ function filtrarHistorial() {
     var destinoEl = document.getElementById('hist-filtro-destino');
     var destino = destinoEl ? destinoEl.value : '';
     var filtrados = historialMovimientos;
-    if (fecha) {
-        var partes = fecha.split('-');
-        var fechaStr = parseInt(partes[2]) + '/' + parseInt(partes[1]) + '/' + partes[0];
-        filtrados = filtrados.filter(function(m) { return m.fecha === fechaStr; });
-    }
+    filtrados = histDesdeFiltro(filtrados, fecha);
     if (codigo) {
         var codigoLimpio = codigo.replace(/^0+/, '').toLowerCase();
         filtrados = filtrados.filter(function(m) {
@@ -952,12 +961,7 @@ function filtrarHistorial() {
 
 function exportarHistorial() {
     var fecha = document.getElementById('hist-fecha').value;
-    var filtrados = historialMovimientos;
-    if (fecha) {
-        var partes = fecha.split('-');
-        var fechaStr = parseInt(partes[2]) + '/' + parseInt(partes[1]) + '/' + partes[0];
-        filtrados = historialMovimientos.filter(function(m) { return m.fecha === fechaStr; });
-    }
+    var filtrados = histDesdeFiltro(historialMovimientos, fecha);
     var data = [['FECHA','HORA','TIPO','UBICACIÓN','CÓDIGO','PRODUCTO','LOTE','UND ANT','UND DESP','KG ANT','KG DESP']];
     filtrados.forEach(function(m) {
         data.push([m.fecha, m.hora, m.tipo, m.ubicacion, m.codigo, m.producto, m.lote, m.undAnt, m.undDesp, m.kgAnt, m.kgDesp]);

@@ -118,7 +118,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ cr7</div>
+<div>Ing. PERCY S. TEJADA VALDEZ </div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -882,11 +882,13 @@ function mostrarHistorial(lista) {
         if (m.saldoReal && String(m.tipo).indexOf('PICKING') >= 0) {
             undDesp = Math.max(0, undAnt - undFin);
             kgDesp = Math.max(0, kgAnt - kgFin);
-            bandDesp = Math.max(0, bandAnt - bandFin);
-            // Respaldo: si el cálculo da 0 pero el registro guardó bandejas que salieron, usar ese valor
-            if (bandDesp === 0 && (m.bandDesp || 0) > 0 && m.bandDesp !== m.bandFin) bandDesp = m.bandDesp;
         }
         var bandFin = m.bandFin !== undefined ? m.bandFin : Math.max(0, bandAnt - bandDesp);
+        // PICKING con saldo real: BAND DESP = bandejas que había antes - las que quedaron
+        if (m.saldoReal && String(m.tipo).indexOf('PICKING') >= 0) {
+            bandDesp = Math.max(0, bandAnt - bandFin);
+            if (bandDesp === 0 && (m.bandDesp || 0) > 0 && m.bandDesp !== m.bandFin) bandDesp = m.bandDesp;
+        }
         
         var colorTipo = '#90caf9';
         if (m.tipo === 'INGRESO') colorTipo = '#69f0ae';

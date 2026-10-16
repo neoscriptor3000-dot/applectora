@@ -118,7 +118,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ GOAT </div>
+<div>Ing. PERCY S. TEJADA VALDEZ </div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -315,10 +315,8 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <div id="panel-mov-producto" class="panel"><h3>📦 MOVIMIENTO POR PRODUCTO</h3>
 <div style="font-size:11px;color:#c0c0c0;">Código</div>
 <input type="text" id="mp-codigo" placeholder="Ej: 2230" style="margin-bottom:6px;width:100%;">
-<div style="font-size:11px;color:#c0c0c0;">Desde</div>
-<input type="date" id="mp-desde" style="margin-bottom:6px;width:100%;">
-<div style="font-size:11px;color:#c0c0c0;">Hasta</div>
-<input type="date" id="mp-hasta" style="margin-bottom:8px;width:100%;">
+<div style="font-size:11px;color:#c0c0c0;">Desde (hasta hoy)</div>
+<input type="date" id="mp-desde" style="margin-bottom:8px;width:100%;">
 <button class="btn btn-ubicacion" onclick="filtrarMovProducto()">🔍 FILTRAR</button>
 <button class="btn btn-excel" onclick="exportarMovProducto()">📥 EXPORTAR</button>
 <div id="mp-body" style="font-size:10px;color:#c0c0c0;max-height:400px;overflow:auto;margin-top:8px;"></div>
@@ -1113,23 +1111,37 @@ function mpFechaInput(v) {
     var p = v.split('-');
     return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
 }
+// Cantidades de cada movimiento, interpretando las distintas formas en que se guardaron las salidas
+function mpCantidades(m) {
+    var tipo = String(m.tipo || '');
+    var undA = Number(m.undAnt) || 0, kgA = Number(m.kgAnt) || 0;
+    var undD = Number(m.undDesp) || 0, kgD = Number(m.kgDesp) || 0;
+    if (tipo.indexOf('INGRESO') >= 0) return { und: undD, kg: kgD, esIng: true };
+    if (tipo.indexOf('PICKING') >= 0) {
+        if (m.undFin !== undefined) return { und: undD, kg: kgD, esIng: false };
+        return { und: Math.max(0, undA - undD), kg: Math.max(0, kgA - kgD), esIng: false };
+    }
+    return { und: undD > 0 ? undD : undA, kg: kgD > 0 ? kgD : kgA, esIng: false };
+}
 function mpFila(m) {
     var tipo = String(m.tipo || '');
-    var esIng = tipo.indexOf('INGRESO') >= 0;
-    var esSal = tipo.indexOf('SALIDA') >= 0 || tipo.indexOf('PICKING') >= 0;
-    var kg = Number(m.kgDesp) || 0;
-    var destProc = esIng ? (m.procedencia || '—') : (m.nombreDestino || m.destino || '—');
+    var c = mpCantidades(m);
+    var destProc = c.esIng ? (m.procedencia || '—') : (m.nombreDestino || m.destino || '—');
     return { fecha: m.fecha || '—', tipo: tipo, destProc: destProc, ubic: m.ubicacion || '—',
-             kgIng: esIng ? kg : 0, kgSal: esSal ? kg : 0 };
+             undIng: c.esIng ? c.und : 0, kgIng: c.esIng ? c.kg : 0,
+             undSal: c.esIng ? 0 : c.und, kgSal: c.esIng ? 0 : c.kg };
 }
 function mostrarMovProducto() {
     mostrarPanel('panel-mov-producto');
+    document.getElementById('mp-codigo').value = '';
+    document.getElementById('mp-desde').value = '';
+    mpFilas = [];
+    mpCodigo = '';
     document.getElementById('mp-body').innerHTML = '<div style="padding:10px;color:#607d8b;">Ingresa un código y presiona FILTRAR</div>';
 }
 function filtrarMovProducto() {
     var cod = (document.getElementById('mp-codigo').value || '').trim().toUpperCase();
     var d1 = mpFechaInput(document.getElementById('mp-desde').value);
-    var d2 = mpFechaInput(document.getElementById('mp-hasta').value);
     var body = document.getElementById('mp-body');
     if (!cod) { body.innerHTML = '<div style="padding:10px;color:#ff8a65;">Ingresa un código</div>'; return; }
     mpCodigo = cod;
@@ -1138,45 +1150,51 @@ function filtrarMovProducto() {
         var f = mpParseFecha(m.fecha);
         if (!f) return false;
         if (d1 && f < d1) return false;
-        if (d2 && f > d2) return false;
         return true;
     });
     if (mpFilas.length === 0) { body.innerHTML = '<div style="padding:10px;color:#607d8b;">Sin movimientos para ' + cod + '</div>'; return; }
-    var totIng = 0, totSal = 0;
+    var tUndIng = 0, tKgIng = 0, tUndSal = 0, tKgSal = 0;
+    var th = 'padding:4px;border:1px solid #666;';
     var h = '<table style="width:100%;border-collapse:collapse;font-size:10px;">';
     h += '<thead style="background:#444;color:#fff;position:sticky;top:0;"><tr>';
-    h += '<th style="padding:4px;border:1px solid #666;text-align:left;">Fecha</th>';
-    h += '<th style="padding:4px;border:1px solid #666;">Tipo</th>';
-    h += '<th style="padding:4px;border:1px solid #666;text-align:left;">Dest./Proc.</th>';
-    h += '<th style="padding:4px;border:1px solid #666;text-align:left;">Ubicación</th>';
-    h += '<th style="padding:4px;border:1px solid #666;text-align:right;">Kg Ing</th>';
-    h += '<th style="padding:4px;border:1px solid #666;text-align:right;">Kg Sal</th>';
+    h += '<th style="' + th + 'text-align:left;">Fecha</th>';
+    h += '<th style="' + th + '">Tipo</th>';
+    h += '<th style="' + th + 'text-align:left;">Dest./Proc.</th>';
+    h += '<th style="' + th + 'text-align:left;">Ubicación</th>';
+    h += '<th style="' + th + 'text-align:right;">Und. Ing</th>';
+    h += '<th style="' + th + 'text-align:right;">Kg Ing</th>';
+    h += '<th style="' + th + 'text-align:right;">Und. Sal</th>';
+    h += '<th style="' + th + 'text-align:right;">Kg Sal</th>';
     h += '</tr></thead><tbody>';
     mpFilas.forEach(function(m, i) {
         var f = mpFila(m);
-        totIng += f.kgIng; totSal += f.kgSal;
+        tUndIng += f.undIng; tKgIng += f.kgIng; tUndSal += f.undSal; tKgSal += f.kgSal;
         var color = f.tipo.indexOf('INGRESO') >= 0 ? '#2e7d32' : '#c62828';
         h += '<tr style="background:' + (i % 2 === 0 ? '#1a1a1a' : '#2a2a2a') + ';">';
-        h += '<td style="padding:4px;border:1px solid #666;">' + f.fecha + '</td>';
-        h += '<td style="padding:4px;border:1px solid #666;color:' + color + ';font-weight:bold;">' + f.tipo.substring(0, 12) + '</td>';
-        h += '<td style="padding:4px;border:1px solid #666;font-size:9px;">' + f.destProc + '</td>';
-        h += '<td style="padding:4px;border:1px solid #666;font-size:9px;color:#90caf9;font-weight:bold;">' + f.ubic + '</td>';
-        h += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + (f.kgIng > 0 ? f.kgIng.toFixed(2) : '—') + '</td>';
-        h += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + (f.kgSal > 0 ? f.kgSal.toFixed(2) : '—') + '</td>';
+        h += '<td style="' + th + '">' + f.fecha + '</td>';
+        h += '<td style="' + th + 'color:' + color + ';font-weight:bold;">' + f.tipo.substring(0, 12) + '</td>';
+        h += '<td style="' + th + 'font-size:9px;">' + f.destProc + '</td>';
+        h += '<td style="' + th + 'font-size:9px;color:#90caf9;font-weight:bold;">' + f.ubic + '</td>';
+        h += '<td style="' + th + 'text-align:right;">' + (f.undIng > 0 ? f.undIng : '—') + '</td>';
+        h += '<td style="' + th + 'text-align:right;">' + (f.kgIng > 0 ? f.kgIng.toFixed(2) : '—') + '</td>';
+        h += '<td style="' + th + 'text-align:right;">' + (f.undSal > 0 ? f.undSal : '—') + '</td>';
+        h += '<td style="' + th + 'text-align:right;">' + (f.kgSal > 0 ? f.kgSal.toFixed(2) : '—') + '</td>';
         h += '</tr>';
     });
-    h += '<tr style="background:#0d47a1;font-weight:bold;color:#fff;"><td colspan="4" style="padding:4px;border:1px solid #666;">TOTAL ' + cod + ' (' + mpFilas.length + ' mov.)</td>';
-    h += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + totIng.toFixed(2) + '</td>';
-    h += '<td style="padding:4px;border:1px solid #666;text-align:right;">' + totSal.toFixed(2) + '</td></tr>';
+    h += '<tr style="background:#0d47a1;font-weight:bold;color:#fff;"><td colspan="4" style="' + th + '">TOTAL ' + cod + ' (' + mpFilas.length + ' mov.)</td>';
+    h += '<td style="' + th + 'text-align:right;">' + tUndIng + '</td>';
+    h += '<td style="' + th + 'text-align:right;">' + tKgIng.toFixed(2) + '</td>';
+    h += '<td style="' + th + 'text-align:right;">' + tUndSal + '</td>';
+    h += '<td style="' + th + 'text-align:right;">' + tKgSal.toFixed(2) + '</td></tr>';
     h += '</tbody></table>';
     body.innerHTML = h;
 }
 function exportarMovProducto() {
     if (!mpFilas || mpFilas.length === 0) { alert('Primero filtra un código con movimientos'); return; }
-    var data = [['Fecha', 'Tipo', 'Dest./Proc.', 'Ubicación', 'Kg Ing', 'Kg Sal']];
+    var data = [['Fecha', 'Tipo', 'Dest./Proc.', 'Ubicación', 'Und. Ing', 'Kg Ing', 'Und. Sal', 'Kg Sal']];
     mpFilas.forEach(function(m) {
         var f = mpFila(m);
-        data.push([f.fecha, f.tipo, f.destProc, f.ubic, f.kgIng, f.kgSal]);
+        data.push([f.fecha, f.tipo, f.destProc, f.ubic, f.undIng, f.kgIng, f.undSal, f.kgSal]);
     });
     var ws = XLSX.utils.aoa_to_sheet(data);
     var wb = XLSX.utils.book_new();

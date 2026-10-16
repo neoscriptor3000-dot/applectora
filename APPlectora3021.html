@@ -118,7 +118,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ </div>
+<div>Ing. PERCY S. TEJADA VALDEZ goat </div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -996,11 +996,18 @@ function filtrarHistorial() {
 }
 
 function exportarHistorial() {
-    var fecha = document.getElementById('hist-fecha').value;
-    var filtrados = histDesdeFiltro(historialMovimientos, fecha);
-    var data = [['FECHA','HORA','TIPO','UBICACIÓN','CÓDIGO','PRODUCTO','LOTE','UND ANT','UND DESP','KG ANT','KG DESP']];
-    filtrados.forEach(function(m) {
-        data.push([m.fecha, m.hora, m.tipo, m.ubicacion, m.codigo, m.producto, m.lote, m.undAnt, m.undDesp, m.kgAnt, m.kgDesp]);
+    // Exporta exactamente la tabla que se ve en pantalla (mismas columnas, mismos valores y filtros)
+    var tabla = document.querySelector('#hist-lista table');
+    if (!tabla) { alert('⚠️ No hay movimientos para exportar.'); return; }
+    var data = [];
+    tabla.querySelectorAll('tr').forEach(function(tr) {
+        var celdas = [];
+        tr.querySelectorAll('th, td').forEach(function(c) {
+            var v = (c.textContent || '').trim();
+            // Números como número para que Excel los pueda sumar
+            celdas.push(/^-?\d+(\.\d+)?$/.test(v) ? Number(v) : v);
+        });
+        if (celdas.length) data.push(celdas);
     });
     var ws = XLSX.utils.aoa_to_sheet(data);
     var wb = XLSX.utils.book_new();

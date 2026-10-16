@@ -118,7 +118,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ GOAT</div>
+<div>Ing. PERCY S. TEJADA VALDEZ </div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -3391,7 +3391,13 @@ function ejecutarTraslado() {
     document.getElementById('traslado-msg').innerHTML = '<span style="color:#69f0ae;">✅ TRASLADO: ' + ubicacionOrigen + ' → ' + ubDestino + '</span>';
     mostrarFeedback('✅ Traslado completado');
 
+    // Indicador visual: fondo azul celeste mientras se muestra el resultado del traslado
+    var panelT = document.getElementById('panel-trasladar');
+    var fondoPrevioT = panelT.style.background;
+    panelT.style.background = 'linear-gradient(135deg,#0d47a1,#4fc3f7)';
+
     setTimeout(function() {
+        panelT.style.background = fondoPrevioT;
         document.getElementById('traslado-seccion-destino').style.display = 'none';
         document.getElementById('traslado-destino').value = '';
         document.getElementById('traslado-origen').focus();

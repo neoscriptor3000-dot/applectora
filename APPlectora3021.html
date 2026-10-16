@@ -883,6 +883,8 @@ function mostrarHistorial(lista) {
             undDesp = Math.max(0, undAnt - undFin);
             kgDesp = Math.max(0, kgAnt - kgFin);
             bandDesp = Math.max(0, bandAnt - bandFin);
+            // Respaldo: si el cálculo da 0 pero el registro guardó bandejas que salieron, usar ese valor
+            if (bandDesp === 0 && (m.bandDesp || 0) > 0 && m.bandDesp !== m.bandFin) bandDesp = m.bandDesp;
         }
         var bandFin = m.bandFin !== undefined ? m.bandFin : Math.max(0, bandAnt - bandDesp);
         

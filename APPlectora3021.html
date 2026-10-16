@@ -118,7 +118,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ </div>
+<div>Ing. PERCY S. TEJADA VALDEZ GOAT</div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -363,7 +363,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 <div class="info-line"><span class="info-label">KG FIN:</span><span class="info-value" id="pick-kg-fin" style="color:#69f0ae;">0</span></div>
 <div class="info-line"><span class="info-label">📦 BANDEJAS FIN:</span><span class="info-value" id="pick-band-fin" style="color:#69f0ae;">0</span></div>
 <input type="hidden" id="pick-ubicacion">
-<div class="acciones"><button class="btn-verde" onclick="guardarPicking()">💾 GUARDAR</button><button class="btn-volver" onclick="mostrarPanel('panel-escanear')">⬅ CANCELAR</button></div><div id="resultado-picking" class="mensaje"></div><button class="btn-rojo" onclick="confirmarDeshacer()" style="margin-top:5px;width:100%;padding:12px;border:none;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">↩ DESHACER</button><button class="btn btn-ubicacion" onclick="mostrarPanel('panel-escanear');document.getElementById('input-escanear').focus();" style="margin-top:10px;">📍 ESCANEAR OTRA UBICACIÓN</button></div>
+<div class="acciones"><button class="btn-verde" onclick="guardarPicking()">💾 GUARDAR</button><button class="btn-volver" onclick="mostrarMenu()">✅ FINALIZAR</button></div><div id="resultado-picking" class="mensaje"></div><button class="btn-rojo" onclick="confirmarDeshacer()" style="margin-top:5px;width:100%;padding:12px;border:none;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">↩ DESHACER</button><button class="btn btn-ubicacion" onclick="mostrarPanel('panel-escanear');document.getElementById('input-escanear').focus();" style="margin-top:10px;">📍 ESCANEAR OTRA UBICACIÓN</button></div>
 
 <div id="panel-resumen-ingreso" class="panel" style="display:none;"><h3>📦 RESUMEN DE INGRESO</h3><div id="resumen-ingreso-lista" style="font-size:12px;color:#fff;margin:10px 0;"></div><button class="btn btn-ingreso" onclick="irASeleccionarCamara()" style="font-size:16px;padding:15px;">✅ CONTINUAR</button><button class="btn btn-volver" onclick="cancelarIngresoMasivo()">❌ CANCELAR</button></div>
 <div id="ing-masivo-camara-panel" class="panel" style="display:none;"><h3>📷 SELECCIONE CÁMARA</h3><button class="btn btn-ingreso" onclick="seleccionarCamaraIngreso('2')" style="font-size:20px;padding:20px;">📷 CÁMARA 2000</button><button class="btn btn-ingreso" onclick="seleccionarCamaraIngreso('1')" style="font-size:20px;padding:20px;">📷 CÁMARA 1000</button><button class="btn btn-volver" onclick="mostrarMenu()">⬅ CANCELAR</button></div>

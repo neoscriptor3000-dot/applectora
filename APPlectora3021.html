@@ -540,6 +540,7 @@ function cargarDatosDesdeLocalStorage() {
         tablaDatos = datosGuardados ? JSON.parse(datosGuardados) : [];
         var histGuardado = localStorage.getItem('historialMovimientos');
         historialMovimientos = histGuardado ? JSON.parse(histGuardado) : [];
+        historialMovimientos.forEach(function(m) { if (m.saldoReal === undefined) m.saldoLegacy = true; });
         var salidasGuardadas = localStorage.getItem('historialSalidas');
         historialSalidas = salidasGuardadas ? JSON.parse(salidasGuardadas) : [];
         var clavesGuardadas = localStorage.getItem('catalogoClaves');
@@ -556,7 +557,7 @@ function cargarDatosDesdeLocalStorage() {
 function guardarEnLocalStorage() {
     try {
         localStorage.setItem('tablaDatos', JSON.stringify(tablaDatos));
-        localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+        completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
         localStorage.setItem('historialSalidas', JSON.stringify(historialSalidas));
         localStorage.setItem('catalogoClaves', JSON.stringify(catalogoClaves));
         return true;
@@ -834,6 +835,26 @@ function buildSlotMap() {
 // ============================================================
 // FUNCIONES DE HISTORIAL
 // ============================================================
+// Saldo que queda en una ubicación según tablaDatos
+function saldoUbicacionActual(ub) {
+    var und = 0, kg = 0;
+    tablaDatos.forEach(function(sl) {
+        if (sl.ubicacion === ub) { und += Number(sl.und) || 0; kg += Number(sl.kg) || 0; }
+    });
+    return { und: und, kg: Math.round(kg * 100) / 100 };
+}
+// Registra el saldo de la ubicación en los movimientos nuevos (justo al guardar)
+function completarSaldoHistorial() {
+    historialMovimientos.forEach(function(m) {
+        if (m.saldoReal === undefined && !m.saldoLegacy) {
+            var s = saldoUbicacionActual(m.ubicacion);
+            m.undFin = s.und;
+            m.kgFin = s.kg;
+            m.saldoReal = true;
+        }
+    });
+}
+
 function mostrarHistorial(lista) {
     if (!lista || lista.length === 0) {
         document.getElementById('hist-lista').innerHTML = '<div class="mensaje" style="color:#607d8b;font-size:14px;padding:20px;">📭 Sin movimientos</div>';
@@ -887,8 +908,8 @@ function mostrarHistorial(lista) {
         html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (undDesp || 0) + '</td>';
         html += '<td style="padding:5px;font-size:10px;text-align:right;">' + ((kgDesp || 0).toFixed(2)) + '</td>';
         html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (bandDesp || 0) + '</td>';
-        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (undFin || 0) + '</td>';
-        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + ((kgFin || 0).toFixed(2)) + '</td>';
+        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (m.saldoReal ? (m.undFin || 0) : '—') + '</td>';
+        html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (m.saldoReal ? (m.kgFin || 0).toFixed(2) : '—') + '</td>';
         html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (bandFin || 0) + '</td>';
         html += '</tr>';
     });
@@ -1706,7 +1727,7 @@ if (encontrado && encontrado.codigo && catalogoClaves[encontrado.codigo]) {
             bandDesp: 0,
             bandFin: 0
         });
-        localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+        completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
         document.getElementById('resultado-escanear').innerHTML = '<div class="mensaje">✅ SALIDA registrada en ' + ubicacion + '<br>📤 Destino: ' + nombreDestino + '</div>';
         mostrarFeedback('✅ Salida registrada en ' + ubicacion + ' → ' + nombreDestino);
         document.getElementById('input-escanear').focus();
@@ -2537,7 +2558,7 @@ function confirmarIngresoPalletNuevo(clave) {
         kgAnt: 0,
         kgDesp: kg
     });
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     
     mostrarFeedback('✅ Pallet ingresado correctamente - Clave: ' + clave);
     
@@ -2614,7 +2635,7 @@ function accionEtiquetaSalida(clave, tipo) {
             bandAnt: pallet.bandejas || 0,
             bandDesp: 0
         });
-        localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+        completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
         
         // Remover del catálogo
         delete catalogoClaves[clave];
@@ -2830,7 +2851,7 @@ function confirmarPickingEtiqueta() {
         bandDesp: bandDesp,
         bandFin: bandFin
     });
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     
     // Registrar en historialSalidas
     historialSalidas.push({
@@ -2999,7 +3020,7 @@ function accionPasadizoConDestino(ubPasadizo, idx, tipo) {
             bandDesp: 0,
             bandFin: 0
         });
-        localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+        completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
         mostrarFeedback('✅ Salida registrada — ' + ubPasadizo + ' → ' + nombreDestino);
         mostrarListaPasadizoEscaneo(ubPasadizo);
         return;
@@ -3132,7 +3153,7 @@ if (codigoIngreso && catalogoClaves[codigoIngreso]) {
         kgAnt: 0,
         kgDesp: encontrado.kg
     });
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     var panelIng = document.getElementById('panel-ingreso');
     panelIng.style.background = '#1b5e20';
     document.getElementById('resultado-ingreso').innerHTML = '<div class="mensaje" style="color:#fff;font-size:18px;">✅ INGRESADO en ' + ub + '</div>';
@@ -3350,7 +3371,7 @@ function ejecutarTraslado() {
         undAnt: 0, undDesp: destino.und,
         kgAnt: 0, kgDesp: destino.kg
     });
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
 
     document.getElementById('traslado-msg').innerHTML = '<span style="color:#69f0ae;">✅ TRASLADO: ' + ubicacionOrigen + ' → ' + ubDestino + '</span>';
     mostrarFeedback('✅ Traslado completado');
@@ -3890,7 +3911,7 @@ if (p.clave && catalogoClaves[p.clave]) {
         kgAnt: 0,
         kgDesp: p.kg
     });
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     
     // Marcar como procesado
     p.procesado = true;
@@ -4896,7 +4917,7 @@ if (p.clave && catalogoClaves[p.clave]) {
         kgAnt: 0,
         kgDesp: p.kg
     });
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     p.procesado = true;
     p.ubicacion = ubicacion;
     palletsIngresadosEtiqueta.push({
@@ -5139,7 +5160,7 @@ function anularIngresoEtiqueta(index) {
             break;
         }
     }
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     p.procesado = false;
     p.ubicacion = '';
     for (var j = 0; j < palletsIngresadosEtiqueta.length; j++) {
@@ -5840,7 +5861,7 @@ function confirmarSalidaManual(ubicacion) {
         kgAnt: p.kg,
         kgDesp: 0
     });
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     
     // 3. VACIAR la ubicación
     if (encontrado) {
@@ -5985,7 +6006,7 @@ function registrarNuevoCompleto() {
         kgAnt: p.kg,
         kgDesp: 0
     });
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     guardarEnLocalStorage();
     var _sN = -1;
     for (var _ni = indexSalida + 1; _ni < listaSalida.length; _ni++) {
@@ -6075,7 +6096,7 @@ function confirmarPickingSuelto() {
         kgAnt: kg,
         kgDesp: 0
     });
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     guardarEnLocalStorage();
     mostrarFeedback('✅ Picking registrado en ' + ubicacion + ' (' + kg + ' kg, ' + und + ' und)');
     var panel = document.getElementById('panel-salida-masiva');
@@ -6115,7 +6136,7 @@ function confirmarPickingSuelto() {
             kgAnt: p.kg,
             kgDesp: 0
         });
-        localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+        completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
         palletsSalidos.push({
             codigo: p.codigo,
             producto: p.producto,
@@ -6263,7 +6284,7 @@ if (p.codigo && catalogoClaves[p.codigo]) {
             kgAnt: p.kg,
             kgDesp: 0
         });
-        localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+        completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
         mostrarFeedback('✅ Pallet registrado como NUEVO');
         indexSalida++;
         mostrarSalidaPallet();
@@ -6326,7 +6347,7 @@ if (p.codigo && catalogoClaves[p.codigo]) {
         kgAnt: p.kg,
         kgDesp: 0
     });
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     mostrarFeedback('✅ Salida registrada en ' + p.ubicacion);
     var panel = document.getElementById('panel-salida-masiva');
     var colorOriginal = panel.style.background;
@@ -6368,7 +6389,7 @@ function cancelarSalidaMasiva() {
         if (typeof window._histMovSnap !== 'undefined')
             historialMovimientos.splice(window._histMovSnap);
         localStorage.setItem('historialSalidas', JSON.stringify(historialSalidas));
-        localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+        completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
         localStorage.removeItem('salidasEnProgreso_' + new Date().toISOString().slice(0,10));
         if (typeof huellaExcel !== 'undefined' && huellaExcel) {
             localStorage.removeItem('salida_progreso_' + huellaExcel);
@@ -6565,7 +6586,7 @@ function devolverPalletSalida(index) {
             break;
         }
     }
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     
     // 5. Quitar de la lista de pallets salidos
     palletsSalidos.splice(index, 1);
@@ -6704,7 +6725,7 @@ function confirmarManual() {
         kgAnt: kg,
         kgDesp: 0
     });
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     palletsSalidos.push({
         codigo: codigo,
         producto: producto || '',
@@ -7025,7 +7046,7 @@ function ejecutarSalidaPistoleo() {
     });
     guardarEnLocalStorage();
     guardarCatalogoClaves();
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     localStorage.setItem('historialSalidas', JSON.stringify(historialSalidas));
 
     // Mostrar modal de éxito antes de volver al menú
@@ -7591,7 +7612,7 @@ function actualizarBandejasDesdeEscaneo(ubicacion) {
         vence: encontrado.vence
     };
     historialMovimientos.push(movimiento);
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     
     alert('✅ Bandejas actualizadas: ' + bandejasAnteriores + ' → ' + bandejasNuevas);
     
@@ -7647,7 +7668,7 @@ function actualizarBandejasDesdeEtiqueta(clave) {
         vence: pallet.vence
     };
     historialMovimientos.push(movimiento);
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     
     alert('✅ Bandejas actualizadas: ' + bandejasAnteriores + ' → ' + bandejasNuevas);
     
@@ -7693,7 +7714,7 @@ function actualizarBandejas() {
         vence: encontrado.vence
     };
     historialMovimientos.push(movimiento);
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     
     alert('✅ Bandejas actualizadas: ' + bandejasAnteriores + ' → ' + bandejasNuevas);
     
@@ -7744,7 +7765,7 @@ function actualizarBandejasEtiqueta(clave) {
         vence: pallet.vence
     };
     historialMovimientos.push(movimiento);
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     
     alert('✅ Bandejas actualizadas: ' + bandejasAnteriores + ' → ' + bandejasNuevas);
     
@@ -7841,7 +7862,7 @@ function guardarPicking() {
         bandDesp: bandFin,
         bandFin: bandFin
     });
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     historialSalidas.push({
         fecha: new Date().toLocaleDateString('es-PE'),
         hora: new Date().toLocaleTimeString('es-PE'),
@@ -7920,7 +7941,7 @@ function confirmarDeshacer() {
             break;
         }
     }
-    localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
+    completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
     mostrarFeedback('↩ Picking deshecho');
 }
 

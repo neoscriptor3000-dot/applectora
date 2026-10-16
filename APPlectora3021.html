@@ -118,7 +118,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ goat</div>
+<div>Ing. PERCY S. TEJADA VALDEZ </div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -840,7 +840,7 @@ function mostrarHistorial(lista) {
         return;
     }
     var html = '<table style="width:100%;border-collapse:collapse;font-size:9px;">';
-    html += '<tr style="color:#607d8b;border-bottom:2px solid rgba(79,195,247,0.3);"><th>HORA</th><th>TIPO</th><th>UBICACIÓN</th><th>CÓDIGO</th><th>PROC/DEST</th><th>UND INIC</th><th>KG INIC</th><th>BAND INIC</th><th>UND DESP</th><th>KG DESP</th><th>BAND DESP</th><th>UND FIN</th><th>KG FIN</th><th>BAND FIN</th></tr>';
+    html += '<tr style="color:#607d8b;border-bottom:2px solid rgba(79,195,247,0.3);"><th>FECHA Y HORA</th><th>TIPO</th><th>UBICACIÓN</th><th>CÓDIGO</th><th>PROC/DEST</th><th>UND INIC</th><th>KG INIC</th><th>BAND INIC</th><th>UND DESP</th><th>KG DESP</th><th>BAND DESP</th><th>UND FIN</th><th>KG FIN</th><th>BAND FIN</th></tr>';
     var listaMostrar = lista.slice().reverse();
     listaMostrar.forEach(function(m) {
         // Calcular valores faltantes
@@ -876,7 +876,7 @@ function mostrarHistorial(lista) {
             }
         }
         html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
-        html += '<td style="padding:5px;font-size:10px;">' + (m.hora || '—') + '</td>';
+        html += '<td style="padding:5px;font-size:10px;white-space:nowrap;">' + (m.fecha || '—') + ' ' + (m.hora || '') + '</td>';
         html += '<td style="padding:5px;font-size:10px;color:' + colorTipo + ';">' + (m.tipo || '—') + '</td>';
         html += '<td style="padding:5px;font-size:10px;color:#4fc3f7;">' + (m.ubicacion || '—') + '</td>';
         html += '<td style="padding:5px;font-size:10px;color:#fff;font-weight:bold;">' + (m.codigo || '—') + '</td>';

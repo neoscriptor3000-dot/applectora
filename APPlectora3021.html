@@ -52,6 +52,10 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 #hist-lista table { border-collapse: collapse; }
 #hist-lista th, #hist-lista td { border: 1px solid #666 !important; }
 #hist-lista tr:first-child th { background: #444 !important; color: #fff !important; }
+/* Encabezados fijos (tipo Inmovilizar del Excel) */
+#hist-lista, #mp-body { max-height: 65vh !important; overflow: auto !important; }
+#hist-lista tr:first-child th,
+#mp-body thead th { position: sticky !important; top: 0 !important; z-index: 5 !important; background: #444 !important; color: #fff !important; box-shadow: 0 2px 0 #666; }
 </style>
 </head>
 <body>

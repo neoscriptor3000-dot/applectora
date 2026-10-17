@@ -912,12 +912,12 @@ function mostrarHistorial(lista) {
             }
         }
         html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
-        html += '<td style="padding:5px;font-size:10px;white-space:nowrap;">' + (m.fecha || '—') + ' ' + (m.hora || '') + '</td>';
+        html += '<td style="padding:4px;font-size:10px;line-height:1.25;">' + (m.fecha || '—') + '<br><span style="color:#90a4ae;font-size:9px;">' + (m.hora || '') + '</span></td>';
         html += '<td style="padding:5px;font-size:10px;color:' + colorTipo + ';">' + (m.tipo || '—') + '</td>';
         html += '<td style="padding:5px;font-size:10px;color:#4fc3f7;">' + (m.ubicacion || '—') + '</td>';
         html += '<td style="padding:5px;font-size:10px;color:#fff;font-weight:bold;">' + (m.codigo || '—') + '</td>';
-        html += '<td style="padding:5px;font-size:9px;color:#e0e0e0;">' + (m.producto || '—') + '</td>';
-        html += '<td style="padding:5px;font-size:9px;color:#ffcc80;">' + procDest + '</td>';
+        html += '<td style="padding:4px;font-size:9px;color:#e0e0e0;max-width:120px;word-break:break-word;line-height:1.25;">' + (m.producto || '—') + '</td>';
+        html += '<td style="padding:4px;font-size:9px;color:#ffcc80;max-width:90px;word-break:break-word;line-height:1.25;">' + procDest + '</td>';
         html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (undAnt || 0) + '</td>';
         html += '<td style="padding:5px;font-size:10px;text-align:right;">' + ((kgAnt || 0).toFixed(2)) + '</td>';
         html += '<td style="padding:5px;font-size:10px;text-align:right;">' + (bandAnt || 0) + '</td>';

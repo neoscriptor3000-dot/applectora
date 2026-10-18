@@ -126,7 +126,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 <div style="text-align:center;font-size:12px;color:#ffffff;opacity:0.45;margin-top:10px;">
 <div>Elaborado por:</div>
-<div>Ing. PERCY S. TEJADA VALDEZ goat </div>
+<div>Ing. PERCY S. TEJADA VALDEZ </div>
 <div>Supervisor de Despacho AQP</div>
 </div>
 </div>
@@ -498,7 +498,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 </div>
 
-<div id="panel-ingreso" class="panel"><h3>📥 INGRESAR PALLET</h3><input type="text" id="ing-codigo" placeholder="Código del producto" onchange="autocompletarProducto()" onkeydown="if(event.key==='Enter')document.getElementById('ing-producto').focus()"><input type="text" id="ing-producto" placeholder="Nombre del producto" onkeydown="if(event.key==='Enter')document.getElementById('ing-lote').focus()"><input type="text" id="ing-lote" placeholder="Lote" onkeydown="if(event.key==='Enter')document.getElementById('ing-unidades').focus()"><input type="number" id="ing-unidades" placeholder="Unidades" min="0" onkeydown="if(event.key==='Enter')document.getElementById('ing-kilos').focus()"><input type="number" id="ing-kilos" placeholder="Peso en Kilos" min="0" step="0.01" onkeydown="if(event.key==='Enter')document.getElementById('ing-bandejas').focus()"><input type="number" id="ing-bandejas" placeholder="Número de Bandejas" min="0" onkeydown="if(event.key==='Enter')document.getElementById('ing-venc').focus()"><input type="text" id="ing-venc" placeholder="Vencimiento (ej: 15/03/2028)" onkeydown="if(event.key==='Enter')document.getElementById('ing-ubicacion').focus()"><input type="text" id="ing-clave" placeholder="Clave de etiqueta (opcional): pistolee" onkeydown="if(event.key==='Enter')document.getElementById('ing-ubicacion').focus()"><input type="text" id="ing-ubicacion" placeholder="Escanee ubicación destino" onchange="confirmarIngreso()"><div id="resultado-ingreso"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
+<div id="panel-ingreso" class="panel"><h3>📥 INGRESAR PALLET</h3><input type="text" id="ing-codigo" placeholder="Código del producto" onchange="autocompletarProducto()" onkeydown="if(event.key==='Enter')document.getElementById('ing-producto').focus()"><input type="text" id="ing-producto" placeholder="Nombre del producto" onkeydown="if(event.key==='Enter')document.getElementById('ing-lote').focus()"><input type="text" id="ing-lote" placeholder="Lote" onkeydown="if(event.key==='Enter')document.getElementById('ing-unidades').focus()"><input type="number" id="ing-unidades" placeholder="Unidades" min="0" onkeydown="if(event.key==='Enter')document.getElementById('ing-kilos').focus()"><input type="text" inputmode="decimal" id="ing-kilos" placeholder="Peso en Kilos (ej: 983.15)" oninput="this.value=this.value.replace(/,/g,'.')" onkeydown="if(event.key==='Enter')document.getElementById('ing-bandejas').focus()"><input type="number" id="ing-bandejas" placeholder="Número de Bandejas" min="0" onkeydown="if(event.key==='Enter')document.getElementById('ing-venc').focus()"><input type="text" id="ing-venc" placeholder="Vencimiento (ej: 15/03/2028)" onkeydown="if(event.key==='Enter')document.getElementById('ing-ubicacion').focus()"><input type="text" id="ing-clave" placeholder="Clave de etiqueta (opcional): pistolee" onkeydown="if(event.key==='Enter')document.getElementById('ing-ubicacion').focus()"><input type="text" id="ing-ubicacion" placeholder="Escanee ubicación destino" onchange="confirmarIngreso()"><div id="resultado-ingreso"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
 </div>
 
 <script>
@@ -1610,6 +1610,8 @@ function verAcarreo() {
 
     var posicionesUsadas = [];
     ordenVisual.forEach(function(o) { if (posicionesUsadas.indexOf(o.pos) === -1) posicionesUsadas.push(o.pos); });
+    // Encabezados: Izquierdo se lee de 6 a 1 (izquierda a derecha); Derecho de 1 a 6
+    posicionesUsadas.sort(function(a, b) { return ladoChar === 'I' ? b - a : a - b; });
 
     var datos = {};
     ordenVisual.forEach(function(o) {
@@ -1626,24 +1628,36 @@ function verAcarreo() {
     html += '<div style="border:2px solid #69f0ae;border-radius:8px;padding:10px;text-align:center;min-width:90px;"><div style="font-size:11px;color:#90caf9;">TOTAL</div><div style="font-size:20px;font-weight:bold;color:#69f0ae;">' + total + '</div></div>';
     html += '</div>';
 
+    html += '<div style="display:flex;justify-content:' + (ladoChar === 'I' ? 'flex-start' : 'flex-end') + ';font-size:11px;font-weight:bold;color:#90a4ae;margin:0 0 4px 0;">🧱 PARED ' + (ladoChar === 'I' ? '←' : '→') + '</div>';
     html += '<table style="width:100%;border-collapse:collapse;text-align:center;table-layout:fixed;">';
-    html += '<tr><td style="width:26px;"></td>';
-    posicionesUsadas.forEach(function(p) { html += '<td style="padding:4px;color:#90caf9;font-weight:bold;">' + p + '</td>'; });
-    html += '</tr>';
+    // Barra vertical que simula la pared (izquierda en Izquierdo, derecha en Derecho)
+    var PARED = '<td style="width:14px;background:#78909c;padding:0;"></td>';
+    // Cuadrícula FÍSICA: columna 1 = junto a la pared. Nivel A tiene 6 posiciones (6 junto a la pared);
+    // niveles D, C y B tienen 5 (5 junto a la pared), así que empiezan en la misma columna que A6.
+    var maxPosNivel = { D: 5, C: 5, B: 5, A: 6 };
+    // Encabezados en pantalla: Izquierdo 6→1 de izquierda a derecha; Derecho 1→6 (espejado)
+    html += '<tr><td style="width:26px;"></td>' + (ladoChar === 'I' ? PARED : '');
+    for (var s = 1; s <= 6; s++) {
+        var etiq = ladoChar === 'I' ? 7 - s : s;
+        html += '<td style="padding:4px;color:#90caf9;font-weight:bold;">' + etiq + '</td>';
+    }
+    html += (ladoChar === 'D' ? PARED : '') + '</tr>';
     niveles.forEach(function(niv) {
         if (!datos[niv]) return;
         html += '<tr>';
-        html += '<td style="padding:6px;font-weight:bold;color:#4fc3f7;">' + niv + '</td>';
-        posicionesUsadas.forEach(function(p) {
-            if (!datos[niv].hasOwnProperty(p)) { html += '<td style="height:40px;padding:12px 6px;border:1px solid rgba(255,255,255,0.12);"></td>'; return; }
-            var band = datos[niv][p];
+        html += '<td style="padding:6px;font-weight:bold;color:#4fc3f7;">' + niv + '</td>' + (ladoChar === 'I' ? PARED : '');
+        for (var s2 = 1; s2 <= 6; s2++) {
+            var col = ladoChar === 'I' ? s2 : 7 - s2;
+            var pos = niv === 'A' ? 7 - col : 6 - col;
+            var valido = pos >= 1 && pos <= maxPosNivel[niv];
+            var band = (valido && datos[niv].hasOwnProperty(pos)) ? datos[niv][pos] : null;
             if (band) {
                 html += '<td style="height:40px;padding:12px 6px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);font-weight:bold;">' + band + '</td>';
             } else {
                 html += '<td style="height:40px;padding:12px 6px;border:1px solid rgba(255,255,255,0.12);"></td>';
             }
-        });
-        html += '</tr>';
+        }
+        html += (ladoChar === 'D' ? PARED : '') + '</tr>';
     });
     html += '</table>';
 
@@ -2396,7 +2410,7 @@ function ingresarPalletNuevo(clave) {
     html += '<div style="flex:1;">';
     html += '<label style="color:#4fc3f7;font-weight:bold;">⚖️ Kilos *</label>';
     html += '<div style="display:flex;gap:6px;">';
-    html += '<input type="number" id="ingreso-kg" placeholder="0.00" min="0" step="0.01" style="flex:1;font-size:14px;padding:10px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:6px;">';
+    html += '<input type="text" inputmode="decimal" id="ingreso-kg" placeholder="0.00" oninput="this.value=this.value.replace(/,/g,String.fromCharCode(46))" style="flex:1;font-size:14px;padding:10px;background:rgba(3,12,32,0.9);border:1px solid rgba(79,195,247,0.3);color:#fff;border-radius:6px;">';
     html += '<button onclick="activarVozCampo(\'ingreso-kg\')" style="background:#1565c0;border:none;color:#fff;padding:10px 15px;border-radius:6px;cursor:pointer;">🎙️</button>';
     html += '</div>';
     html += '</div>';
@@ -2484,6 +2498,15 @@ function activarVozCampo(campoId) {
     
     recognition.onresult = function(event) {
         var transcript = event.results[0][0].transcript.trim();
+        if (campoId === 'ingreso-kg') {
+            // Peso: siempre con punto (el reconocedor puede devolver "10,5" o "10 punto 5")
+            transcript = transcript.toLowerCase()
+                .replace(/\s*(punto|coma)\s*/g, '.')
+                .replace(/,/g, '.')
+                .replace(/[^0-9.]/g, '');
+            var partes = transcript.split('.');
+            if (partes.length > 2) transcript = partes[0] + '.' + partes.slice(1).join('');
+        }
         document.getElementById(campoId).value = transcript;
         boton.style.background = '#1565c0';
         boton.textContent = '🎙️';
@@ -2516,7 +2539,7 @@ function confirmarIngresoPalletNuevo(clave) {
     var codigo = document.getElementById('ingreso-codigo').value.trim();
     var producto = document.getElementById('ingreso-producto').value.trim();
     var und = parseInt(document.getElementById('ingreso-und').value) || 0;
-    var kg = parseFloat(document.getElementById('ingreso-kg').value) || 0;
+    var kg = parseFloat(String(document.getElementById('ingreso-kg').value).replace(',', '.')) || 0;
     var lote = document.getElementById('ingreso-lote').value.trim();
     var vence = document.getElementById('ingreso-vence').value.trim();
     var ubicacion = document.getElementById('ingreso-ubicacion').value.toUpperCase().trim();
@@ -3218,7 +3241,7 @@ if (codigoIngreso && catalogoClaves[codigoIngreso]) {
     encontrado.producto = document.getElementById('ing-producto').value.trim();
     encontrado.lote = document.getElementById('ing-lote').value.trim();
     encontrado.und = parseFloat(document.getElementById('ing-unidades').value) || 0;
-    encontrado.kg = parseFloat(document.getElementById('ing-kilos').value) || 0;
+    encontrado.kg = parseFloat(String(document.getElementById('ing-kilos').value).replace(',', '.')) || 0;
     encontrado.vence = document.getElementById('ing-venc').value.trim();
     encontrado.bandejas = document.getElementById('ing-bandejas').value.trim();
     encontrado.clave = claveIng || '';

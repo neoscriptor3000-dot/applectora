@@ -498,7 +498,7 @@ td{padding:5px;border-bottom:1px solid rgba(255,255,255,0.03)}
 </div>
 </div>
 
-<div id="panel-ingreso" class="panel"><h3>📥 INGRESAR PALLET</h3><input type="text" id="ing-codigo" placeholder="Código del producto" onchange="autocompletarProducto()" onkeydown="if(event.key==='Enter')document.getElementById('ing-producto').focus()"><input type="text" id="ing-producto" placeholder="Nombre del producto" onkeydown="if(event.key==='Enter')document.getElementById('ing-lote').focus()"><input type="text" id="ing-lote" placeholder="Lote" onkeydown="if(event.key==='Enter')document.getElementById('ing-unidades').focus()"><input type="number" id="ing-unidades" placeholder="Unidades" min="0" onkeydown="if(event.key==='Enter')document.getElementById('ing-kilos').focus()"><input type="number" id="ing-kilos" placeholder="Peso en Kilos" min="0" step="0.01" onkeydown="if(event.key==='Enter')document.getElementById('ing-bandejas').focus()"><input type="number" id="ing-bandejas" placeholder="Número de Bandejas" min="0" onkeydown="if(event.key==='Enter')document.getElementById('ing-venc').focus()"><input type="text" id="ing-venc" placeholder="Vencimiento (ej: 15/03/2028)" onkeydown="if(event.key==='Enter')document.getElementById('ing-ubicacion').focus()"><input type="text" id="ing-ubicacion" placeholder="Escanee ubicación destino" onchange="confirmarIngreso()"><div id="resultado-ingreso"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
+<div id="panel-ingreso" class="panel"><h3>📥 INGRESAR PALLET</h3><input type="text" id="ing-codigo" placeholder="Código del producto" onchange="autocompletarProducto()" onkeydown="if(event.key==='Enter')document.getElementById('ing-producto').focus()"><input type="text" id="ing-producto" placeholder="Nombre del producto" onkeydown="if(event.key==='Enter')document.getElementById('ing-lote').focus()"><input type="text" id="ing-lote" placeholder="Lote" onkeydown="if(event.key==='Enter')document.getElementById('ing-unidades').focus()"><input type="number" id="ing-unidades" placeholder="Unidades" min="0" onkeydown="if(event.key==='Enter')document.getElementById('ing-kilos').focus()"><input type="number" id="ing-kilos" placeholder="Peso en Kilos" min="0" step="0.01" onkeydown="if(event.key==='Enter')document.getElementById('ing-bandejas').focus()"><input type="number" id="ing-bandejas" placeholder="Número de Bandejas" min="0" onkeydown="if(event.key==='Enter')document.getElementById('ing-venc').focus()"><input type="text" id="ing-venc" placeholder="Vencimiento (ej: 15/03/2028)" onkeydown="if(event.key==='Enter')document.getElementById('ing-ubicacion').focus()"><input type="text" id="ing-clave" placeholder="Clave de etiqueta (opcional): pistolee" onkeydown="if(event.key==='Enter')document.getElementById('ing-ubicacion').focus()"><input type="text" id="ing-ubicacion" placeholder="Escanee ubicación destino" onchange="confirmarIngreso()"><div id="resultado-ingreso"></div><button class="btn btn-volver" onclick="mostrarMenu()">⬅ VOLVER</button></div>
 </div>
 
 <script>
@@ -520,7 +520,34 @@ function cargarCatalogoClaves() {
 }
 
 
+// Marca cada clave del catálogo como ACTIVA (está en la tabla 3D con producto) o INACTIVA (ya salió),
+// y actualiza la ubicación de las activas. Se ejecuta en cada guardado, cubre todas las salidas y traslados.
+function sincronizarActivoClaves() {
+    var porClave = {};
+    tablaDatos.forEach(function(s) {
+        if (s.clave && s.codigo) porClave[String(s.clave)] = s;
+    });
+    var ahoraF = new Date().toLocaleDateString('es-PE');
+    var ahoraH = new Date().toLocaleTimeString('es-PE');
+    Object.keys(catalogoClaves).forEach(function(k) {
+        var c = catalogoClaves[k];
+        if (!c || typeof c !== 'object') return;
+        var s = porClave[k];
+        if (s) {
+            c.activo = true;
+            c.ubicacion = s.ubicacion;
+            delete c.fechaSalida;
+            delete c.horaSalida;
+        } else if (c.activo !== false) {
+            c.activo = false;
+            c.fechaSalida = c.fechaSalida || ahoraF;
+            c.horaSalida = c.horaSalida || ahoraH;
+        }
+    });
+}
+
 function guardarCatalogoClaves() {
+    sincronizarActivoClaves();
     try {
         localStorage.setItem('catalogoClaves', JSON.stringify(catalogoClaves));
         actualizarIndicadorCobertura();
@@ -563,6 +590,7 @@ function cargarDatosDesdeLocalStorage() {
 }
 
 function guardarEnLocalStorage() {
+    sincronizarActivoClaves();
     try {
         localStorage.setItem('tablaDatos', JSON.stringify(tablaDatos));
         completarSaldoHistorial(); localStorage.setItem('historialMovimientos', JSON.stringify(historialMovimientos));
@@ -3093,12 +3121,29 @@ function accionPasadizoConDestino(ubPasadizo, idx, tipo) {
 function autocompletarProducto() {
     var cod = document.getElementById('ing-codigo').value.trim();
     if (!cod) return;
-    for (var i = 0; i < tablaDatos.length; i++) {
-        if (tablaDatos[i].codigo === cod && tablaDatos[i].producto) {
-            document.getElementById('ing-producto').value = tablaDatos[i].producto;
-            document.getElementById('ing-lote').focus();
-            return;
-        }
+    var nombre = '';
+    // 1) Tabla 3D (pallets en la cámara)
+    for (var i = 0; i < tablaDatos.length && !nombre; i++) {
+        if (String(tablaDatos[i].codigo || '').trim() === cod && tablaDatos[i].producto) nombre = tablaDatos[i].producto;
+    }
+    // 2) Historial de movimientos (productos que ya salieron)
+    for (var j = historialMovimientos.length - 1; j >= 0 && !nombre; j--) {
+        var mh = historialMovimientos[j];
+        if (String(mh.codigo || '').trim() === cod && mh.producto) nombre = mh.producto;
+    }
+    // 3) Catálogo de claves
+    if (!nombre) {
+        Object.keys(catalogoClaves).forEach(function(k) {
+            var c = catalogoClaves[k];
+            if (!nombre && c && String(c.codigo || '').trim() === cod && c.producto) nombre = c.producto;
+        });
+    }
+    if (nombre) {
+        document.getElementById('ing-producto').value = nombre;
+        document.getElementById('ing-lote').focus();
+    } else {
+        mostrarFeedback('ℹ️ Código sin nombre registrado: escríbalo a mano');
+        document.getElementById('ing-producto').focus();
     }
 }
 
@@ -3132,6 +3177,22 @@ if (esPasadizo(ub)) {
     }
 }
 
+// Clave de etiqueta (opcional): si ya está ACTIVA en la tabla 3D, no se permite ingresar con ella
+var claveIng = (document.getElementById('ing-clave').value || '').trim();
+if (claveIng) {
+    var claveActiva = null;
+    tablaDatos.forEach(function(sl) {
+        if (sl.codigo && String(sl.clave || '') === claveIng) claveActiva = sl;
+    });
+    if (claveActiva) {
+        alert('⚠️ CLAVE YA EXISTE (ACTIVA)\n\nClave: ' + claveIng + '\nProducto: ' + claveActiva.codigo + ' - ' + claveActiva.producto +
+              '\nUbicación actual: ' + claveActiva.ubicacion + '\n\nPara ingresar este pallet, deje la clave vacía.');
+        document.getElementById('ing-clave').value = '';
+        document.getElementById('ing-clave').focus();
+        return;
+    }
+}
+
 // Verificar si la clave ya existe en el catálogo
 var codigoIngreso = document.getElementById('ing-codigo').value.trim();
 if (codigoIngreso && catalogoClaves[codigoIngreso]) {
@@ -3160,7 +3221,19 @@ if (codigoIngreso && catalogoClaves[codigoIngreso]) {
     encontrado.kg = parseFloat(document.getElementById('ing-kilos').value) || 0;
     encontrado.vence = document.getElementById('ing-venc').value.trim();
     encontrado.bandejas = document.getElementById('ing-bandejas').value.trim();
+    encontrado.clave = claveIng || '';
     guardarEnLocalStorage();
+
+// Registrar la clave en el catálogo (si se ingresó una)
+if (claveIng) {
+    catalogoClaves[claveIng] = {
+        codigo: encontrado.codigo, producto: encontrado.producto, lote: encontrado.lote,
+        und: encontrado.und, kg: encontrado.kg, ubicacion: ub, activo: true,
+        fechaIngreso: new Date().toLocaleDateString('es-PE'),
+        horaIngreso: new Date().toLocaleTimeString('es-PE')
+    };
+    guardarCatalogoClaves();
+}
 
 // Actualizar la ubicación en el catálogo (reingreso)
 var codigoIngreso = document.getElementById('ing-codigo').value.trim();
@@ -3199,6 +3272,7 @@ if (codigoIngreso && catalogoClaves[codigoIngreso]) {
         document.getElementById('ing-kilos').value = '';
         document.getElementById('ing-bandejas').value = '';
         document.getElementById('ing-venc').value = '';
+        document.getElementById('ing-clave').value = '';
         document.getElementById('ing-ubicacion').value = '';
         document.getElementById('ing-codigo').focus();
     }, 3000);
@@ -3395,6 +3469,7 @@ function ejecutarTraslado() {
     destino.linea = orig.linea;
     destino.bandejas = orig.bandejas || '';
     destino.procedencia = orig.procedencia || '';
+    destino.clave = orig.clave || '';
     destino.occ = true;
 
     // Vaciar origen (normal o PASADIZO)
@@ -3416,6 +3491,7 @@ function ejecutarTraslado() {
                 s.linea = '';
                 s.bandejas = '';
                 s.procedencia = '';
+                s.clave = '';
                 s.occ = false;
                 break;
             }
@@ -3433,6 +3509,7 @@ function ejecutarTraslado() {
             encontrado.linea = '';
             encontrado.bandejas = '';
             encontrado.procedencia = '';
+            encontrado.clave = '';
             encontrado.occ = false;
         }
     }
